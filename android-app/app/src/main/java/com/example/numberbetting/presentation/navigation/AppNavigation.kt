@@ -34,7 +34,6 @@ import com.example.numberbetting.presentation.betting.BettingScreen
 import com.example.numberbetting.presentation.wallet.WalletScreen
 import com.example.numberbetting.presentation.history.MyBetsScreen
 import com.example.numberbetting.presentation.history.BetItemData
-import com.example.numberbetting.presentation.khaiwal.KhaiwalScreen
 import com.example.numberbetting.presentation.splash.SplashScreen
 import com.example.numberbetting.presentation.components.RulesAndRatesDialog
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +52,6 @@ fun AppNavigation() {
     var currentScreen by remember { mutableStateOf("splash") }
     var selectedGameTitle by remember { mutableStateOf("Gali") }
     var showRulesDialog by remember { mutableStateOf(false) }
-    var currentKhaiwalPlayerId by remember { mutableStateOf<String?>(null) }
     
     // User credentials state
     var currentUserName by remember { mutableStateOf(AuthManager.getUserName(context)) }
@@ -66,7 +64,6 @@ fun AppNavigation() {
     var userCommission by remember { mutableStateOf(0.00) }
     var isAccountBlocked by remember { mutableStateOf(false) }
     var isAccountDeleted by remember { mutableStateOf(false) }
-    var isKhaiwalUser by remember { mutableStateOf(false) }
     var liveWhatsAppNumber by remember { mutableStateOf("917206561420") }
     var declaredResultsMap by remember { mutableStateOf<Map<String, Int?>>(emptyMap()) }
     var livePlayersMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
@@ -309,7 +306,6 @@ fun AppNavigation() {
                                     val bal = jsonObj.optDouble("balance", userBalance)
                                     val bon = jsonObj.optDouble("bonus_balance", 0.0)
                                     val comm = jsonObj.optDouble("commission_balance", 0.0)
-                                    val khStatus = jsonObj.optBoolean("is_khaiwal", false)
                                     val serverName = jsonObj.optString("name", "")
                                     val blockedStatus = jsonObj.optBoolean("is_blocked", false) || jsonObj.optBoolean("isBlocked", false)
                                     val deletedStatus = jsonObj.optBoolean("is_deleted", false) || jsonObj.optBoolean("isDeleted", false) || (jsonObj.optString("message", "") == "No Authentication")
@@ -317,7 +313,6 @@ fun AppNavigation() {
                                         userBalance = bal
                                         userBonus = bon
                                         userCommission = comm
-                                        isKhaiwalUser = khStatus
                                         isAccountBlocked = blockedStatus
                                         isAccountDeleted = deletedStatus
                                         if (deletedStatus) {
@@ -623,7 +618,6 @@ fun AppNavigation() {
                     userName = currentUserName,
                     userPhone = currentUserPhone,
                     whatsappNumber = liveWhatsAppNumber,
-                    isKhaiwal = isKhaiwalUser,
                     onNavigate = { route ->
                         currentScreen = route
                         scope.launch { drawerState.close() }
@@ -657,9 +651,7 @@ fun AppNavigation() {
                     declaredResults = declaredResultsMap,
                     livePlayers = livePlayersMap,
                     whatsappNumber = liveWhatsAppNumber,
-                    isKhaiwal = isKhaiwalUser,
                     onNavigateToBetting = { gameName ->
-                        currentKhaiwalPlayerId = null
                         selectedGameTitle = gameName
                         currentScreen = "betting"
                     },
@@ -667,18 +659,8 @@ fun AppNavigation() {
                     onNavigateToMyBets = { currentScreen = "my_bets" },
                     onNavigateToChart = { currentScreen = "chart" },
                     onNavigateToReferral = { currentScreen = "referral" },
-                    onNavigateToKhaiwal = { currentScreen = "khaiwal" },
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onRefresh = triggerManualRefresh
-                )
-                "khaiwal" -> KhaiwalScreen(
-                    userMobile = currentUserPhone,
-                    onBack = { currentScreen = "game" },
-                    onSelectPlayerForBet = { gameName, playerId, _ ->
-                        selectedGameTitle = gameName
-                        currentKhaiwalPlayerId = playerId
-                        currentScreen = "betting"
-                    }
                 )
                 "betting" -> BettingScreen(
                     gameTitle = selectedGameTitle,
@@ -731,60 +713,6 @@ fun AppNavigation() {
                                 put("bets", betsArray)
                             }
 
-                            val khPlayerId = currentKhaiwalPlayerId
-                            if (khPlayerId != null) {
-                                val khBetsArray = JSONArray()
-                                var mainCat = "Jodi"
-                                for (betItem in newBets) {
-                                    var bType = "Jodi"
-                                    val fullGName = betItem.gameName
-                                    if (fullGName.contains("(Jodi)")) {
-                                        bType = "Jodi"
-                                    } else if (fullGName.contains("(Crossing)")) {
-                                        bType = "Crossing"
-                                        mainCat = "Crossing"
-                                    } else if (fullGName.contains("(Ander)")) {
-                                        bType = "Haroof Ander"
-                                        mainCat = "Haruf"
-                                    } else if (fullGName.contains("(Bahar)")) {
-                                        bType = "Haroof Bahar"
-                                        mainCat = "Haruf"
-                                    }
-                                    val betObj = JSONObject().apply {
-                                        put("number", betItem.number)
-                                        put("amount", betItem.stakeAmount.toInt())
-                                        put("betType", bType)
-                                    }
-                                    khBetsArray.put(betObj)
-                                }
-                                val totStake = newBets.sumOf { it.stakeAmount }
-                                val khLogObj = JSONObject().apply {
-                                    put("mobile", currentUserPhone)
-                                    put("khaiwalPhone", currentUserPhone)
-                                    put("userPhone", currentUserPhone)
-                                    put("playerId", khPlayerId)
-                                    put("gameName", cleanGameName)
-                                    put("betCategory", mainCat)
-                                    put("totalAmount", totStake)
-                                    put("bets", khBetsArray)
-                                }
-                                scope.launch(Dispatchers.IO) {
-                                    for (baseUrl in ApiConfig.getWorkingUrls()) {
-                                        try {
-                                            val url = URL("$baseUrl/api/user/khaiwal/log-player-bet")
-                                            val conn = url.openConnection() as HttpURLConnection
-                                            conn.requestMethod = "POST"
-                                            conn.setRequestProperty("Content-Type", "application/json")
-                                            conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
-                                            conn.connectTimeout = 3000
-                                            conn.doOutput = true
-                                            conn.outputStream.use { it.write(khLogObj.toString().toByteArray()) }
-                                            if (conn.responseCode in 200..299) break
-                                        } catch (e: Exception) { }
-                                    }
-                                }
-                            }
-
                             scope.launch(Dispatchers.IO) {
                                 for (baseUrl in ApiConfig.getWorkingUrls()) {
                                     try {
@@ -820,9 +748,7 @@ fun AppNavigation() {
                         }
                     },
                     onBack = {
-                        val wasKhaiwal = currentKhaiwalPlayerId != null
-                        currentKhaiwalPlayerId = null
-                        currentScreen = if (wasKhaiwal) "khaiwal" else "game"
+                        currentScreen = "game"
                     }
                 )
                 "wallet" -> WalletScreen(

@@ -31,7 +31,6 @@ fun AppDrawerContent(
     userName: String = "User",
     userPhone: String = "",
     whatsappNumber: String = "917206561420",
-    isKhaiwal: Boolean = false,
     onNavigate: (String) -> Unit,
     onOpenRulesDialog: () -> Unit = {},
     onLogout: () -> Unit = {},
@@ -87,25 +86,6 @@ fun AppDrawerContent(
                 icon = "🏠",
                 label = LanguageManager.getText("Home / Live Games", "होम / लाइव गेम"),
                 onClick = { onNavigate("game") }
-            )
-
-            DrawerActionItem(
-                icon = "👑",
-                label = if (isKhaiwal) LanguageManager.getText("Khaiwal Panel", "खाईवाल पैनल") else LanguageManager.getText("Become a Khaiwal", "खाईवाल बनें"),
-                onClick = {
-                    if (isKhaiwal) {
-                        onNavigate("khaiwal")
-                    } else {
-                        onCloseDrawer()
-                        try {
-                            val cleanPhone = whatsappNumber.replace("[^0-9]".toRegex(), "")
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://wa.me/$cleanPhone")).apply {
-                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        } catch (_: Exception) { }
-                    }
-                }
             )
 
             DrawerActionItem(

@@ -3671,31 +3671,15 @@ const deleteUser = async (req, res) => {
     try {
       const { 
         deletedMobiles: storeDeletedMobiles, 
-        userWalletStore,
-        khaiwalPlayersStore,
-        khaiwalPlayerBetsStore 
+        userWalletStore
       } = require('../store');
 
       deletedMobiles.forEach(m => {
         if (m) {
           if (storeDeletedMobiles && !storeDeletedMobiles.includes(m)) storeDeletedMobiles.push(m);
           if (userWalletStore && userWalletStore[m]) delete userWalletStore[m];
-          if (khaiwalPlayersStore && khaiwalPlayersStore[m]) delete khaiwalPlayersStore[m];
-          if (khaiwalPlayerBetsStore && khaiwalPlayerBetsStore[m]) delete khaiwalPlayerBetsStore[m];
         }
       });
-
-      // Remove any registered player entries whose mobile matches deletedMobiles from other Khaiwals' stores
-      if (khaiwalPlayersStore) {
-        Object.keys(khaiwalPlayersStore).forEach(k => {
-          if (Array.isArray(khaiwalPlayersStore[k])) {
-            khaiwalPlayersStore[k] = khaiwalPlayersStore[k].filter(p => {
-              const pMob = String(p.mobile || p.phone || '').replace(/[^0-9]/g, '').slice(-10);
-              return !deletedMobiles.includes(pMob);
-            });
-          }
-        });
-      }
     } catch (e) {}
 
     saveDiskStore();
@@ -3724,9 +3708,6 @@ const deleteUser = async (req, res) => {
         await mongoose.connection.db.collection('transactions').deleteMany({ $or: orConditions }).catch(()=>{});
         await mongoose.connection.db.collection('depositrequests').deleteMany({ $or: orConditions }).catch(()=>{});
         await mongoose.connection.db.collection('withdrawalrequests').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('khaiwal_players').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('khaiwal_bets').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('khaiwal_player_bets').deleteMany({ $or: orConditions }).catch(()=>{});
       }
     }
     res.json({ success: true, message: `User and all related data deleted permanently` });

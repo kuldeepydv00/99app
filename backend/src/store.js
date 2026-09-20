@@ -26,8 +26,6 @@ let declaredResultsDateMap = {};
 let memoryResultsHistory = [];
 let blockedMobiles = [];
 let deletedMobiles = [];
-let khaiwalPlayersStore = {};
-let khaiwalPlayerBetsStore = {};
 
 const FORTY_DAYS_MS = 40 * 24 * 60 * 60 * 1000;
 
@@ -252,9 +250,7 @@ function saveDiskStore() {
       bannersListStore,
       blockedMobiles,
       deletedMobiles,
-      livePlayersMap,
-      khaiwalPlayersStore,
-      khaiwalPlayerBetsStore
+      livePlayersMap
     };
     fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2), 'utf-8');
     const legacyPath = path.join(__dirname, 'dataStore.json');
@@ -376,8 +372,6 @@ function loadDiskStore() {
       if (data.blockedMobiles && Array.isArray(data.blockedMobiles)) blockedMobiles.length = 0, blockedMobiles.push(...data.blockedMobiles);
       if (data.deletedMobiles && Array.isArray(data.deletedMobiles)) deletedMobiles.length = 0, deletedMobiles.push(...data.deletedMobiles);
       if (data.livePlayersMap && typeof data.livePlayersMap === 'object') Object.assign(livePlayersMap, data.livePlayersMap);
-      if (data.khaiwalPlayersStore && typeof data.khaiwalPlayersStore === 'object') Object.assign(khaiwalPlayersStore, data.khaiwalPlayersStore);
-      if (data.khaiwalPlayerBetsStore && typeof data.khaiwalPlayerBetsStore === 'object') Object.assign(khaiwalPlayerBetsStore, data.khaiwalPlayerBetsStore);
       console.log(`[Disk Store] Successfully loaded disk data from ${targetFile}! Registered users: ${registeredUsers.length}`);
     }
   } catch (err) {
@@ -413,7 +407,5 @@ module.exports = {
   purgeOldBets,
   blockedMobiles,
   deletedMobiles,
-  livePlayersMap,
-  khaiwalPlayersStore,
-  khaiwalPlayerBetsStore
+  livePlayersMap
 };

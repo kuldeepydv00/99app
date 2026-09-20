@@ -18,12 +18,6 @@ const {
   getReferralDetails,
   applyReferralCode,
   transferCommissionToWallet,
-  getKhaiwalPlayers,
-  addKhaiwalPlayer,
-  updateKhaiwalPlayer,
-  deleteKhaiwalPlayer,
-  logKhaiwalPlayerBet,
-  getKhaiwalPlayerLedger,
   uploadApkChunk
 } = require('../controllers/userController');
 
@@ -46,15 +40,5 @@ router.post('/withdraw/request', requestWithdrawal);
 router.get('/bank-details', getBankDetails);
 router.post('/bank-details/save', saveBankDetails);
 router.post('/commission/transfer', transferCommissionToWallet);
-
-// Khaiwal Management Routes
-router.get('/khaiwal/players', getKhaiwalPlayers);
-router.post('/khaiwal/players', addKhaiwalPlayer);
-router.post('/khaiwal/players/update', updateKhaiwalPlayer);
-router.put('/khaiwal/players/:playerId', updateKhaiwalPlayer);
-router.post('/khaiwal/players/delete', deleteKhaiwalPlayer);
-router.delete('/khaiwal/players/:playerId', deleteKhaiwalPlayer);
-router.post('/khaiwal/log-player-bet', logKhaiwalPlayerBet);
-router.get('/khaiwal/players/:playerId/ledger', getKhaiwalPlayerLedger);
 
 module.exports = router;

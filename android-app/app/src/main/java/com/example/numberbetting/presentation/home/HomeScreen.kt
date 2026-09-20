@@ -83,13 +83,11 @@ fun HomeScreen(
     declaredResults: Map<String, Int?> = emptyMap(),
     livePlayers: Map<String, Int> = emptyMap(),
     whatsappNumber: String = "917206561420",
-    isKhaiwal: Boolean = false,
     onNavigateToBetting: (String) -> Unit,
     onNavigateToWallet: () -> Unit,
     onNavigateToMyBets: () -> Unit,
     onNavigateToChart: () -> Unit = {},
     onNavigateToReferral: () -> Unit = {},
-    onNavigateToKhaiwal: () -> Unit = {},
     onMenuClick: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
@@ -300,7 +298,7 @@ fun HomeScreen(
                         TrustBadgesRow()
                     }
 
-                    // Official Website & Khaiwal Cards (Full Width Stacked Layout matching Image 4)
+                    // Official Website Card (Full Width Stacked Layout matching Image 4)
                     item {
                         val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                         Column(
@@ -357,84 +355,6 @@ fun HomeScreen(
                                             Spacer(modifier = Modifier.height(1.dp))
                                             Text(
                                                 "Fast • Secure • Always Accessible",
-                                                color = Color(0xFF94A3B8),
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF182234))
-                                            .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("➔", color = Color(0xFFF3D079), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-
-                            // Become / You are Khaiwal Card (Full Width)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF0F1624))
-                                    .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        if (isKhaiwal) {
-                                            onNavigateToKhaiwal()
-                                        } else {
-                                            try {
-                                                val cleanPhone = whatsappNumber.replace("[^0-9]".toRegex(), "")
-                                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://wa.me/$cleanPhone")).apply {
-                                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                }
-                                                context.startActivity(intent)
-                                            } catch (_: Exception) { }
-                                        }
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        modifier = Modifier.weight(1f),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0xFF182234))
-                                                .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text("🤝", fontSize = 16.sp)
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column {
-                                            Text(
-                                                "KHAIWAL DASHBOARD",
-                                                color = Color(0xFFF3D079),
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                letterSpacing = 0.5.sp
-                                            )
-                                            Text(
-                                                if (isKhaiwal) "You are a Khaiwal" else "Become a Khaiwal",
-                                                color = Color.White,
-                                                fontSize = 12.5.sp,
-                                                fontWeight = FontWeight.Black
-                                            )
-                                            Spacer(modifier = Modifier.height(1.dp))
-                                            Text(
-                                                if (isKhaiwal) "Manage Players • Track Commission" else "Contact Admin on WhatsApp",
                                                 color = Color(0xFF94A3B8),
                                                 fontSize = 8.5.sp,
                                                 fontWeight = FontWeight.Medium

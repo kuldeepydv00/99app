@@ -228,13 +228,13 @@ export default function App() {
 
   // Active Tab State
   const [activeTab, setActiveTabRaw] = useState<
-    'dashboard' | 'admins' | 'users' | 'userChange' | 'khaiwal' | 'gameLedger' | 'wallets' |
+    'dashboard' | 'admins' | 'users' | 'userChange' | 'gameLedger' | 'wallets' |
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'khaiwal', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -2149,7 +2149,6 @@ export default function App() {
               { id: 'dashboard', label: 'Dashboard', icon: '⏱️' },
               { id: 'users', label: 'Users', icon: '👥' },
               { id: 'userChange', label: 'User Change', icon: '👥' },
-              { id: 'khaiwal', label: 'Khaiwal', icon: '👤' },
               { id: 'banners', label: 'Banner', icon: '🖼️' },
               { id: 'referral', label: 'Refer & Earn', icon: '🎁' },
               { id: 'gameLedger', label: 'Game Ledger', icon: '📘' },
@@ -2170,7 +2169,7 @@ export default function App() {
                 onClick={() => setActiveTab(item.id as any)}
                 title={item.label}
                 className={`w-full flex items-center ${sidebarOpen ? 'justify-start px-3' : 'justify-center'} py-2.5 rounded font-semibold transition-all ${
-                  (activeTab === item.id || ((item.id === 'users' || item.id === 'khaiwal') && (activeTab === 'userDetails' || activeTab === 'userEdit')))
+                  (activeTab === item.id || (item.id === 'users' && (activeTab === 'userDetails' || activeTab === 'userEdit')))
                     ? 'bg-[#007BFF] text-white font-bold shadow'
                     : 'text-[#C2C7D0] hover:bg-[#495057] hover:text-white'
                 }`}
@@ -3369,211 +3368,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 3B. KHAIWAL USERS MODULE (REFERRAL OFF VIEW) */}
-            {activeTab === 'khaiwal' && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h1 className="text-2xl font-bold text-[#212529]">Khaiwal Management</h1>
-                    <p className="text-xs text-[#6C757D] mt-0.5">Displays all users whose Referral Status is OFF. Users in this view remain fully visible in the main Users section.</p>
-                  </div>
-                  <button onClick={() => setShowAddUserModal(true)} className="bg-[#007BFF] hover:bg-[#0069D9] text-white px-4 py-1.5 rounded text-xs font-bold shadow-sm">+ Add</button>
-                </div>
 
-                {/* FILTER CARD */}
-                <form onSubmit={handleExecuteSearch} className="bg-white p-4 rounded border border-[#DEE2E6] shadow-sm space-y-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-[#212529] mb-1">Name / Email / Phone</label>
-                    <input
-                      type="text"
-                      value={filterSearch}
-                      onChange={(e) => setFilterSearch(e.target.value)}
-                      placeholder="Search Khaiwal users by name, email or phone"
-                      className="w-full border border-[#CED4DA] p-2 rounded text-xs text-[#495057] focus:outline-none focus:border-[#80BDFF]"
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <button type="submit" onClick={handleExecuteSearch} className="bg-[#28A745] hover:bg-[#218838] text-white px-4 py-1.5 rounded font-bold shadow-sm">Search</button>
-                    <button type="button" onClick={handleClearFilters} className="bg-white border border-[#CED4DA] text-[#212529] px-4 py-1.5 rounded font-bold shadow-sm hover:bg-gray-100">Clear</button>
-                  </div>
-                </form>
-
-                <div className="bg-white rounded border border-[#DEE2E6] shadow-sm p-4 space-y-4">
-                  <div className="flex justify-between items-center text-xs text-[#6C757D]">
-                    <div className="flex items-center gap-1.5">
-                      <span>Show</span>
-                      <select value={entriesPerPage} onChange={(e)=>setEntriesPerPage(e.target.value)} className="border border-[#CED4DA] px-2 py-1 rounded text-xs">
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                      </select>
-                      <span>entries</span>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-[#212529] border border-[#DEE2E6] whitespace-nowrap">
-                      <thead className="bg-[#F8F9FA] text-[#495057] font-bold border-b border-[#DEE2E6]">
-                        <tr>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Sr. No</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Name ⇅</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Email ⇅</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Phone ⇅</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Registered At ⇅</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Referals</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Refer By</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Deactive Reason</th>
-                          <th className="p-2.5 border-r border-[#DEE2E6]">Status</th>
-                          <th className="p-2.5 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.filter(u => {
-                          const isOff = u.referral_enabled === false || u.referral_status === 'OFF';
-                          if (!isOff) return false;
-                          const q = (appliedSearch || filterSearch).toLowerCase().trim();
-                          if (q) {
-                            const matches = (u.name && u.name.toLowerCase().includes(q)) ||
-                                            (u.email && u.email.toLowerCase().includes(q)) ||
-                                            (u.mobile && u.mobile.toString().includes(q));
-                            if (!matches) return false;
-                          }
-                          return true;
-                        }).map((u, i) => (
-                          <tr key={i} className="hover:bg-[#F4F6F9] align-middle">
-                            <td className="p-2.5 border-r border-[#DEE2E6]">{i + 1}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] font-bold">{u.name || 'User'}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] font-mono text-gray-700">{u.email || `${u.name || 'user'}@gmail.com`}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] text-[#007BFF] font-bold font-mono cursor-pointer hover:underline">{u.mobile}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] font-mono text-gray-600">{u.createdAt ? u.createdAt.replace('T', ' ').slice(0, 19) : '2026-08-29 09:50:00'}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] text-center font-mono text-slate-800">
-                              <div className="font-bold">{u.referrals !== undefined ? u.referrals : (u.referrals_count || 0)}</div>
-                              <div className="flex flex-col items-center gap-0.5 mt-0.5">
-                                <span className="px-1.5 py-0.2 text-[9px] font-bold bg-[#DC3545] text-white rounded">
-                                  Ref: OFF
-                                </span>
-                                {u.custom_referral_commission !== undefined && u.custom_referral_commission !== null && String(u.custom_referral_commission).trim() !== '' && (
-                                  <span className="px-1.5 py-0.2 text-[9px] font-bold bg-[#28A745] text-white rounded">
-                                    {u.custom_referral_commission}% Comm
-                                  </span>
-                                )}
-                                {u.self_bet_commission !== undefined && u.self_bet_commission !== null && String(u.self_bet_commission).trim() !== '' && (
-                                  <span className="px-1.5 py-0.2 text-[9px] font-bold bg-[#6F42C1] text-white rounded">
-                                    Self: {u.self_bet_commission}%
-                                  </span>
-                                )}
-                                {(u.custom_jodi_rate || u.custom_haroof_rate || u.custom_crossing_rate) && (
-                                  <span className="px-1.5 py-0.2 text-[9px] font-bold bg-[#17A2B8] text-white rounded">
-                                    Rates: {u.custom_jodi_rate || 95}x / {u.custom_haroof_rate || 9.5}x
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] font-mono">{u.referBy || u.referred_by || '-'}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] text-red-600 max-w-xs truncate">{u.blockReason || u.deactiveReason || ''}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6]">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex gap-1">
-                                  <span className={`px-2 py-0.5 rounded text-white text-[10px] font-bold ${u.is_blocked ? 'bg-[#DC3545]' : 'bg-[#007BFF]'}`}>{u.is_blocked ? 'Blocked' : (u.status || 'Active')}</span>
-                                  <span className="px-2 py-0.5 rounded bg-[#0056B3] text-white text-[10px] font-bold">Web-Site</span>
-                                </div>
-                                <span className="text-[10px] text-gray-500 font-mono">web</span>
-                              </div>
-                            </td>
-                            <td className="p-2.5 text-center">
-                              <div className="flex justify-center items-center gap-1">
-                                <button
-                                  onClick={() => { setSelectedUser(u); setActiveTab('userDetails'); }}
-                                  className="bg-[#FFC107] hover:bg-[#E0A800] text-[#212529] px-2 py-1 rounded text-[10px] font-bold shadow-sm"
-                                  title="View User Details"
-                                >
-                                  👁️
-                                </button>
-                                <button
-                                  onClick={() => { setSelectedUser(u); setEditUserForm(u); setActiveTab('userEdit'); }}
-                                  className="bg-[#17A2B8] hover:bg-[#138496] text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm"
-                                  title="Edit User"
-                                >
-                                  ✏️
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    if (window.confirm(`Are you sure you want to permanently delete user "${u.name || u.mobile}"?`)) {
-                                      try {
-                                        const targetId = u.id || u._id || u.mobile;
-                                        const res = await fetch(`${API_BASE}/api/admin/users/${targetId}`, { method: 'DELETE' });
-                                        const data = await res.json();
-                                        if (data.success) {
-                                          setUsers(prev => prev.filter(x => (x.id !== u.id && (!u._id || x._id !== u._id) && (!u.mobile || x.mobile !== u.mobile))));
-                                          await fetchLiveData();
-                                          alert('User deleted permanently.');
-                                        } else {
-                                          alert(data.message || 'Failed to delete user.');
-                                        }
-                                      } catch (err) {
-                                        alert('Error deleting user.');
-                                      }
-                                    }
-                                  }}
-                                  className="bg-[#DC3545] hover:bg-[#C82333] text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm"
-                                  title="Delete User"
-                                >
-                                  🗑️
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const isBlocked = u.is_blocked;
-                                    const action = isBlocked ? 'unblock' : 'block';
-                                    let blockReason = '';
-                                    if (!isBlocked) {
-                                      const reason = window.prompt(`⚠️ PERMANENTLY BLOCK user "${u.name || u.mobile}" (${u.mobile})?\n\nThis user will NEVER be able to register or login again.\n\nEnter the reason for blocking:`);
-                                      if (reason === null) return;
-                                      if (!reason.trim()) { alert('Block reason is required!'); return; }
-                                      blockReason = reason.trim();
-                                    } else {
-                                      if (!window.confirm(`Unblock user "${u.name || u.mobile}"?`)) return;
-                                    }
-                                    try {
-                                      const res = await fetch(`${API_BASE}/api/admin/users/${action}`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ mobile: u.mobile, reason: blockReason })
-                                      });
-                                      const data = await res.json();
-                                      if (data.success) {
-                                        setUsers(prev => prev.map(x =>
-                                          x.mobile === u.mobile ? { ...x, is_blocked: !isBlocked, status: isBlocked ? 'Active' : 'Blocked', blockReason: isBlocked ? '' : blockReason } : x
-                                        ));
-                                        alert(data.message);
-                                      } else {
-                                        alert(data.message || `Failed to ${action} user.`);
-                                      }
-                                    } catch (err) {
-                                      alert(`Error ${action}ing user.`);
-                                    }
-                                  }}
-                                  className={`${u.is_blocked ? 'bg-[#28A745] hover:bg-[#218838]' : 'bg-[#6C757D] hover:bg-[#5A6268]'} text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm`}
-                                  title={u.is_blocked ? 'Unblock User' : 'Block User Permanently'}
-                                >
-                                  {u.is_blocked ? '🔓' : '🚫'}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex flex-wrap justify-between items-center pt-2 text-xs text-[#6C757D] gap-2">
-                    <div>Showing {users.filter(u => u.referral_enabled === false || u.referral_status === 'OFF').length} Khaiwal user(s)</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ACTION 1 PAGE: USER DETAILS */}
             {activeTab === 'userDetails' && selectedUser && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -4990,32 +4785,6 @@ export default function App() {
                               <td className="p-2.5 border-r border-[#DEE2E6] font-mono text-gray-900">{commissionBal}</td>
                               <td className="p-2.5 text-center">
                                 <div className="flex justify-center items-center gap-1.5">
-                                  <button
-                                    onClick={async () => {
-                                      const isKh = u.is_khaiwal === true;
-                                      const confirmMsg = isKh
-                                        ? `Remove Khaiwal status from "${u.name || u.mobile}"?`
-                                        : `Make "${u.name || u.mobile}" a Khaiwal user?`;
-                                      if (!window.confirm(confirmMsg)) return;
-                                      try {
-                                        const targetId = u.id || u._id || u.mobile;
-                                        const res = await fetch(`${API_BASE}/api/admin/users/${targetId}/toggle-khaiwal`, { method: 'POST' });
-                                        const data = await res.json();
-                                        if (data.success) {
-                                          setUsers(prev => prev.map(x => ((x.id && x.id === u.id) || (x.mobile && x.mobile === u.mobile)) ? { ...x, is_khaiwal: data.is_khaiwal } : x));
-                                          alert(data.message);
-                                        } else {
-                                          alert(data.message || 'Failed to toggle Khaiwal status');
-                                        }
-                                      } catch (err) {
-                                        alert('Error updating Khaiwal status');
-                                      }
-                                    }}
-                                    className={`${u.is_khaiwal ? 'bg-[#FFD700] hover:bg-[#E6C200] text-black' : 'bg-[#343A40] hover:bg-[#23272B] text-white'} px-2 py-1 rounded text-[10px] font-bold shadow-sm`}
-                                    title={u.is_khaiwal ? 'Khaiwal Active (Click to demote)' : 'Make Khaiwal'}
-                                  >
-                                    {u.is_khaiwal ? '👑 Khaiwal' : '➕ Khaiwal'}
-                                  </button>
                                   <button
                                     onClick={() => { setWalletTargetUser(u); setShowWalletModal(true); }}
                                     className="bg-[#28A745] hover:bg-[#218838] text-white w-6 h-6 rounded flex items-center justify-center font-bold text-sm shadow-sm"
