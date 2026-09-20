@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.gradle/
+.idea/
+*.iml
+local.properties
+.env
+*.apk
+.DS_Store
+backend/src/dataStore.json

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Payment Successful - 99xmatka</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #0b0f19;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: linear-gradient(145deg, #1e2638, #151c2a);
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      border-radius: 24px;
+      padding: 36px 24px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon-badge {
+      width: 80px;
+      height: 80px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 20px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #10b981;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: #ffffff;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+    }
+    .btn-secondary {
+      background: #26324a;
+      color: #cbd5e1;
+      border: 1px solid #3b4d6c;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-badge">✅</div>
+    <h1>Payment Completed!</h1>
+    <p>Your deposit has been verified & added to your wallet balance. Returning to the app...</p>
+    
+    <a href="matka99x://payment-success" class="btn btn-primary" id="openAppBtn">Open 99xmatka App ➔</a>
+    <a href="https://newmatkadomain.com" class="btn btn-secondary">Continue on Website</a>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.location.href = "matka99x://payment-success";
+      }, 300);
+    };
+  </script>
+</body>
+</html>
