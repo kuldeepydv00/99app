@@ -27,12 +27,14 @@ if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_UR
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 // Allow requests with no Origin header (native Android app, curl) and whitelisted web origins
+// Any localhost port is allowed so the Vite dev servers (5173/5174) can call the API during development
+const isAllowedOrigin = (origin) => !origin || allowedOrigins.includes(origin) || /^http:\/\/localhost(:\d+)?$/.test(origin);
 const corsOptions = {
-  origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))),
+  origin: (origin, cb) => (isAllowedOrigin(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))),
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 };
 const io = new Server(server, {
-  cors: { origin: allowedOrigins, methods: ['GET', 'POST'] }
+  cors: { origin: (origin, cb) => (isAllowedOrigin(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))), methods: ['GET', 'POST'] }
 });
 
 // Middleware
