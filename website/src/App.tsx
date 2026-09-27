@@ -1380,7 +1380,7 @@ export default function App() {
 
         {/* Full Screen Blocked Overlay */}
         {isWebUserBlocked && (
-          <div className="fixed inset-0 z-50 bg-[#0F172A] text-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="fixed inset-0 z-50 bg-[#0A0F0D] text-white flex flex-col items-center justify-center p-6 text-center">
             <div className="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mb-6">
               <span className="text-4xl">📡</span>
             </div>
@@ -1399,7 +1399,7 @@ export default function App() {
 
         {/* Full Screen Deleted Overlay */}
         {isWebUserDeleted && (
-          <div className="fixed inset-0 z-50 bg-[#0F172A] text-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="fixed inset-0 z-50 bg-[#0A0F0D] text-white flex flex-col items-center justify-center p-6 text-center">
             <div className="w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center mb-6">
               <span className="text-4xl">🔒</span>
             </div>
@@ -1425,8 +1425,8 @@ export default function App() {
             <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div className="flex items-center gap-2.5">
                 <svg className="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="none">
-                  <path d="M3.6 1.8C3.3 2.1 3.1 2.6 3.1 3.2V20.8C3.1 21.4 3.3 21.9 3.6 22.2L3.7 22.3L13.5 12.5V12.3V12.1L3.7 1.7L3.6 1.8Z" fill="#00C853"/>
-                  <path d="M16.8 15.6L13.5 12.3V12.1V11.9L16.8 8.6L16.9 8.7L20.8 10.9C21.9 11.5 21.9 12.7 20.8 13.3L16.9 15.5L16.8 15.6Z" fill="#FFD600"/>
+                  <path d="M3.6 1.8C3.3 2.1 3.1 2.6 3.1 3.2V20.8C3.1 21.4 3.3 21.9 3.6 22.2L3.7 22.3L13.5 12.5V12.3V12.1L3.7 1.7L3.6 1.8Z" fill="#2ECC8F"/>
+                  <path d="M16.8 15.6L13.5 12.3V12.1V11.9L16.8 8.6L16.9 8.7L20.8 10.9C21.9 11.5 21.9 12.7 20.8 13.3L16.9 15.5L16.8 15.6Z" fill="#D9B98C"/>
                   <path d="M16.9 15.5L13.5 12.1L3.6 22.2C4.0 22.6 4.6 22.7 5.4 22.2L16.9 15.5Z" fill="#D50000"/>
                   <path d="M16.9 8.7L5.4 2.1C4.6 1.7 4.0 1.8 3.6 2.2L13.5 12.3L16.9 8.7Z" fill="#0091EA"/>
                 </svg>
@@ -1444,7 +1444,7 @@ export default function App() {
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-black text-gray-900 leading-tight">99xmatka SATTA</h1>
-                <p className="text-xs text-[#00875A] font-bold mt-0.5">99X Games Ltd.</p>
+                <p className="text-xs text-[#1C7A52] font-bold mt-0.5">99X Games Ltd.</p>
                 <p className="text-[11px] text-gray-400 font-medium">Contains ads • In-app purchases</p>
               </div>
             </div>
@@ -1476,7 +1476,7 @@ export default function App() {
                   e.preventDefault();
                   handleDownloadApk();
                 }}
-                className="w-full bg-[#00875A] hover:bg-[#00704A] text-white font-black py-3.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all text-center cursor-pointer"
+                className="w-full bg-[#1C7A52] hover:bg-[#155E3F] text-white font-black py-3.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all text-center cursor-pointer"
               >
                 <Download className="w-4 h-4 stroke-[3]" /> DOWNLOAD APP
               </a>
@@ -1505,18 +1505,18 @@ export default function App() {
             <div className="px-5 mt-8 border-t border-gray-100 pt-6">
               {/* Main Headline */}
               <h2 className="text-xl font-black text-gray-900 leading-snug text-center mb-5">
-                भारत का पहला ऐसा खाईवाल मटका ऐप जो देता है <span className="text-[#00875A]">8% रेफर कमीशन</span>
+                भारत का पहला ऐसा खाईवाल मटका ऐप जो देता है <span className="text-[#1C7A52]">8% रेफर कमीशन</span>
               </h2>
 
               {/* Rate & Commission Points */}
               <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6 space-y-2.5">
                 <div className="flex items-center gap-3">
                   <span className="text-lg">💰</span>
-                  <p className="text-base font-bold text-gray-900">रेट <span className="text-[#00875A] text-lg">10 का 900</span></p>
+                  <p className="text-base font-bold text-gray-900">रेट <span className="text-[#1C7A52] text-lg">10 का 900</span></p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-lg">🎯</span>
-                  <p className="text-base font-bold text-gray-900">कमीशन <span className="text-[#00875A] text-lg">8 परसेंट</span></p>
+                  <p className="text-base font-bold text-gray-900">कमीशन <span className="text-[#1C7A52] text-lg">8 परसेंट</span></p>
                 </div>
               </div>
 
@@ -1524,13 +1524,13 @@ export default function App() {
               <h3 className="text-lg font-black text-gray-900 mb-3">रेफर क्या होता है।</h3>
               <div className="bg-slate-50 border border-gray-200 rounded-xl p-4 mb-5 space-y-4">
                 <div className="flex items-start gap-3">
-                  <span className="bg-[#00875A] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+                  <span className="bg-[#1C7A52] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    आप अपने दोस्त को ऐप फॉरवर्ड करोगे ओर उसकी आईडी बनवाते वक्त रेफर कोड वाली जगह में अपना रेफर कोड डलवाएंगे तो वो जितने का गेम खेलेगा उसका <strong className="text-[#00875A] font-bold">8 परसेंट कमीशन</strong> आपको मिलेगा आपके <strong>वॉलेट</strong> में सीधा जिसे आप <strong>निकाल भी सकते है</strong> ।
+                    आप अपने दोस्त को ऐप फॉरवर्ड करोगे ओर उसकी आईडी बनवाते वक्त रेफर कोड वाली जगह में अपना रेफर कोड डलवाएंगे तो वो जितने का गेम खेलेगा उसका <strong className="text-[#1C7A52] font-bold">8 परसेंट कमीशन</strong> आपको मिलेगा आपके <strong>वॉलेट</strong> में सीधा जिसे आप <strong>निकाल भी सकते है</strong> ।
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="bg-[#00875A] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                  <span className="bg-[#1C7A52] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
                   <p className="text-sm text-gray-700 leading-relaxed">
                     आपका आईडी <strong>मोबाइल नंबर</strong> ही आपका <strong>रेफर कोड</strong> होगा ।
                   </p>
@@ -1542,7 +1542,7 @@ export default function App() {
                 <div className="flex items-start gap-3">
                   <svg className="w-6 h-6 shrink-0 mt-0.5" viewBox="0 0 384 512" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-62.1 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    <strong className="text-gray-900">Apple(Iphone) यूजर्स</strong> के लिए हमने इस ऐप को <strong>वेबसाइट</strong> पर भी लॉन्च किया है जिसे आप ऊपर <strong className="text-[#00875A]">Play on Website</strong> पर क्लिक करके वहां प्ले कर सकते है ।
+                    <strong className="text-gray-900">Apple(Iphone) यूजर्स</strong> के लिए हमने इस ऐप को <strong>वेबसाइट</strong> पर भी लॉन्च किया है जिसे आप ऊपर <strong className="text-[#1C7A52]">Play on Website</strong> पर क्लिक करके वहां प्ले कर सकते है ।
                   </p>
                 </div>
               </div>
@@ -1592,7 +1592,7 @@ export default function App() {
                 <div>
                   <div className="text-4xl font-extrabold text-gray-900">4.8</div>
                   <div className="text-[11px] text-gray-500 font-medium">12L+</div>
-                  <div className="flex text-[#00C853] text-sm mt-1">
+                  <div className="flex text-[#2ECC8F] text-sm mt-1">
                     ★★★★★
                   </div>
                 </div>
@@ -1602,31 +1602,31 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <span>5</span>
                     <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#00C853] h-full w-[85%]"></div>
+                      <div className="bg-[#2ECC8F] h-full w-[85%]"></div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>4</span>
                     <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#00C853] h-full w-[70%]"></div>
+                      <div className="bg-[#2ECC8F] h-full w-[70%]"></div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>3</span>
                     <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#00C853] h-full w-[50%]"></div>
+                      <div className="bg-[#2ECC8F] h-full w-[50%]"></div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>2</span>
                     <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#00C853] h-full w-[25%]"></div>
+                      <div className="bg-[#2ECC8F] h-full w-[25%]"></div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>1</span>
                     <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#00C853] h-full w-[10%]"></div>
+                      <div className="bg-[#2ECC8F] h-full w-[10%]"></div>
                     </div>
                   </div>
                 </div>
@@ -1670,7 +1670,7 @@ export default function App() {
                         <div className={`w-8 h-8 rounded-full ${r.color} text-white font-bold flex items-center justify-center text-xs`}>{r.name[0]}</div>
                         <div>
                           <h4 className="text-xs font-bold text-gray-900">{r.name}</h4>
-                          <div className="flex text-[#00C853] text-xs">{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)} <span className="text-[10px] text-gray-400 ml-2">{r.date}</span></div>
+                          <div className="flex text-[#2ECC8F] text-xs">{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)} <span className="text-[10px] text-gray-400 ml-2">{r.date}</span></div>
                         </div>
                       </div>
                       <p className="text-xs text-gray-700 leading-relaxed">{r.text}</p>
@@ -1701,18 +1701,18 @@ export default function App() {
         {/* VIEW 2: AUTHENTICATION FLOW (Same as Mobile App!)        */}
         {/* ========================================================= */}
         {view === 'auth' && (
-          <div className="flex-1 bg-[#0F172A] p-6 flex flex-col justify-between">
+          <div className="flex-1 bg-[#0A0F0D] p-6 flex flex-col justify-between">
             <div>
               {/* Back to Landing Header */}
-              <button onClick={() => setView('landing')} className="flex items-center gap-2 text-xs font-bold text-[#94A3B8] mb-6">
+              <button onClick={() => setView('landing')} className="flex items-center gap-2 text-xs font-bold text-[#8FA89B] mb-6">
                 <ArrowLeft className="w-4 h-4" /> Back to Home
               </button>
 
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#F3D079] via-[#D97706] to-[#78350F] rounded-2xl p-1 mx-auto shadow-lg flex items-center justify-center border border-[#F3D079]/50 mb-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#D9B98C] via-[#B98F57] to-[#6B4A32] rounded-2xl p-1 mx-auto shadow-lg flex items-center justify-center border border-[#D9B98C]/50 mb-3">
                   <span className="text-2xl">👑</span>
                 </div>
-                <h2 className="text-2xl font-black text-[#FFE485]">99xmatka</h2>
+                <h2 className="text-2xl font-black text-[#F0DDB8]">99xmatka</h2>
                 <p className="text-xs text-gray-400 mt-1">आपका भरोसा, हमारी पहचान</p>
               </div>
 
@@ -1733,8 +1733,8 @@ export default function App() {
                 <form onSubmit={handlePhoneSubmit} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Mobile Number</label>
-                    <div className="flex bg-[#1E293B] border border-[#334155] rounded-xl overflow-hidden">
-                      <span className="px-3.5 py-3 text-sm font-bold text-gray-400 border-r border-[#334155] bg-[#0F172A] flex items-center">+91</span>
+                    <div className="flex bg-[#123A2C] border border-[#1E5C46] rounded-xl overflow-hidden">
+                      <span className="px-3.5 py-3 text-sm font-bold text-gray-400 border-r border-[#1E5C46] bg-[#0A0F0D] flex items-center">+91</span>
                       <input
                         type="tel"
                         maxLength={10}
@@ -1750,7 +1750,7 @@ export default function App() {
                   <button 
                     type="submit" 
                     disabled={isSendingOtp}
-                    className="w-full bg-[#00C853] hover:bg-[#00B248] disabled:opacity-50 text-white font-black py-3.5 rounded-xl shadow-lg text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-[#2ECC8F] hover:bg-[#29B876] disabled:opacity-50 text-white font-black py-3.5 rounded-xl shadow-lg text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-2"
                   >
                     {isSendingOtp ? (
                       <>
@@ -1787,7 +1787,7 @@ export default function App() {
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 disabled:cursor-not-allowed"
                     />
                     {[0, 1, 2, 3].map((idx) => (
-                      <div key={idx} className={`w-12 h-14 bg-[#1E293B] border-2 ${isVerifyingOtp ? 'border-emerald-500 animate-pulse' : 'border-[#F3D079]'} rounded-xl flex items-center justify-center text-xl font-bold font-mono text-[#FFE485]`}>
+                      <div key={idx} className={`w-12 h-14 bg-[#123A2C] border-2 ${isVerifyingOtp ? 'border-emerald-500 animate-pulse' : 'border-[#D9B98C]'} rounded-xl flex items-center justify-center text-xl font-bold font-mono text-[#F0DDB8]`}>
                         {otpInput[idx] || ''}
                       </div>
                     ))}
@@ -1810,14 +1810,14 @@ export default function App() {
 
                     {resendTimer > 0 ? (
                       <span className="text-xs text-gray-400 font-medium">
-                        Resend in <strong className="text-[#FFE485] font-mono">{resendTimer}s</strong>
+                        Resend in <strong className="text-[#F0DDB8] font-mono">{resendTimer}s</strong>
                       </span>
                     ) : (
                       <button 
                         type="button"
                         onClick={handleResendOtp}
                         disabled={isSendingOtp}
-                        className="text-xs text-[#00C853] hover:text-[#00E676] font-bold"
+                        className="text-xs text-[#2ECC8F] hover:text-[#3EE08A] font-bold"
                       >
                         {isSendingOtp ? 'Sending...' : 'Resend OTP ⟳'}
                       </button>
@@ -1836,7 +1836,7 @@ export default function App() {
                       placeholder="Enter your full name"
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
-                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl p-3 text-sm text-white focus:outline-none"
+                      className="w-full bg-[#123A2C] border border-[#1E5C46] rounded-xl p-3 text-sm text-white focus:outline-none"
                     />
                   </div>
 
@@ -1847,11 +1847,11 @@ export default function App() {
                       placeholder="Enter referrer mobile number (e.g. 7206561420)"
                       value={referralCodeInput}
                       onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
-                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl p-3 text-sm text-[#FFE485] font-mono focus:outline-none uppercase"
+                      className="w-full bg-[#123A2C] border border-[#1E5C46] rounded-xl p-3 text-sm text-[#F0DDB8] font-mono focus:outline-none uppercase"
                     />
                   </div>
 
-                  <button type="submit" className="w-full bg-[#00C853] hover:bg-[#00B248] text-white font-black py-3.5 rounded-xl shadow-lg text-sm tracking-wider uppercase transition-all">
+                  <button type="submit" className="w-full bg-[#2ECC8F] hover:bg-[#29B876] text-white font-black py-3.5 rounded-xl shadow-lg text-sm tracking-wider uppercase transition-all">
                     COMPLETE REGISTRATION 🚀
                   </button>
                 </form>
@@ -1868,7 +1868,7 @@ export default function App() {
         {/* VIEW 3: WEB APP PLAYER PORTAL (100% Mobile App Replica!)   */}
         {/* ========================================================= */}
         {view === 'webapp' && (
-          <div className="flex-1 bg-[#090D16] text-white flex flex-col pb-20 min-h-screen">
+          <div className="flex-1 bg-[#091610] text-white flex flex-col pb-20 min-h-screen">
             {/* SIDE MENU DRAWER OVERLAY & PANEL */}
             {isSideMenuOpen && (
               <div className="fixed inset-0 z-50 flex">
@@ -1879,23 +1879,23 @@ export default function App() {
                 />
 
                 {/* Left Side Drawer */}
-                <div className="relative w-80 max-w-[85vw] bg-[#0F172A] border-r border-gray-800 h-full flex flex-col z-50 shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300">
+                <div className="relative w-80 max-w-[85vw] bg-[#0A0F0D] border-r border-gray-800 h-full flex flex-col z-50 shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300">
                   {/* Drawer Header (Clickable Profile) */}
                   <div 
                     onClick={() => {
                       setShowProfileModal(true);
                       setIsSideMenuOpen(false);
                     }}
-                    className="p-5 bg-gradient-to-r from-[#1E293B] to-[#0F172A] border-b border-gray-800 flex justify-between items-center cursor-pointer hover:bg-gray-800/50 transition-all"
+                    className="p-5 bg-gradient-to-r from-[#123A2C] to-[#0A0F0D] border-b border-gray-800 flex justify-between items-center cursor-pointer hover:bg-gray-800/50 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00C853] to-[#00897B] flex items-center justify-center text-xl font-bold text-white shadow-lg border border-emerald-400/30">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2ECC8F] to-[#1E8A6E] flex items-center justify-center text-xl font-bold text-white shadow-lg border border-emerald-400/30">
                         👑
                       </div>
                       <div>
                         <h3 className="text-sm font-black text-white">{user?.name || 'Player'}</h3>
                         <p className="text-[11px] text-gray-400 font-mono">+91 {user?.mobile || '9999999999'}</p>
-                        <div className="mt-1 inline-flex items-center gap-1 bg-[#00C853]/15 border border-[#00C853]/40 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#00C853]">
+                        <div className="mt-1 inline-flex items-center gap-1 bg-[#2ECC8F]/15 border border-[#2ECC8F]/40 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#2ECC8F]">
                           💵 ₹{user?.balance ? user.balance.toFixed(2) : '0.00'}
                         </div>
                       </div>
@@ -1919,7 +1919,7 @@ export default function App() {
                         setActiveWebTab('home');
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#1E293B] hover:text-white transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
                     >
                       <span className="text-base">🏠</span> Home
                     </button>
@@ -1929,7 +1929,7 @@ export default function App() {
                         setActiveWebTab('charts');
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#1E293B] hover:text-white transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
                     >
                       <span className="text-base">📊</span> Charts & Results
                     </button>
@@ -1939,7 +1939,7 @@ export default function App() {
                         setActiveWebTab('mybets');
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#1E293B] hover:text-white transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
                     >
                       <span className="text-base">📜</span> My Bet History
                     </button>
@@ -1951,7 +1951,7 @@ export default function App() {
                         setShowDepositModal(true);
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#00C853] hover:bg-[#00C853]/10 transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#2ECC8F] hover:bg-[#2ECC8F]/10 transition-all text-left"
                     >
                       <span className="text-base">💵</span> Add Cash (Deposit)
                     </button>
@@ -1961,7 +1961,7 @@ export default function App() {
                         setShowWithdrawModal(true);
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#F3D079] hover:bg-[#F3D079]/10 transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#D9B98C] hover:bg-[#D9B98C]/10 transition-all text-left"
                     >
                       <span className="text-base">🏦</span> Withdraw Cash
                     </button>
@@ -1973,7 +1973,7 @@ export default function App() {
                         setShowReferralModal(true);
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#FFE485] hover:bg-[#F3D079]/10 transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#F0DDB8] hover:bg-[#D9B98C]/10 transition-all text-left"
                     >
                       <span className="text-base">🎁</span> Refer & Earn (Lifetime Commission)
                     </button>
@@ -1983,7 +1983,7 @@ export default function App() {
                       target="_blank"
                       rel="noreferrer"
                       onClick={() => setIsSideMenuOpen(false)}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#1E293B] hover:text-white transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
                     >
                       <span className="text-base">💬</span> Customer Support
                     </a>
@@ -1993,7 +1993,7 @@ export default function App() {
                         setShowRulesModal(true);
                         setIsSideMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#1E293B] hover:text-white transition-all text-left"
+                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
                     >
                       <span className="text-base">📋</span> Rules & Rates
                     </button>
@@ -2041,7 +2041,7 @@ export default function App() {
             )}
 
             {/* Top Header Bar */}
-            <div className="px-4 py-3 bg-[#0F172A]/90 backdrop-blur-md border-b border-gray-800 flex justify-between items-center sticky top-0 z-20 shadow-md">
+            <div className="px-4 py-3 bg-[#0A0F0D]/90 backdrop-blur-md border-b border-gray-800 flex justify-between items-center sticky top-0 z-20 shadow-md">
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setIsSideMenuOpen(true)}
@@ -2056,15 +2056,15 @@ export default function App() {
 
                 {/* 100% Matching Crown Logo & Brand Title (Matching Mockup media_1789486150552.png) */}
                 <div className="flex items-center gap-1.5">
-                  <svg className="w-8 h-8 fill-[#F5D77F] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.6)] shrink-0" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 fill-[#E0C9A0] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.6)] shrink-0" viewBox="0 0 24 24">
                     <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
                   </svg>
                   <div className="flex flex-col text-left">
                     <div className="flex items-center gap-0.5 leading-none">
-                      <span className="text-base font-black text-[#F5D77F] tracking-tight">95x</span>
+                      <span className="text-base font-black text-[#E0C9A0] tracking-tight">99x</span>
                       <span className="text-base font-black text-white tracking-tight">MATKA</span>
                     </div>
-                    <span className="text-[7.5px] font-black text-[#F5D77F] tracking-[0.18em] uppercase mt-0.5">TRUST • FAST • WIN</span>
+                    <span className="text-[7.5px] font-black text-[#E0C9A0] tracking-[0.18em] uppercase mt-0.5">TRUST • FAST • WIN</span>
                   </div>
                 </div>
               </div>
@@ -2073,11 +2073,11 @@ export default function App() {
                 {/* Gold Wallet Balance Pill with + Button */}
                 <button 
                   onClick={() => setShowWalletModal(true)}
-                  className="flex items-center gap-1.5 bg-[#121A29] border border-[#D4AF37] text-white pl-2.5 pr-1 py-1 rounded-full text-xs font-bold font-mono shadow-[0_0_12px_rgba(212,175,55,0.25)] hover:bg-[#1E2A3C] transition-all"
+                  className="flex items-center gap-1.5 bg-[#12291E] border border-[#C9A87C] text-white pl-2.5 pr-1 py-1 rounded-full text-xs font-bold font-mono shadow-[0_0_12px_rgba(212,175,55,0.25)] hover:bg-[#1E3C2D] transition-all"
                 >
                   <span className="text-xs">👛</span>
                   <span className="font-mono font-black text-white text-xs whitespace-nowrap">₹{user?.balance ? user.balance.toFixed(2) : '0.00'}</span>
-                  <span className="w-5 h-5 rounded-full bg-gradient-to-r from-[#FFE485] to-[#D4AF37] text-slate-950 flex items-center justify-center text-xs font-black ml-0.5 shadow">+</span>
+                  <span className="w-5 h-5 rounded-full bg-gradient-to-r from-[#F0DDB8] to-[#C9A87C] text-slate-950 flex items-center justify-center text-xs font-black ml-0.5 shadow">+</span>
                 </button>
               </div>
             </div>
@@ -2110,15 +2110,15 @@ export default function App() {
                           }}
                           className={`min-w-[82px] flex flex-col items-center flex-shrink-0 rounded-2xl py-2.5 px-2 transition-all cursor-pointer ${
                             isSelected 
-                              ? 'bg-gradient-to-b from-[#1F293D] to-[#0D121F] border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.4)]' 
-                              : 'bg-[#101622] border border-[#D4AF37]/30 hover:border-[#D4AF37]/60'
+                              ? 'bg-gradient-to-b from-[#1F3D2E] to-[#0D1F16] border-2 border-[#C9A87C] shadow-[0_0_15px_rgba(212,175,55,0.4)]' 
+                              : 'bg-[#102219] border border-[#C9A87C]/30 hover:border-[#C9A87C]/60'
                           }`}
                         >
                           <span className="text-2xl drop-shadow-md">{mIcon}</span>
                           <span className="text-[10px] font-bold text-white mt-1.5 whitespace-nowrap tracking-tight w-full text-center">
                             {mName}
                           </span>
-                          <span className={`w-5 h-0.5 rounded-full mt-1.5 ${isSelected ? 'bg-[#D4AF37] shadow-[0_0_6px_#D4AF37]' : 'bg-[#D4AF37]/60'}`}></span>
+                          <span className={`w-5 h-0.5 rounded-full mt-1.5 ${isSelected ? 'bg-[#C9A87C] shadow-[0_0_6px_#C9A87C]' : 'bg-[#C9A87C]/60'}`}></span>
                         </button>
                       );
                     })}
@@ -2147,7 +2147,7 @@ export default function App() {
                           onClick={() => {
                             if (slideLink) window.open(slideLink, '_blank');
                           }}
-                          className={`relative overflow-hidden rounded-2xl border-2 border-[#D4AF37]/80 shadow-[0_0_20px_rgba(212,175,55,0.25)] bg-[#0E131E] transition-all duration-500 ${slideLink ? 'cursor-pointer' : ''}`}
+                          className={`relative overflow-hidden rounded-2xl border-2 border-[#C9A87C]/80 shadow-[0_0_20px_rgba(212,175,55,0.25)] bg-[#050605] transition-all duration-500 ${slideLink ? 'cursor-pointer' : ''}`}
                         >
                           <img 
                             src={slideImgSrc} 
@@ -2171,7 +2171,7 @@ export default function App() {
                                   }}
                                   className={`h-1.5 rounded-full transition-all cursor-pointer ${
                                     i === (webBannerIndex % dotsCount)
-                                      ? 'bg-[#D4AF37] w-4'
+                                      ? 'bg-[#C9A87C] w-4'
                                       : 'bg-gray-400 w-1.5 hover:bg-white'
                                   }`}
                                 />
@@ -2185,20 +2185,20 @@ export default function App() {
 
                   return (
                     <div className="px-3.5 mb-3">
-                      <div className="relative overflow-hidden rounded-2xl border-2 border-[#D4AF37]/80 bg-gradient-to-br from-[#1E2638] via-[#0E131E] to-[#1A2130] p-4 shadow-[0_0_20px_rgba(212,175,55,0.25)] transition-all duration-500">
+                      <div className="relative overflow-hidden rounded-2xl border-2 border-[#C9A87C]/80 bg-gradient-to-br from-[#0F2A20] via-[#050605] to-[#1A3025] p-4 shadow-[0_0_20px_rgba(212,175,55,0.25)] transition-all duration-500">
                         <div className="flex justify-between items-center gap-2">
                           <div className="text-left space-y-1 max-w-[62%]">
-                            <p className="text-[9px] font-extrabold text-[#D4AF37] tracking-[0.2em] uppercase line-clamp-1">
+                            <p className="text-[9px] font-extrabold text-[#C9A87C] tracking-[0.2em] uppercase line-clamp-1">
                               {slideSubtitle}
                             </p>
-                            <h3 className="text-2.5xl font-black bg-gradient-to-r from-[#FFF5D0] via-[#F5D77F] to-[#D4AF37] bg-clip-text text-transparent tracking-wide leading-tight line-clamp-1">
+                            <h3 className="text-2.5xl font-black bg-gradient-to-r from-[#F5EDE2] via-[#E0C9A0] to-[#C9A87C] bg-clip-text text-transparent tracking-wide leading-tight line-clamp-1">
                               {slideTitle}
                             </h3>
                             <p className="text-[8.5px] font-extrabold text-gray-300 tracking-wider">
                               FAST • SECURE • HIGH PAYOUTS
                             </p>
                             
-                            <div className="inline-block bg-[#D4AF37]/15 border border-[#D4AF37] px-2.5 py-0.5 rounded-full text-[8.5px] font-extrabold text-[#F5D77F] mt-1.5 shadow">
+                            <div className="inline-block bg-[#C9A87C]/15 border border-[#C9A87C] px-2.5 py-0.5 rounded-full text-[8.5px] font-extrabold text-[#E0C9A0] mt-1.5 shadow">
                               INDIA KA SABSE PEHLA KHAIWAL
                             </div>
 
@@ -2211,7 +2211,7 @@ export default function App() {
                                     setActiveWebTab('home');
                                   }
                                 }}
-                                className="bg-gradient-to-r from-[#FFE485] via-[#D4AF37] to-[#B8860B] hover:from-[#F5D77F] hover:to-[#997A15] text-slate-950 font-black px-4.5 py-2 rounded-full text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                                className="bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#9C7B4F] hover:from-[#E0C9A0] hover:to-[#8A6D47] text-slate-950 font-black px-4.5 py-2 rounded-full text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                               >
                                 <span>PLAY NOW</span>
                                 <span className="text-sm">➔</span>
@@ -2231,7 +2231,7 @@ export default function App() {
                                 }}
                               />
                             </div>
-                            <span className="text-[8.5px] font-black text-[#F5D77F] tracking-widest text-center mt-0.5 uppercase line-clamp-1 max-w-[90px]">
+                            <span className="text-[8.5px] font-black text-[#E0C9A0] tracking-widest text-center mt-0.5 uppercase line-clamp-1 max-w-[90px]">
                               {currentSlide?.name ? currentSlide.name : 'PLAY BIG WIN BIGGER'}
                             </span>
                             {/* Interactive Carousel Dots */}
@@ -2243,7 +2243,7 @@ export default function App() {
                                   onClick={() => setWebBannerIndex(i)}
                                   className={`h-1.5 rounded-full transition-all cursor-pointer ${
                                     i === (webBannerIndex % dotsCount)
-                                      ? 'bg-[#D4AF37] w-4'
+                                      ? 'bg-[#C9A87C] w-4'
                                       : 'bg-gray-600 w-1.5 hover:bg-gray-400'
                                   }`}
                                 />
@@ -2258,22 +2258,22 @@ export default function App() {
 
                 {/* 3 Trust Badges Bar (100% Copy of Mockup media_1789471623091.png) */}
                 <div className="px-3.5 mb-3 grid grid-cols-3 gap-1 text-[9px]">
-                  <div className="flex items-center gap-1.5 bg-[#0F1624] border border-[#D4AF37]/30 p-2 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-[#182234] border border-[#D4AF37]/60 flex items-center justify-center text-xs shrink-0">🛡️</div>
+                  <div className="flex items-center gap-1.5 bg-[#081310] border border-[#C9A87C]/30 p-2 rounded-xl">
+                    <div className="w-6 h-6 rounded-full bg-[#0D1512] border border-[#C9A87C]/60 flex items-center justify-center text-xs shrink-0">🛡️</div>
                     <div className="text-left">
                       <p className="font-black text-white leading-tight">100% SECURE</p>
                       <p className="text-gray-400 text-[7.5px]">Safe & Trusted</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-[#0F1624] border border-[#D4AF37]/30 p-2 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-[#182234] border border-[#D4AF37]/60 flex items-center justify-center text-xs shrink-0">⚡</div>
+                  <div className="flex items-center gap-1.5 bg-[#081310] border border-[#C9A87C]/30 p-2 rounded-xl">
+                    <div className="w-6 h-6 rounded-full bg-[#0D1512] border border-[#C9A87C]/60 flex items-center justify-center text-xs shrink-0">⚡</div>
                     <div className="text-left">
                       <p className="font-black text-white leading-tight">INSTANT RESULT</p>
                       <p className="text-gray-400 text-[7.5px]">Real-Time Updates</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-[#0F1624] border border-[#D4AF37]/30 p-2 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-[#182234] border border-[#D4AF37]/60 flex items-center justify-center text-xs shrink-0">🎧</div>
+                  <div className="flex items-center gap-1.5 bg-[#081310] border border-[#C9A87C]/30 p-2 rounded-xl">
+                    <div className="w-6 h-6 rounded-full bg-[#0D1512] border border-[#C9A87C]/60 flex items-center justify-center text-xs shrink-0">🎧</div>
                     <div className="text-left">
                       <p className="font-black text-white leading-tight">24x7 SUPPORT</p>
                       <p className="text-gray-400 text-[7.5px]">Always With You</p>
@@ -2285,18 +2285,18 @@ export default function App() {
                 <div className="px-3.5 mb-3">
                   <div 
                     onClick={handleDownloadApk}
-                    className="bg-gradient-to-r from-[#172033] via-[#0E131E] to-[#0A0E1A] border border-[#F5D77F]/60 rounded-2xl p-3 flex justify-between items-center shadow-[0_0_15px_rgba(212,175,55,0.25)] hover:border-[#F5D77F] cursor-pointer transition-all group"
+                    className="bg-gradient-to-r from-[#173325] via-[#050605] to-[#0A1A12] border border-[#E0C9A0]/60 rounded-2xl p-3 flex justify-between items-center shadow-[0_0_15px_rgba(212,175,55,0.25)] hover:border-[#E0C9A0] cursor-pointer transition-all group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FFE599]/25 via-[#D4AF37]/30 to-[#8C6D13]/25 border border-[#F5D77F]/60 flex items-center justify-center text-[#F5D77F] text-base shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_10px_rgba(212,175,55,0.3)]">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#F0DDB8]/25 via-[#C9A87C]/30 to-[#8A6D47]/25 border border-[#E0C9A0]/60 flex items-center justify-center text-[#E0C9A0] text-base shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_10px_rgba(212,175,55,0.3)]">
                         📱
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-black text-white tracking-wide uppercase">INSTALL OUR APP</p>
-                        <p className="text-[10px] font-semibold text-[#F5D77F]/90">Get fast & secure mobile gaming experience</p>
+                        <p className="text-[10px] font-semibold text-[#E0C9A0]/90">Get fast & secure mobile gaming experience</p>
                       </div>
                     </div>
-                    <div className="w-7 h-7 rounded-full bg-[#182234] border border-[#F5D77F]/50 text-[#F5D77F] flex items-center justify-center text-xs font-bold shrink-0 group-hover:translate-x-0.5 transition-transform shadow-[0_0_8px_rgba(212,175,55,0.2)]">
+                    <div className="w-7 h-7 rounded-full bg-[#0D1512] border border-[#E0C9A0]/50 text-[#E0C9A0] flex items-center justify-center text-xs font-bold shrink-0 group-hover:translate-x-0.5 transition-transform shadow-[0_0_8px_rgba(212,175,55,0.2)]">
                       ➔
                     </div>
                   </div>
@@ -2317,13 +2317,13 @@ export default function App() {
                   {/* SECTION 1: LIVE GAMES (Only games currently OPEN for betting!) */}
                   <div className="space-y-3">
                     <h3 className="text-lg font-extrabold text-white tracking-wide mb-2 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-ping"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#3EE08A] animate-ping"></span>
                       Live Games
                     </h3>
 
                     <div className="space-y-3">
                       {liveGames.length === 0 ? (
-                        <div className="text-center py-6 bg-[#121927] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
+                        <div className="text-center py-6 bg-[#0C241B] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
                           No games currently open for betting. Check results below!
                         </div>
                       ) : (
@@ -2339,11 +2339,11 @@ export default function App() {
                           return (
                             <div 
                               key={`live_${gameName}`}
-                              className="bg-[#121927] p-4 rounded-2xl border border-[#D4AF37]/30 shadow-xl flex justify-between items-center transition-all hover:border-[#D4AF37]/60"
+                              className="bg-[#0C241B] p-4 rounded-2xl border border-[#C9A87C]/30 shadow-xl flex justify-between items-center transition-all hover:border-[#C9A87C]/60"
                             >
                               <div className="flex items-center gap-3">
                                 {/* 3D Emblem Badge Box */}
-                                <div className="w-12 h-12 bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-[#D4AF37]/60 rounded-xl flex items-center justify-center text-2xl shadow-inner shrink-0">
+                                <div className="w-12 h-12 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/60 rounded-xl flex items-center justify-center text-2xl shadow-inner shrink-0">
                                   {iconEmoji}
                                 </div>
 
@@ -2354,13 +2354,13 @@ export default function App() {
                                   </p>
                                   <div className="mt-1.5 flex items-center gap-2">
                                     {isUrgent ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/50 text-[10px] font-extrabold text-[#F59E0B] uppercase tracking-wider">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-pulse"></span>
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A87C]/15 border border-[#C9A87C]/50 text-[10px] font-extrabold text-[#C9A87C] uppercase tracking-wider">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#C9A87C] animate-pulse"></span>
                                         ⏰ {remainingMins} MINS LEFT
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#F5D77F]/50 text-[10px] font-extrabold text-[#F5D77F] uppercase tracking-wider">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#F5D77F] animate-ping"></span>
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A87C]/15 border border-[#E0C9A0]/50 text-[10px] font-extrabold text-[#E0C9A0] uppercase tracking-wider">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#E0C9A0] animate-ping"></span>
                                         BETTING OPEN
                                       </span>
                                     )}
@@ -2374,7 +2374,7 @@ export default function App() {
                                   setSelectedGameForBetting(gameName);
                                   setBetMessage('');
                                 }}
-                                className="bg-gradient-to-r from-[#FFE599] via-[#D4AF37] to-[#8C6D13] hover:brightness-110 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(212,175,55,0.4)] flex items-center gap-1 shrink-0 transition-all active:scale-95 cursor-pointer"
+                                className="bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47] hover:brightness-110 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(212,175,55,0.4)] flex items-center gap-1 shrink-0 transition-all active:scale-95 cursor-pointer"
                               >
                                 PLAY ➔
                               </button>
@@ -2391,7 +2391,7 @@ export default function App() {
 
                     <div className="space-y-3">
                       {resultGames.length === 0 ? (
-                        <div className="text-center py-5 bg-[#121927] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
+                        <div className="text-center py-5 bg-[#0C241B] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
                           No closed results yet for today. Live games open above!
                         </div>
                       ) : (
@@ -2409,18 +2409,18 @@ export default function App() {
                                 setSelectedGameForBetting(gameName);
                                 setBetMessage('');
                               }}
-                              className="bg-[#121927] hover:bg-[#1A2337] p-3.5 rounded-2xl border border-gray-800 shadow-lg flex justify-between items-center cursor-pointer transition-all active:scale-[0.99]"
+                              className="bg-[#0C241B] hover:bg-[#1A3729] p-3.5 rounded-2xl border border-gray-800 shadow-lg flex justify-between items-center cursor-pointer transition-all active:scale-[0.99]"
                             >
                               <div className="flex items-center gap-3">
                                 {/* 3D Emblem Badge Box */}
-                                <div className="w-12 h-12 bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-[#D4AF37]/50 rounded-xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                <div className="w-12 h-12 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/50 rounded-xl flex items-center justify-center text-xl shadow-inner shrink-0">
                                   {iconEmoji}
                                 </div>
 
                                 <div>
                                   <h4 className="text-sm font-bold text-white">{gameName}</h4>
                                   {isDeclared ? (
-                                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Winner Number · <span className="text-[#F5D77F] font-semibold">Result Declared</span></p>
+                                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Winner Number · <span className="text-[#E0C9A0] font-semibold">Result Declared</span></p>
                                   ) : (
                                     <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
                                       Betting Closed · Result at <span className="font-semibold text-gray-300">{sched?.result || sched?.close || 'soon'}</span>
@@ -2431,7 +2431,7 @@ export default function App() {
 
                               {/* Right Gold Winner Number Badge Box or Pending Status */}
                               {isDeclared ? (
-                                <div className="w-10 h-10 rounded-xl bg-[#0F172A] border border-[#D4AF37]/50 flex items-center justify-center font-mono font-bold text-base text-[#FFE485] shadow-md shrink-0">
+                                <div className="w-10 h-10 rounded-xl bg-[#0A0F0D] border border-[#C9A87C]/50 flex items-center justify-center font-mono font-bold text-base text-[#F0DDB8] shadow-md shrink-0">
                                   {String(result).padStart(2, '0')}
                                 </div>
                               ) : (
@@ -2463,7 +2463,7 @@ export default function App() {
                       setMyBetsSelectedDate(new Date().toISOString().split('T')[0]);
                     }}
                     className={`px-3.5 py-1.5 rounded-full font-bold text-xs shadow-md transition-all ${
-                      myBetsDateFilter === 'today' ? 'bg-[#EAB308] text-slate-950' : 'bg-[#1E293B] text-gray-300 hover:text-white border border-gray-800'
+                      myBetsDateFilter === 'today' ? 'bg-[#C9A87C] text-slate-950' : 'bg-[#123A2C] text-gray-300 hover:text-white border border-gray-800'
                     }`}
                   >
                     Today
@@ -2476,7 +2476,7 @@ export default function App() {
                       setMyBetsSelectedDate(y.toISOString().split('T')[0]);
                     }}
                     className={`px-3.5 py-1.5 rounded-full font-bold text-xs shadow-md transition-all ${
-                      myBetsDateFilter === 'yesterday' ? 'bg-[#EAB308] text-slate-950' : 'bg-[#1E293B] text-gray-300 hover:text-white border border-gray-800'
+                      myBetsDateFilter === 'yesterday' ? 'bg-[#C9A87C] text-slate-950' : 'bg-[#123A2C] text-gray-300 hover:text-white border border-gray-800'
                     }`}
                   >
                     Yesterday
@@ -2489,7 +2489,7 @@ export default function App() {
                       }
                     }}
                     className={`px-3.5 py-1.5 rounded-full font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-1 relative ${
-                      myBetsDateFilter === 'custom' ? 'bg-[#EAB308] text-slate-950' : 'bg-[#1E293B] text-gray-300 hover:text-white border border-gray-800'
+                      myBetsDateFilter === 'custom' ? 'bg-[#C9A87C] text-slate-950' : 'bg-[#123A2C] text-gray-300 hover:text-white border border-gray-800'
                     }`}
                   >
                     <span>📅</span>
@@ -2516,8 +2516,8 @@ export default function App() {
                       onClick={() => setMyBetsMarketFilter(mName)}
                       className={`px-3.5 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap shadow-sm border transition-all ${
                         myBetsMarketFilter === mName
-                          ? 'bg-[#00E676] text-slate-950 border-[#00C853]'
-                          : 'bg-[#121927] text-gray-300 border-gray-800 hover:border-gray-700'
+                          ? 'bg-[#3EE08A] text-slate-950 border-[#2ECC8F]'
+                          : 'bg-[#0C241B] text-gray-300 border-gray-800 hover:border-gray-700'
                       }`}
                     >
                       {mName}
@@ -2567,7 +2567,7 @@ export default function App() {
 
                   if (marketFiltered.length === 0) {
                     return (
-                      <div className="text-center text-gray-400 py-10 bg-[#121927] rounded-2xl border border-gray-800 space-y-2">
+                      <div className="text-center text-gray-400 py-10 bg-[#0C241B] rounded-2xl border border-gray-800 space-y-2">
                         <p className="text-2xl">📜</p>
                         <p className="text-sm font-semibold">No bets found for {myBetsMarketFilter} on {targetDateStr}.</p>
                         <p className="text-xs text-gray-500">Select another date or market column to view bids.</p>
@@ -2643,9 +2643,9 @@ export default function App() {
                     });
 
                     return (
-                      <div key={idx} className="bg-[#16202E] border border-[#263346] rounded-2xl overflow-hidden shadow-lg mb-4">
+                      <div key={idx} className="bg-[#162E22] border border-[#163024] rounded-2xl overflow-hidden shadow-lg mb-4">
                         {/* Top Header Bar */}
-                        <div className="bg-[#263346] px-4 py-2.5 flex justify-between items-center">
+                        <div className="bg-[#163024] px-4 py-2.5 flex justify-between items-center">
                           <span className="text-sm font-bold text-white">{group.cleanGameName}</span>
                           <span className={`text-xs font-bold ${statusColor}`}>{statusText}</span>
                         </div>
@@ -2654,7 +2654,7 @@ export default function App() {
                         <div className="p-4 text-center space-y-2">
                           <h4 className="text-lg font-extrabold text-white">{group.cleanGameName}</h4>
                           <p className="text-xs text-gray-400">{group.dateStr || 'September 12, 2026'}</p>
-                          <p className="text-sm font-bold text-[#F3D079]">{group.betTypeLabel}</p>
+                          <p className="text-sm font-bold text-[#D9B98C]">{group.betTypeLabel}</p>
                           <p className="text-xs text-gray-400">Amount placed on the numbers</p>
 
                           {/* Number Badges Grid (5 Cards per row, no swiping) */}
@@ -2671,11 +2671,11 @@ export default function App() {
                               const displayNum = isHar && badge ? `${item.number} (${badge})` : rawNum;
 
                               return (
-                                <div key={bIdx} className="flex flex-col items-center w-full rounded-lg overflow-hidden border border-[#263346]">
-                                  <div className="bg-[#0F172A] w-full h-9 flex items-center justify-center text-white font-black text-xs font-mono">
+                                <div key={bIdx} className="flex flex-col items-center w-full rounded-lg overflow-hidden border border-[#163024]">
+                                  <div className="bg-[#0A0F0D] w-full h-9 flex items-center justify-center text-white font-black text-xs font-mono">
                                     {displayNum}
                                   </div>
-                                  <div className="bg-[#F3D079] w-full h-6.5 flex items-center justify-center text-slate-950 font-extrabold text-xs">
+                                  <div className="bg-[#D9B98C] w-full h-6.5 flex items-center justify-center text-slate-950 font-extrabold text-xs">
                                     ₹{item.bet_amount}
                                   </div>
                                 </div>
@@ -2684,12 +2684,12 @@ export default function App() {
                           </div>
 
                           {/* Total Amount Button */}
-                          <div className="bg-[#263346] py-3 rounded-xl text-white font-bold text-sm w-full shadow-inner mt-2">
+                          <div className="bg-[#163024] py-3 rounded-xl text-white font-bold text-sm w-full shadow-inner mt-2">
                             Total Amount: ₹{group.totalAmount}
                           </div>
 
                           {/* Outcome Line */}
-                          <p className={`text-xs font-bold pt-1 ${isWon ? 'text-[#00C853]' : 'text-[#F3D079]'}`}>
+                          <p className={`text-xs font-bold pt-1 ${isWon ? 'text-[#2ECC8F]' : 'text-[#D9B98C]'}`}>
                             {isWon ? `🎉 Won: +₹${group.totalWin}` : 'No Rewards'}
                           </p>
                         </div>
@@ -2715,7 +2715,7 @@ export default function App() {
                     <button 
                       onClick={() => setChartFilter('today')}
                       className={`px-4 py-1.5 rounded-full font-bold text-xs shadow-md transition-all ${
-                        chartFilter === 'today' ? 'bg-[#EAB308] text-slate-950' : 'bg-[#1E293B] text-gray-300 hover:text-white border border-gray-800'
+                        chartFilter === 'today' ? 'bg-[#C9A87C] text-slate-950' : 'bg-[#123A2C] text-gray-300 hover:text-white border border-gray-800'
                       }`}
                     >
                       Today
@@ -2723,7 +2723,7 @@ export default function App() {
                     <button 
                       onClick={() => setChartFilter('yesterday')}
                       className={`px-4 py-1.5 rounded-full font-bold text-xs shadow-md transition-all ${
-                        chartFilter === 'yesterday' ? 'bg-[#EAB308] text-slate-950' : 'bg-[#1E293B] text-gray-300 hover:text-white border border-gray-800'
+                        chartFilter === 'yesterday' ? 'bg-[#C9A87C] text-slate-950' : 'bg-[#123A2C] text-gray-300 hover:text-white border border-gray-800'
                       }`}
                     >
                       Yesterday
@@ -2742,7 +2742,7 @@ export default function App() {
                         }
                       }}
                       className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer relative ${
-                        chartFilter === 'custom' ? 'bg-[#EAB308] text-slate-950 border-[#EAB308]' : 'bg-[#1E293B] border-gray-800 text-gray-300 hover:text-white'
+                        chartFilter === 'custom' ? 'bg-[#C9A87C] text-slate-950 border-[#C9A87C]' : 'bg-[#123A2C] border-gray-800 text-gray-300 hover:text-white'
                       }`}
                     >
                       <span>📅</span>
@@ -2781,10 +2781,10 @@ export default function App() {
                       return (
                         <div 
                           key={gameName}
-                          className="bg-[#121927] p-3.5 rounded-2xl border border-gray-800 shadow-lg flex justify-between items-center"
+                          className="bg-[#0C241B] p-3.5 rounded-2xl border border-gray-800 shadow-lg flex justify-between items-center"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-[#D4AF37]/60 rounded-xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/60 rounded-xl flex items-center justify-center text-xl shadow-inner shrink-0">
                               {iconEmoji}
                             </div>
 
@@ -2794,7 +2794,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="w-12 h-10 rounded-xl bg-[#0F172A] border border-[#D4AF37]/50 flex items-center justify-center font-mono font-bold text-base text-[#FFE485] shadow-md shrink-0">
+                          <div className="w-12 h-10 rounded-xl bg-[#0A0F0D] border border-[#C9A87C]/50 flex items-center justify-center font-mono font-bold text-base text-[#F0DDB8] shadow-md shrink-0">
                             {displayNum}
                           </div>
                         </div>
@@ -2821,8 +2821,8 @@ export default function App() {
                     }}
                     className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border ${
                       refFilterType === 'all'
-                        ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                        : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                        ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                        : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                     }`}
                   >
                     All Time
@@ -2838,8 +2838,8 @@ export default function App() {
                     }}
                     className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border ${
                       refFilterType === 'today'
-                        ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                        : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                        ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                        : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                     }`}
                   >
                     Today
@@ -2857,8 +2857,8 @@ export default function App() {
                     }}
                     className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border ${
                       refFilterType === 'yesterday'
-                        ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                        : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                        ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                        : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                     }`}
                   >
                     Yesterday
@@ -2867,8 +2867,8 @@ export default function App() {
                   <label
                     className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border flex items-center justify-center gap-1 cursor-pointer ${
                       refFilterType === 'custom'
-                        ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                        : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                        ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                        : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                     }`}
                   >
                     <span>📅</span>
@@ -2892,8 +2892,8 @@ export default function App() {
                 </div>
 
                 {/* CARD 1: TOTAL COMMISSION */}
-                <div className="bg-[#1E293B] rounded-2xl shadow-lg border border-[#334155] overflow-hidden">
-                  <div className="bg-[#162238] px-4 py-2.5 flex justify-between items-center text-white">
+                <div className="bg-[#123A2C] rounded-2xl shadow-lg border border-[#1E5C46] overflow-hidden">
+                  <div className="bg-[#0A1712] px-4 py-2.5 flex justify-between items-center text-white">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">🎟️</span>
                       <span className="text-xs font-black tracking-wider uppercase">
@@ -2908,9 +2908,9 @@ export default function App() {
                     </button>
                   </div>
                   <div className="p-4 space-y-3">
-                    <div className="bg-[#0F172A] border-2 border-[#F3D079] rounded-2xl py-4 text-center">
-                      <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-widest mb-1">Commission Wallet</p>
-                      <span className="text-2xl font-mono font-black text-[#F3D079]">
+                    <div className="bg-[#0A0F0D] border-2 border-[#D9B98C] rounded-2xl py-4 text-center">
+                      <p className="text-[10px] text-[#8FA89B] font-bold uppercase tracking-widest mb-1">Commission Wallet</p>
+                      <span className="text-2xl font-mono font-black text-[#D9B98C]">
                         ₹{(user?.commission_balance !== undefined ? user.commission_balance : (referralDetails.totalCommission || 0)).toFixed(2)}/-
                       </span>
                     </div>
@@ -2918,7 +2918,7 @@ export default function App() {
                     <button
                       onClick={handleCommissionTransfer}
                       disabled={isTransferringCommission || (user?.commission_balance !== undefined ? user.commission_balance : (referralDetails.totalCommission || 0)) <= 0}
-                      className="w-full bg-gradient-to-r from-[#F3D079] to-[#F59E0B] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black py-3 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[#D9B98C] to-[#C9A87C] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black py-3 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-all flex items-center justify-center gap-2"
                     >
                       {isTransferringCommission ? (
                         <><span className="animate-spin">⏳</span> Transferring...</>
@@ -2935,8 +2935,8 @@ export default function App() {
                 </div>
 
                 {/* CARD 2: YOUR REFERRAL CODE */}
-                <div className="bg-[#1E293B] rounded-2xl shadow-lg border border-[#334155] overflow-hidden">
-                  <div className="bg-[#00873E] px-4 py-2.5 flex items-center gap-2 text-white">
+                <div className="bg-[#123A2C] rounded-2xl shadow-lg border border-[#1E5C46] overflow-hidden">
+                  <div className="bg-[#1C7A45] px-4 py-2.5 flex items-center gap-2 text-white">
                     <span className="text-sm">🎁</span>
                     <span className="text-xs font-black tracking-wider uppercase">YOUR REFERRAL CODE</span>
                   </div>
@@ -2948,8 +2948,8 @@ export default function App() {
 
                       return (
                         <div className="space-y-4">
-                          <div className="bg-[#0F172A] border-2 border-[#F3D079] rounded-2xl py-3.5 px-3">
-                            <div className="text-xl font-mono font-black text-[#F3D079] tracking-[0.2em] select-all whitespace-nowrap overflow-x-auto">
+                          <div className="bg-[#0A0F0D] border-2 border-[#D9B98C] rounded-2xl py-3.5 px-3">
+                            <div className="text-xl font-mono font-black text-[#D9B98C] tracking-[0.2em] select-all whitespace-nowrap overflow-x-auto">
                               {userRefCode}
                             </div>
                           </div>
@@ -2962,7 +2962,7 @@ export default function App() {
                                 setCopiedToast(true);
                                 setTimeout(() => setCopiedToast(false), 2500);
                               }}
-                              className="bg-[#00873E] hover:bg-[#007033] text-white font-bold py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
+                              className="bg-[#1C7A45] hover:bg-[#17662E] text-white font-bold py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
                             >
                               <span>📋</span>
                               <span>{copiedToast ? 'COPIED!' : 'Copy Code'}</span>
@@ -2972,7 +2972,7 @@ export default function App() {
                               href={whatsappUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="bg-[#F59E0B] hover:bg-[#D97706] text-[#0F172A] font-black py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
+                              className="bg-[#C9A87C] hover:bg-[#B98F57] text-[#0A0F0D] font-black py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
                             >
                               <span>🔀</span>
                               <span>Share</span>
@@ -2980,18 +2980,18 @@ export default function App() {
                           </div>
 
                           {/* Step Process Indicator */}
-                          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[#334155]">
+                          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[#1E5C46]">
                             <div className="flex flex-col items-center">
-                              <div className="w-7 h-7 rounded-full bg-[#0F172A] border border-[#F3D079] flex items-center justify-center font-black text-xs text-[#F3D079] mb-1">1</div>
-                              <span className="text-[10px] font-medium text-[#94A3B8]">Share your code</span>
+                              <div className="w-7 h-7 rounded-full bg-[#0A0F0D] border border-[#D9B98C] flex items-center justify-center font-black text-xs text-[#D9B98C] mb-1">1</div>
+                              <span className="text-[10px] font-medium text-[#8FA89B]">Share your code</span>
                             </div>
                             <div className="flex flex-col items-center">
-                              <div className="w-7 h-7 rounded-full bg-[#0F172A] border border-[#F3D079] flex items-center justify-center font-black text-xs text-[#F3D079] mb-1">2</div>
-                              <span className="text-[10px] font-medium text-[#94A3B8]">They sign up</span>
+                              <div className="w-7 h-7 rounded-full bg-[#0A0F0D] border border-[#D9B98C] flex items-center justify-center font-black text-xs text-[#D9B98C] mb-1">2</div>
+                              <span className="text-[10px] font-medium text-[#8FA89B]">They sign up</span>
                             </div>
                             <div className="flex flex-col items-center">
-                              <div className="w-7 h-7 rounded-full bg-[#0F172A] border border-[#F3D079] flex items-center justify-center font-black text-xs text-[#F3D079] mb-1">3</div>
-                              <span className="text-[10px] font-medium text-[#94A3B8]">You earn</span>
+                              <div className="w-7 h-7 rounded-full bg-[#0A0F0D] border border-[#D9B98C] flex items-center justify-center font-black text-xs text-[#D9B98C] mb-1">3</div>
+                              <span className="text-[10px] font-medium text-[#8FA89B]">You earn</span>
                             </div>
                           </div>
                         </div>
@@ -3001,8 +3001,8 @@ export default function App() {
                 </div>
 
                 {/* CARD 3: TOTAL REFERRALS */}
-                <div className="bg-[#1E293B] rounded-2xl shadow-lg border border-[#334155] overflow-hidden">
-                  <div className="bg-[#162238] px-4 py-2.5 flex justify-between items-center text-white">
+                <div className="bg-[#123A2C] rounded-2xl shadow-lg border border-[#1E5C46] overflow-hidden">
+                  <div className="bg-[#0A1712] px-4 py-2.5 flex justify-between items-center text-white">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">👥</span>
                       <span className="text-xs font-black tracking-wider uppercase">TOTAL REFERRALS</span>
@@ -3010,11 +3010,11 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => fetchWebsiteReferralDetails(refFilterDate)}
-                        className="bg-[#0F172A] border border-[#334155] text-xs text-[#00C853] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 hover:bg-[#1E293B] transition-all"
+                        className="bg-[#0A0F0D] border border-[#1E5C46] text-xs text-[#2ECC8F] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 hover:bg-[#123A2C] transition-all"
                       >
                         <span>🔄</span> Refresh
                       </button>
-                      <div className="bg-[#0F172A] border border-[#F3D079] text-[#F3D079] px-2.5 py-0.5 rounded-full text-xs font-black flex items-center gap-1">
+                      <div className="bg-[#0A0F0D] border border-[#D9B98C] text-[#D9B98C] px-2.5 py-0.5 rounded-full text-xs font-black flex items-center gap-1">
                         <span>👤</span>
                         <span>{referralDetails.referralsCount || 0}</span>
                       </div>
@@ -3025,22 +3025,22 @@ export default function App() {
                     {referralDetails.referredUsers.length === 0 ? (
                       <div className="py-4">
                         <div className="text-4xl mb-2">👥</div>
-                        <p className="text-sm font-bold text-[#94A3B8]">No referrals yet</p>
-                        <p className="text-[11px] text-[#64748B] mt-1">Share your code above to start earning lifetime bet commissions!</p>
+                        <p className="text-sm font-bold text-[#8FA89B]">No referrals yet</p>
+                        <p className="text-[11px] text-[#7D9186] mt-1">Share your code above to start earning lifetime bet commissions!</p>
                       </div>
                     ) : (
                       <div className="text-left space-y-2.5">
                         {referralDetails.referredUsers.map((ref, idx) => (
-                          <div key={idx} className="p-3.5 bg-[#0F172A] rounded-xl border border-[#334155] flex justify-between items-center text-xs">
+                          <div key={idx} className="p-3.5 bg-[#0A0F0D] rounded-xl border border-[#1E5C46] flex justify-between items-center text-xs">
                             <div>
                               <p className="font-bold text-white text-sm">{ref.name}</p>
-                              <p className="text-[#94A3B8] font-mono text-[11px] mt-0.5">{ref.mobile} • {ref.date}</p>
-                              <p className="text-[11px] text-[#F3D079] font-semibold mt-1">
+                              <p className="text-[#8FA89B] font-mono text-[11px] mt-0.5">{ref.mobile} • {ref.date}</p>
+                              <p className="text-[11px] text-[#D9B98C] font-semibold mt-1">
                                 Bet Commission: ₹{ref.betCommission.toFixed(2)}
                               </p>
                             </div>
                             <div className="text-right">
-                              <span className="font-mono font-black text-[#00C853] text-base">+₹{ref.totalEarned.toFixed(2)}</span>
+                              <span className="font-mono font-black text-[#2ECC8F] text-base">+₹{ref.totalEarned.toFixed(2)}</span>
                             </div>
                           </div>
                         ))}
@@ -3053,8 +3053,8 @@ export default function App() {
 
             {/* 100% Pixel-Perfect Luxury Gold Capsule 5-Icon Bottom Navigation Bar (Matching Mockup media_1789481320689.png) */}
             <div className="fixed bottom-3 left-0 right-0 w-full z-50 pointer-events-none px-3">
-              <div className="max-w-md mx-auto relative pointer-events-auto rounded-full bg-gradient-to-r from-[#FFE599] via-[#D4AF37] to-[#FFE599] p-[1.5px] shadow-[0_0_25px_rgba(212,175,55,0.4),0_10px_30px_rgba(0,0,0,0.9)]">
-                <div className="w-full h-full rounded-full bg-gradient-to-b from-[#141B2A] via-[#0E131E] to-[#06090F] px-2 py-1.5 flex justify-around items-center relative overflow-visible backdrop-blur-xl">
+              <div className="max-w-md mx-auto relative pointer-events-auto rounded-full bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#F0DDB8] p-[1.5px] shadow-[0_0_25px_rgba(212,175,55,0.4),0_10px_30px_rgba(0,0,0,0.9)]">
+                <div className="w-full h-full rounded-full bg-gradient-to-b from-[#0D1815] via-[#050605] to-[#040604] px-2 py-1.5 flex justify-around items-center relative overflow-visible backdrop-blur-xl">
                   
                   {/* HOME TAB */}
                   <button 
@@ -3064,11 +3064,11 @@ export default function App() {
                     }}
                     className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
                       activeWebTab === 'home' && !selectedGameForBetting 
-                        ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#8C6D13]/20 border border-[#F5D77F]/60 text-[#F5D77F] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105' 
+                        ? 'bg-gradient-to-r from-[#C9A87C]/30 to-[#8A6D47]/20 border border-[#E0C9A0]/60 text-[#E0C9A0] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105' 
                         : 'text-gray-400 hover:text-gray-200'
                     }`}
                   >
-                    <svg className={`w-5 h-5 ${activeWebTab === 'home' && !selectedGameForBetting ? 'fill-[#F5D77F]' : 'fill-current'}`} viewBox="0 0 24 24">
+                    <svg className={`w-5 h-5 ${activeWebTab === 'home' && !selectedGameForBetting ? 'fill-[#E0C9A0]' : 'fill-current'}`} viewBox="0 0 24 24">
                       <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                     </svg>
                     <span className="text-[9px] font-black uppercase tracking-wider">HOME</span>
@@ -3082,11 +3082,11 @@ export default function App() {
                     }}
                     className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
                       activeWebTab === 'charts' 
-                        ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#8C6D13]/20 border border-[#F5D77F]/60 text-[#F5D77F] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105' 
+                        ? 'bg-gradient-to-r from-[#C9A87C]/30 to-[#8A6D47]/20 border border-[#E0C9A0]/60 text-[#E0C9A0] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105' 
                         : 'text-gray-400 hover:text-gray-200'
                     }`}
                   >
-                    <svg className={`w-5 h-5 ${activeWebTab === 'charts' ? 'fill-[#F5D77F]' : 'fill-current'}`} viewBox="0 0 24 24">
+                    <svg className={`w-5 h-5 ${activeWebTab === 'charts' ? 'fill-[#E0C9A0]' : 'fill-current'}`} viewBox="0 0 24 24">
                       <path d="M4 9h4v11H4zm6-5h4v16h-4zm6 8h4v8h-4z"/>
                     </svg>
                     <span className="text-[9px] font-black uppercase tracking-wider">CHART</span>
@@ -3098,13 +3098,13 @@ export default function App() {
                       setSelectedGameForBetting(null);
                       setActiveWebTab('mybets');
                     }}
-                    className="relative -top-4 w-13 h-13 rounded-full bg-gradient-to-tr from-[#FFE599] via-[#D4AF37] to-[#8C6D13] p-[2px] shadow-[0_0_25px_rgba(212,175,55,0.8),0_4px_15px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 z-20"
+                    className="relative -top-4 w-13 h-13 rounded-full bg-gradient-to-tr from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47] p-[2px] shadow-[0_0_25px_rgba(212,175,55,0.8),0_4px_15px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 z-20"
                   >
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#1E293B] to-[#0A0E17] flex flex-col items-center justify-center border border-[#FFE485]/60 shadow-inner">
-                      <svg className="w-5 h-5 fill-[#F5D77F] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.8)]" viewBox="0 0 24 24">
+                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#123A2C] to-[#060B08] flex flex-col items-center justify-center border border-[#F0DDB8]/60 shadow-inner">
+                      <svg className="w-5 h-5 fill-[#E0C9A0] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.8)]" viewBox="0 0 24 24">
                         <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
                       </svg>
-                      <span className="text-[7.5px] font-black text-[#F5D77F] tracking-tighter leading-none mt-0.5">MY BET</span>
+                      <span className="text-[7.5px] font-black text-[#E0C9A0] tracking-tighter leading-none mt-0.5">MY BET</span>
                     </div>
                   </button>
 
@@ -3146,10 +3146,10 @@ export default function App() {
         {/* (100% Exact Copy of matkagold.com/matka/play/jodi/39)     */}
         {/* ========================================================= */}
         {selectedGameForBetting && (
-          <div className="fixed inset-0 bg-[#060A12] text-white z-50 flex flex-col justify-between overflow-y-auto">
+          <div className="fixed inset-0 bg-[#06120C] text-white z-50 flex flex-col justify-between overflow-y-auto">
             {/* Top Dark Header */}
             {/* Top Bar Header (100% Copy of Android App UI) */}
-            <div className="bg-[#0F172A] border-b border-gray-800/80 px-4 py-3 flex justify-between items-center sticky top-0 z-30 shadow-xl backdrop-blur-md">
+            <div className="bg-[#0A0F0D] border-b border-gray-800/80 px-4 py-3 flex justify-between items-center sticky top-0 z-30 shadow-xl backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => {
@@ -3168,7 +3168,7 @@ export default function App() {
               {/* Wallet Badge (Dark Gold / Emerald Pill) */}
               <button 
                 onClick={() => setShowDepositModal(true)} 
-                className="flex items-center gap-1.5 bg-[#152338] border border-amber-500/30 text-[#F3D079] px-3 py-1 rounded-full text-xs font-mono font-bold shadow-md hover:border-amber-400"
+                className="flex items-center gap-1.5 bg-[#153827] border border-amber-500/30 text-[#D9B98C] px-3 py-1 rounded-full text-xs font-mono font-bold shadow-md hover:border-amber-400"
               >
                 <span>💳 ₹{user?.balance ? user.balance.toFixed(2) : '0.00'}</span>
                 <span className="bg-amber-500/20 text-amber-300 text-xs px-1 rounded font-bold">+</span>
@@ -3176,7 +3176,7 @@ export default function App() {
             </div>
 
             {/* Sub-header Underline Category Selector (JODI | PASTE | CROSSING | HAROOF) */}
-            <div className="bg-[#0F172A] border-b border-gray-800/60 px-4 py-2 sticky top-[53px] z-20 flex justify-center gap-6 shadow-md">
+            <div className="bg-[#0A0F0D] border-b border-gray-800/60 px-4 py-2 sticky top-[53px] z-20 flex justify-center gap-6 shadow-md">
               {(['Jodi', 'Paste', 'Crossing', 'Haruf'] as const).map((t) => {
                 const label = t === 'Haruf' ? 'HAROOF' : t.toUpperCase();
                 const isActive = betCategory === t;
@@ -3200,7 +3200,7 @@ export default function App() {
             </div>
 
             {/* Main Bidding Cards Area (100% Copy of Android App Dark Theme Grid) */}
-            <div className="p-3.5 flex-1 pb-32 max-w-md mx-auto w-full bg-[#0B101D]">
+            <div className="p-3.5 flex-1 pb-32 max-w-md mx-auto w-full bg-[#0B1D14]">
               {betMessage && (
                 <div className={`p-3 rounded-xl text-xs font-bold mb-4 text-center ${
                   betMessage.includes('successfully') ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/50' : 'bg-red-950/80 text-red-400 border border-red-500/50'
@@ -3211,12 +3211,12 @@ export default function App() {
 
               {/* Paste / Type Toggle Header Pill & Formats Badge (in Jodi & Paste modes) */}
               {(betCategory === 'Jodi' || betCategory === 'Paste') && (
-                <div className="flex justify-between items-center bg-[#152033] p-2 rounded-xl mb-3 border border-gray-800">
-                  <div className="flex items-center gap-1.5 bg-[#0F172A] p-1 rounded-lg border border-gray-800">
+                <div className="flex justify-between items-center bg-[#153324] p-2 rounded-xl mb-3 border border-gray-800">
+                  <div className="flex items-center gap-1.5 bg-[#0A0F0D] p-1 rounded-lg border border-gray-800">
                     <button
                       onClick={() => setBetCategory('Paste')}
                       className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                        betCategory === 'Paste' ? 'bg-[#00897B] text-white shadow' : 'text-gray-400 hover:text-white'
+                        betCategory === 'Paste' ? 'bg-[#1E8A6E] text-white shadow' : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       Paste
@@ -3224,7 +3224,7 @@ export default function App() {
                     <button
                       onClick={() => setBetCategory('Jodi')}
                       className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                        betCategory === 'Jodi' ? 'bg-[#00897B] text-white shadow' : 'text-gray-400 hover:text-white'
+                        betCategory === 'Jodi' ? 'bg-[#1E8A6E] text-white shadow' : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       Type
@@ -3233,7 +3233,7 @@ export default function App() {
 
                   <button
                     onClick={() => setShowFormatsModal(true)}
-                    className="bg-[#1E293B] hover:bg-[#334155] border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1"
+                    className="bg-[#123A2C] hover:bg-[#1E5C46] border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1"
                   >
                     <span>Formats 1</span>
                     <span className="text-[10px]">▼</span>
@@ -3244,14 +3244,14 @@ export default function App() {
               {/* PASTE TAB: Smart Copy-Paste Betting Engine (Auto-Parser) matching media_1789228099608.png */}
               {betCategory === 'Paste' && (
                 <div className="space-y-3">
-                  <div className="bg-[#182234] border border-gray-800 p-3 rounded-2xl">
+                  <div className="bg-[#0D1512] border border-gray-800 p-3 rounded-2xl">
                     <div className="flex gap-2">
                       <textarea
                         rows={6}
                         placeholder={`Paste your bets string here...\n\nExamples:\n12 34 56 @50\n123456789 (50)\n10(50.10)`}
                         value={copyPasteInputText}
                         onChange={(e) => setCopyPasteInputText(e.target.value)}
-                        className="flex-1 bg-[#0F172A] border border-gray-800 rounded-xl p-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 resize-none"
+                        className="flex-1 bg-[#0A0F0D] border border-gray-800 rounded-xl p-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 resize-none"
                       />
                       <div className="w-28 flex flex-col justify-between gap-1.5">
                         <button
@@ -3259,17 +3259,17 @@ export default function App() {
                             const parsed = parseCopyPasteText(copyPasteInputText, copyPasteWithPalat);
                             setCopyPasteParsedList(parsed);
                           }}
-                          className="w-full bg-[#00897B] hover:bg-[#00796B] text-white font-black py-2.5 rounded-xl text-xs uppercase shadow"
+                          className="w-full bg-[#1E8A6E] hover:bg-[#1A6E5F] text-white font-black py-2.5 rounded-xl text-xs uppercase shadow"
                         >
                           DONE
                         </button>
                         
-                        <label className="flex items-center gap-1.5 bg-[#0F172A] border border-gray-800 p-1.5 rounded-lg cursor-pointer">
+                        <label className="flex items-center gap-1.5 bg-[#0A0F0D] border border-gray-800 p-1.5 rounded-lg cursor-pointer">
                           <input
                             type="checkbox"
                             checked={copyPasteWithPalat}
                             onChange={(e) => setCopyPasteWithPalat(e.target.checked)}
-                            className="accent-[#00897B] w-3.5 h-3.5"
+                            className="accent-[#1E8A6E] w-3.5 h-3.5"
                           />
                           <span className="text-[10px] font-bold text-white whitespace-nowrap">With Palat</span>
                         </label>
@@ -3288,26 +3288,26 @@ export default function App() {
                   </div>
 
                   {/* Hindi Notice Card */}
-                  <div className="bg-[#162032] border border-[#2E3D56] p-3.5 rounded-2xl space-y-2">
-                    <div className="text-[#F3D079] font-black text-xs">📌 जरूरी सूचना:</div>
-                    <p className="text-[#CBD5E1] text-[11px] leading-relaxed font-medium">
+                  <div className="bg-[#163224] border border-[#2E5642] p-3.5 rounded-2xl space-y-2">
+                    <div className="text-[#D9B98C] font-black text-xs">📌 जरूरी सूचना:</div>
+                    <p className="text-[#C9D6CE] text-[11px] leading-relaxed font-medium">
                       आपके दांव (bet) के पैसे सही तरीके से जुड़ें, इसके लिए नंबरों के आखिरी में अपनी पैसों की मात्रा (amount) नीचे दिए गए तरीकों में से किसी एक तरीके से जरूर लिखें:<br />
                       (पैसे) या [पैसे] या {"{पैसे}"}<br />
                       @पैसे, ₹पैसे, #पैसे, $पैसे, %पैसे, =पैसे<br />
                       intoपैसे, intuपैसे, *पैसे, ×पैसे<br />
                       जैसे: 12 34 56 @20 या 123456789 (50)
                     </p>
-                    <div className="text-[#38BDF8] text-[11px] font-bold">
+                    <div className="text-[#D9B98C] text-[11px] font-bold">
                       ⚠️ एक बार आपके लगाए गये नम्बर चेक करले सही है या नहीं
                     </div>
                   </div>
 
                   {/* Summary Review Table */}
                   {copyPasteParsedList.length > 0 && (
-                    <div className="bg-[#182234] border border-emerald-500/50 p-3 rounded-2xl space-y-2">
+                    <div className="bg-[#0D1512] border border-emerald-500/50 p-3 rounded-2xl space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-emerald-400 font-black text-xs">📋 GENERATED JODI BETS ({copyPasteParsedList.length})</span>
-                        <span className="text-[#F3D079] font-black text-xs">
+                        <span className="text-[#D9B98C] font-black text-xs">
                           Total: ₹{copyPasteParsedList.reduce((sum, item) => sum + item.amount, 0)}
                         </span>
                       </div>
@@ -3358,11 +3358,11 @@ export default function App() {
                         <div 
                           key={numStr}
                           className={`rounded-xl border transition-all p-1.5 flex flex-col items-center justify-between min-h-[58px] ${
-                            val ? 'bg-emerald-950/60 border-emerald-500/80 shadow-lg shadow-emerald-950/50' : 'bg-[#182234] border-gray-800/90 hover:border-gray-700'
+                            val ? 'bg-emerald-950/60 border-emerald-500/80 shadow-lg shadow-emerald-950/50' : 'bg-[#0D1512] border-gray-800/90 hover:border-gray-700'
                           }`}
                         >
                           <span className={`text-xs font-mono font-black ${val ? 'text-emerald-400' : 'text-gray-200'}`}>{numStr}</span>
-                          <div className="w-full mt-1 flex items-center justify-center bg-[#0F172A] rounded-lg border border-gray-800 px-1 py-0.5">
+                          <div className="w-full mt-1 flex items-center justify-center bg-[#0A0F0D] rounded-lg border border-gray-800 px-1 py-0.5">
                             <span className="text-[9px] text-gray-400 font-bold mr-0.5">₹</span>
                             <input
                               type="number"
@@ -3410,7 +3410,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="bg-[#182234] p-4 rounded-2xl border border-gray-800 space-y-4 mb-4">
+                  <div className="bg-[#0D1512] p-4 rounded-2xl border border-gray-800 space-y-4 mb-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-300 uppercase mb-1.5">Enter Crossing Digits (e.g. 1234)</label>
                       <input
@@ -3439,12 +3439,12 @@ export default function App() {
                             setJodiGrid({});
                           }
                         }}
-                        className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#00C853]"
+                        className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
                       />
                     </div>
 
                     {/* JODA ADD TOGGLE SWITCH */}
-                    <div className="flex justify-between items-center bg-[#0F172A] p-3 rounded-xl border border-gray-700">
+                    <div className="flex justify-between items-center bg-[#0A0F0D] p-3 rounded-xl border border-gray-700">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-white uppercase">Joda Add</span>
                         <span className="text-[10px] text-gray-400">Include double digit pairs (11, 22, etc.)</span>
@@ -3468,7 +3468,7 @@ export default function App() {
                           }
                         }}
                         className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
-                          crossingWithJoda ? 'bg-[#00C853]' : 'bg-gray-700'
+                          crossingWithJoda ? 'bg-[#2ECC8F]' : 'bg-gray-700'
                         }`}
                       >
                         <div
@@ -3504,7 +3504,7 @@ export default function App() {
                             setJodiGrid(newGrid);
                           }
                         }}
-                        className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#00C853]"
+                        className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
                       />
                       <div className="flex gap-2 mt-2">
                         {['10', '50', '100', '500'].map((amt) => (
@@ -3567,8 +3567,8 @@ export default function App() {
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* ANDER Column */}
-                    <div className="bg-[#182234] border border-gray-800/90 rounded-2xl overflow-hidden p-2">
-                      <div className="bg-[#0F172A] py-2 px-3 text-center border-b border-gray-800 rounded-xl mb-2">
+                    <div className="bg-[#0D1512] border border-gray-800/90 rounded-2xl overflow-hidden p-2">
+                      <div className="bg-[#0A0F0D] py-2 px-3 text-center border-b border-gray-800 rounded-xl mb-2">
                         <h4 className="text-xs font-black text-white tracking-wider uppercase">ANDER</h4>
                       </div>
                       <div className="space-y-1.5">
@@ -3579,11 +3579,11 @@ export default function App() {
                             <div 
                               key={key}
                               className={`flex items-center justify-between p-1.5 rounded-xl border transition-all ${
-                                val ? 'bg-emerald-950/60 border-emerald-500/80' : 'bg-[#0F172A]/70 border-gray-800'
+                                val ? 'bg-emerald-950/60 border-emerald-500/80' : 'bg-[#0A0F0D]/70 border-gray-800'
                               }`}
                             >
                               <span className="text-xs font-black font-mono text-white px-2">{key}</span>
-                              <div className="flex items-center bg-[#182234] rounded-lg border border-gray-700/80 px-2 py-1 w-20">
+                              <div className="flex items-center bg-[#0D1512] rounded-lg border border-gray-700/80 px-2 py-1 w-20">
                                 <span className="text-[10px] text-gray-400 font-bold mr-1">₹</span>
                                 <input
                                   type="number"
@@ -3612,8 +3612,8 @@ export default function App() {
                     </div>
 
                     {/* BAHAR Column */}
-                    <div className="bg-[#182234] border border-gray-800/90 rounded-2xl overflow-hidden p-2">
-                      <div className="bg-[#0F172A] py-2 px-3 text-center border-b border-gray-800 rounded-xl mb-2">
+                    <div className="bg-[#0D1512] border border-gray-800/90 rounded-2xl overflow-hidden p-2">
+                      <div className="bg-[#0A0F0D] py-2 px-3 text-center border-b border-gray-800 rounded-xl mb-2">
                         <h4 className="text-xs font-black text-white tracking-wider uppercase">BAHAR</h4>
                       </div>
                       <div className="space-y-1.5">
@@ -3624,11 +3624,11 @@ export default function App() {
                             <div 
                               key={key}
                               className={`flex items-center justify-between p-1.5 rounded-xl border transition-all ${
-                                val ? 'bg-emerald-950/60 border-emerald-500/80' : 'bg-[#0F172A]/70 border-gray-800'
+                                val ? 'bg-emerald-950/60 border-emerald-500/80' : 'bg-[#0A0F0D]/70 border-gray-800'
                               }`}
                             >
                               <span className="text-xs font-black font-mono text-white px-2">{key}</span>
-                              <div className="flex items-center bg-[#182234] rounded-lg border border-gray-700/80 px-2 py-1 w-20">
+                              <div className="flex items-center bg-[#0D1512] rounded-lg border border-gray-700/80 px-2 py-1 w-20">
                                 <span className="text-[10px] text-gray-400 font-bold mr-1">₹</span>
                                 <input
                                   type="number"
@@ -3658,14 +3658,14 @@ export default function App() {
                   </div>
 
                   {/* Quick Haroof Bar (A, B, Digits, Amount, DONE) */}
-                  <div className="mt-3 bg-[#182234] border border-gray-800 rounded-2xl p-2 flex gap-1.5 items-center">
+                  <div className="mt-3 bg-[#0D1512] border border-gray-800 rounded-2xl p-2 flex gap-1.5 items-center">
                     <button
                       type="button"
                       onClick={() => setHarufQuickASelected(!harufQuickASelected)}
                       className={`h-10 px-3 rounded-xl font-black text-xs border transition-all ${
                         harufQuickASelected 
-                          ? 'bg-[#00897B] text-white border-emerald-500' 
-                          : 'bg-[#0F172A] text-gray-400 border-gray-700/80'
+                          ? 'bg-[#1E8A6E] text-white border-emerald-500' 
+                          : 'bg-[#0A0F0D] text-gray-400 border-gray-700/80'
                       }`}
                     >
                       A
@@ -3675,8 +3675,8 @@ export default function App() {
                       onClick={() => setHarufQuickBSelected(!harufQuickBSelected)}
                       className={`h-10 px-3 rounded-xl font-black text-xs border transition-all ${
                         harufQuickBSelected 
-                          ? 'bg-[#00897B] text-white border-emerald-500' 
-                          : 'bg-[#0F172A] text-gray-400 border-gray-700/80'
+                          ? 'bg-[#1E8A6E] text-white border-emerald-500' 
+                          : 'bg-[#0A0F0D] text-gray-400 border-gray-700/80'
                       }`}
                     >
                       B
@@ -3686,14 +3686,14 @@ export default function App() {
                       placeholder="Haroof"
                       value={harufQuickDigits}
                       onChange={(e) => setHarufQuickDigits(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="h-10 w-24 bg-[#0F172A] border border-gray-700/80 rounded-xl px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 text-center"
+                      className="h-10 w-24 bg-[#0A0F0D] border border-gray-700/80 rounded-xl px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 text-center"
                     />
                     <input
                       type="number"
                       placeholder="Amount"
                       value={harufQuickAmount}
                       onChange={(e) => setHarufQuickAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="h-10 w-24 bg-[#0F172A] border border-gray-700/80 rounded-xl px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 text-center"
+                      className="h-10 w-24 bg-[#0A0F0D] border border-gray-700/80 rounded-xl px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 text-center"
                     />
                     <button
                       type="button"
@@ -3731,7 +3731,7 @@ export default function App() {
                         setHarufQuickAmount('');
                         setBetMessage('');
                       }}
-                      className="flex-1 h-10 bg-[#00897B] hover:bg-[#00796B] text-white font-black text-xs uppercase rounded-xl tracking-wider shadow"
+                      className="flex-1 h-10 bg-[#1E8A6E] hover:bg-[#1A6E5F] text-white font-black text-xs uppercase rounded-xl tracking-wider shadow"
                     >
                       DONE
                     </button>
@@ -3743,7 +3743,7 @@ export default function App() {
             {/* Formats Modal Popup */}
             {showFormatsModal && (
               <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-[#0F172A] border border-amber-500/30 rounded-2xl max-w-sm w-full p-4 space-y-4">
+                <div className="bg-[#0A0F0D] border border-amber-500/30 rounded-2xl max-w-sm w-full p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-amber-400 font-black text-sm">💡 Supported Copy-Paste Formats</h3>
                     <button onClick={() => setShowFormatsModal(false)} className="text-gray-400 hover:text-white font-bold">✕</button>
@@ -3765,7 +3765,7 @@ export default function App() {
                   </div>
                   <button
                     onClick={() => setShowFormatsModal(false)}
-                    className="w-full bg-[#00897B] text-white font-bold py-2.5 rounded-xl text-xs uppercase"
+                    className="w-full bg-[#1E8A6E] text-white font-bold py-2.5 rounded-xl text-xs uppercase"
                   >
                     OK, Got It
                   </button>
@@ -3774,7 +3774,7 @@ export default function App() {
             )}
 
             {/* Bottom Sticky Dark Action Bar */}
-            <div className="fixed bottom-[74px] left-1/2 -translate-x-1/2 w-full max-w-md bg-[#0F172A] border-t border-gray-800/90 p-3 flex gap-3 items-center z-40 shadow-2xl backdrop-blur-md">
+            <div className="fixed bottom-[74px] left-1/2 -translate-x-1/2 w-full max-w-md bg-[#0A0F0D] border-t border-gray-800/90 p-3 flex gap-3 items-center z-40 shadow-2xl backdrop-blur-md">
               {isGameBettingOpen(selectedGameForBetting, gameSchedules[selectedGameForBetting]) ? (
                 <>
                   <button 
@@ -3793,7 +3793,7 @@ export default function App() {
 
                   <button
                     onClick={handlePlaceBet}
-                    className="flex-1 bg-[#00C853] hover:bg-[#00B248] text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="flex-1 bg-[#2ECC8F] hover:bg-[#29B876] text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <span>PLACE BET</span>
                     <span>•</span>
@@ -3805,7 +3805,7 @@ export default function App() {
                   </button>
                 </>
               ) : (
-                <div className="flex-1 bg-[#1E293B] border border-amber-500/40 text-[#F5D77F] font-bold py-3.5 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-inner">
+                <div className="flex-1 bg-[#123A2C] border border-amber-500/40 text-[#E0C9A0] font-bold py-3.5 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-inner">
                   <span>⏳</span>
                   <span>Betting CLOSED for {selectedGameForBetting} {declaredResults[selectedGameForBetting] ? `(Winner: ${declaredResults[selectedGameForBetting]})` : '(Result Pending)'}</span>
                 </div>
@@ -3814,8 +3814,8 @@ export default function App() {
 
             {/* 100% Pixel-Perfect Luxury Gold Capsule 5-Icon Bottom Navigation Bar (Matching Mockup media_1789564447949.png) */}
             <div className="fixed bottom-3 left-0 right-0 w-full z-50 pointer-events-none px-3">
-              <div className="max-w-md mx-auto relative pointer-events-auto rounded-full bg-gradient-to-r from-[#FFE599] via-[#D4AF37] to-[#FFE599] p-[1.5px] shadow-[0_0_25px_rgba(212,175,55,0.4),0_10px_30px_rgba(0,0,0,0.9)]">
-                <div className="w-full h-full rounded-full bg-gradient-to-b from-[#141B2A] via-[#0E131E] to-[#06090F] px-2 py-1.5 flex justify-around items-center relative overflow-visible backdrop-blur-xl">
+              <div className="max-w-md mx-auto relative pointer-events-auto rounded-full bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#F0DDB8] p-[1.5px] shadow-[0_0_25px_rgba(212,175,55,0.4),0_10px_30px_rgba(0,0,0,0.9)]">
+                <div className="w-full h-full rounded-full bg-gradient-to-b from-[#0D1815] via-[#050605] to-[#040604] px-2 py-1.5 flex justify-around items-center relative overflow-visible backdrop-blur-xl">
                   
                   {/* HOME TAB */}
                   <button 
@@ -3851,13 +3851,13 @@ export default function App() {
                       setSelectedGameForBetting(null);
                       setActiveWebTab('mybets');
                     }}
-                    className="relative -top-4 w-13 h-13 rounded-full bg-gradient-to-tr from-[#FFE599] via-[#D4AF37] to-[#8C6D13] p-[2px] shadow-[0_0_25px_rgba(212,175,55,0.8),0_4px_15px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 z-20"
+                    className="relative -top-4 w-13 h-13 rounded-full bg-gradient-to-tr from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47] p-[2px] shadow-[0_0_25px_rgba(212,175,55,0.8),0_4px_15px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 z-20"
                   >
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#1E293B] to-[#0A0E17] flex flex-col items-center justify-center border border-[#FFE485]/60 shadow-inner">
-                      <svg className="w-5 h-5 fill-[#F5D77F] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.8)]" viewBox="0 0 24 24">
+                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#123A2C] to-[#060B08] flex flex-col items-center justify-center border border-[#F0DDB8]/60 shadow-inner">
+                      <svg className="w-5 h-5 fill-[#E0C9A0] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.8)]" viewBox="0 0 24 24">
                         <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
                       </svg>
-                      <span className="text-[7.5px] font-black text-[#F5D77F] tracking-tighter leading-none mt-0.5">MY BET</span>
+                      <span className="text-[7.5px] font-black text-[#E0C9A0] tracking-tighter leading-none mt-0.5">MY BET</span>
                     </div>
                   </button>
 
@@ -3899,7 +3899,7 @@ export default function App() {
         {/* ========================================================= */}
         {showDepositModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-sm p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#123A2C] border border-[#1E5C46] rounded-2xl w-full max-w-sm p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
               <button 
                 onClick={() => {
                   setShowDepositModal(false);
@@ -3937,7 +3937,7 @@ export default function App() {
                       setDepositAmount(e.target.value);
                       setEkqrOrderData(null);
                     }}
-                    className="w-full bg-[#0F172A] border border-[#334155] rounded-xl p-3 text-sm text-white font-mono focus:outline-none"
+                    className="w-full bg-[#0A0F0D] border border-[#1E5C46] rounded-xl p-3 text-sm text-white font-mono focus:outline-none"
                   />
                   
                   {/* Quick Amount Chips */}
@@ -3953,7 +3953,7 @@ export default function App() {
                         className={`py-1.5 text-xs font-mono font-bold rounded-lg border transition-all ${
                           depositAmount === String(amt)
                             ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                            : 'bg-[#0F172A] border-[#334155] text-gray-300 hover:bg-slate-800'
+                            : 'bg-[#0A0F0D] border-[#1E5C46] text-gray-300 hover:bg-slate-800'
                         }`}
                       >
                         ₹{amt}
@@ -3967,7 +3967,7 @@ export default function App() {
                     type="button"
                     disabled={isGeneratingEkqr}
                     onClick={() => handleStartEkqrPayment()}
-                    className="w-full bg-[#00C853] hover:bg-[#00B248] text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    className="w-full bg-[#2ECC8F] hover:bg-[#29B876] text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                   >
                     {isGeneratingEkqr ? (
                       <>
@@ -3979,7 +3979,7 @@ export default function App() {
                     )}
                   </button>
                 ) : (
-                  <div className="bg-[#0F172A] border border-[#334155] rounded-xl p-4 text-center space-y-3">
+                  <div className="bg-[#0A0F0D] border border-[#1E5C46] rounded-xl p-4 text-center space-y-3">
                     <div className="flex items-center justify-between border-b border-slate-700 pb-2">
                       <span className="text-[11px] text-gray-400">Order Amount</span>
                       <span className="text-sm font-black text-emerald-400 font-mono">₹{depositAmount}</span>
@@ -3992,7 +3992,7 @@ export default function App() {
                     </div>
 
                     {/* QR Code */}
-                    <div className="bg-white p-3 rounded-2xl w-52 h-52 mx-auto border-2 border-[#F3D079] shadow-xl flex items-center justify-center">
+                    <div className="bg-white p-3 rounded-2xl w-52 h-52 mx-auto border-2 border-[#D9B98C] shadow-xl flex items-center justify-center">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
                           ekqrOrderData.upi_intent?.phonepe_link || 
@@ -4004,7 +4004,7 @@ export default function App() {
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <p className="text-xs font-bold text-[#F3D079]">Scan with Any UPI App to Pay ₹{depositAmount}</p>
+                    <p className="text-xs font-bold text-[#D9B98C]">Scan with Any UPI App to Pay ₹{depositAmount}</p>
                     <p className="text-[10px] text-gray-400">PhonePe • Google Pay • Paytm • BHIM</p>
 
                     {/* Check Status Button */}
@@ -4034,7 +4034,7 @@ export default function App() {
         {/* MODAL: PUSH NOTIFICATIONS DRAWER */}
         {showNotificationsModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-sm p-5 shadow-2xl relative max-h-[80vh] flex flex-col">
+            <div className="bg-[#123A2C] border border-[#1E5C46] rounded-2xl w-full max-w-sm p-5 shadow-2xl relative max-h-[80vh] flex flex-col">
               <button 
                 onClick={() => setShowNotificationsModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white"
@@ -4055,7 +4055,7 @@ export default function App() {
                   </div>
                 ) : (
                   notificationsList.map((n, i) => (
-                    <div key={i} className="bg-[#0F172A] border border-[#334155] rounded-xl p-3.5 space-y-1">
+                    <div key={i} className="bg-[#0A0F0D] border border-[#1E5C46] rounded-xl p-3.5 space-y-1">
                       <div className="flex justify-between items-start gap-2">
                         <h4 className="text-xs font-bold text-amber-400">{n.title}</h4>
                         <span className="text-[10px] text-gray-500 font-mono whitespace-nowrap">
@@ -4074,7 +4074,7 @@ export default function App() {
         {/* MODAL: RULES & PAYOUT RATES */}
         {showRulesModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-[#121927] border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <div className="bg-[#0C241B] border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
               <button
                 onClick={() => setShowRulesModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center"
@@ -4083,7 +4083,7 @@ export default function App() {
               </button>
 
               <div className="text-center mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#F3D079] to-[#D4AF37] text-slate-950 font-black text-2xl flex items-center justify-center mx-auto mb-2 shadow-lg">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D9B98C] to-[#C9A87C] text-slate-950 font-black text-2xl flex items-center justify-center mx-auto mb-2 shadow-lg">
                   📋
                 </div>
                 <h3 className="text-lg font-extrabold text-white">Rules & Payout Rates</h3>
@@ -4091,39 +4091,39 @@ export default function App() {
               </div>
 
               <div className="space-y-3 text-xs">
-                <div className="bg-[#0F172A] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
+                <div className="bg-[#0A0F0D] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
                   <div>
                     <h4 className="font-bold text-white">Single Jodi (00-99)</h4>
                     <p className="text-[10px] text-gray-400">₹100 bet pays ₹{(gameRates.jodi * 100).toLocaleString()}</p>
                   </div>
-                  <span className="px-2.5 py-1 bg-[#00C853]/20 border border-[#00C853]/50 text-[#00C853] font-black rounded-xl">{gameRates.jodi}X</span>
+                  <span className="px-2.5 py-1 bg-[#2ECC8F]/20 border border-[#2ECC8F]/50 text-[#2ECC8F] font-black rounded-xl">{gameRates.jodi}X</span>
                 </div>
 
-                <div className="bg-[#0F172A] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
+                <div className="bg-[#0A0F0D] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
                   <div>
                     <h4 className="font-bold text-white">Crossing Matrix</h4>
                     <p className="text-[10px] text-gray-400">All combination pairs (₹100 bet pays ₹{(gameRates.crossing * 100).toLocaleString()})</p>
                   </div>
-                  <span className="px-2.5 py-1 bg-[#00C853]/20 border border-[#00C853]/50 text-[#00C853] font-black rounded-xl">{gameRates.crossing}X</span>
+                  <span className="px-2.5 py-1 bg-[#2ECC8F]/20 border border-[#2ECC8F]/50 text-[#2ECC8F] font-black rounded-xl">{gameRates.crossing}X</span>
                 </div>
 
-                <div className="bg-[#0F172A] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
+                <div className="bg-[#0A0F0D] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
                   <div>
                     <h4 className="font-bold text-white">Haruf Ander (Inside)</h4>
                     <p className="text-[10px] text-gray-400">₹100 bet pays ₹{(gameRates.haroof * 100).toLocaleString()}</p>
                   </div>
-                  <span className="px-2.5 py-1 bg-yellow-500/20 border border-yellow-500/50 text-[#F3D079] font-black rounded-xl">{gameRates.haroof}X</span>
+                  <span className="px-2.5 py-1 bg-yellow-500/20 border border-yellow-500/50 text-[#D9B98C] font-black rounded-xl">{gameRates.haroof}X</span>
                 </div>
 
-                <div className="bg-[#0F172A] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
+                <div className="bg-[#0A0F0D] p-3 rounded-2xl border border-gray-800 flex justify-between items-center">
                   <div>
                     <h4 className="font-bold text-white">Haruf Bahar (Outside)</h4>
                     <p className="text-[10px] text-gray-400">₹100 bet pays ₹{(gameRates.haroof * 100).toLocaleString()}</p>
                   </div>
-                  <span className="px-2.5 py-1 bg-yellow-500/20 border border-yellow-500/50 text-[#F3D079] font-black rounded-xl">{gameRates.haroof}X</span>
+                  <span className="px-2.5 py-1 bg-yellow-500/20 border border-yellow-500/50 text-[#D9B98C] font-black rounded-xl">{gameRates.haroof}X</span>
                 </div>
 
-                <div className="bg-[#0F172A] p-3 rounded-2xl border border-gray-800 text-[11px] space-y-1 text-gray-300">
+                <div className="bg-[#0A0F0D] p-3 rounded-2xl border border-gray-800 text-[11px] space-y-1 text-gray-300">
                   <p>⚡ <strong className="text-white">Min Deposit:</strong> ₹100</p>
                   <p>🏦 <strong className="text-white">Min Withdrawal:</strong> ₹200</p>
                   <p>🎲 <strong className="text-white">Min Bet:</strong> ₹1</p>
@@ -4132,7 +4132,7 @@ export default function App() {
 
               <button
                 onClick={() => setShowRulesModal(false)}
-                className="w-full mt-5 bg-[#00C853] hover:bg-[#00B248] text-white font-bold py-3 rounded-xl uppercase tracking-wider text-xs shadow-lg"
+                className="w-full mt-5 bg-[#2ECC8F] hover:bg-[#29B876] text-white font-bold py-3 rounded-xl uppercase tracking-wider text-xs shadow-lg"
               >
                 GOT IT ➔
               </button>
@@ -4143,7 +4143,7 @@ export default function App() {
         {/* MODAL: WALLET SCREEN (Matching Android App!) */}
         {showWalletModal && (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-[#0F172A] border border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200 text-white max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#0A0F0D] border border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200 text-white max-h-[90vh] overflow-y-auto">
               
               {/* Top Bar Header */}
               <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-800">
@@ -4174,7 +4174,7 @@ export default function App() {
               </div>
 
               {/* Main Professional Wallet Card */}
-              <div className="bg-gradient-to-b from-[#1E2638] to-[#131924] border border-[#2A364F] rounded-3xl p-6 shadow-xl mb-6 text-center">
+              <div className="bg-gradient-to-b from-[#0F2A20] to-[#13241C] border border-[#1C4433] rounded-3xl p-6 shadow-xl mb-6 text-center">
                 {/* Big Balance Display */}
                 <h2 className="text-3xl font-black font-mono tracking-tight text-white mb-1">
                   ₹ {user?.balance ? user.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
@@ -4182,18 +4182,18 @@ export default function App() {
                 <p className="text-xs font-semibold text-gray-400 mb-6">Available Balance</p>
 
                 {/* Commission & Bonus Row */}
-                <div className="flex justify-around items-center py-3 border-t border-b border-[#2A364F]/60 mb-6">
+                <div className="flex justify-around items-center py-3 border-t border-b border-[#1C4433]/60 mb-6">
                   {/* Commission */}
                   <div className="text-center">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">COMMISSION</p>
                     <p className="text-sm font-black font-mono text-white">₹ {(user?.commission_balance !== undefined ? user.commission_balance : (referralDetails?.totalCommission || 0)).toFixed(2)}</p>
                   </div>
                   {/* Vertical Divider */}
-                  <div className="w-[1px] h-8 bg-[#2A364F]" />
+                  <div className="w-[1px] h-8 bg-[#1C4433]" />
                   {/* Bonus */}
                   <div className="text-center">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">BONUS</p>
-                    <p className="text-sm font-black font-mono text-[#00C853]">₹ {(user?.bonus_balance !== undefined ? user.bonus_balance : 200).toFixed(2)}</p>
+                    <p className="text-sm font-black font-mono text-[#2ECC8F]">₹ {(user?.bonus_balance !== undefined ? user.bonus_balance : 200).toFixed(2)}</p>
                   </div>
                 </div>
 
@@ -4202,11 +4202,11 @@ export default function App() {
                   type="button"
                   onClick={handleCommissionTransfer}
                   disabled={isTransferringCommission}
-                  className="w-full bg-[#182234] hover:bg-[#1E2C42] border border-[#F5D77F]/80 text-[#F5D77F] py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider mb-3 flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
+                  className="w-full bg-[#0D1512] hover:bg-[#1E4230] border border-[#E0C9A0]/80 text-[#E0C9A0] py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider mb-3 flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   {isTransferringCommission ? (
                     <span className="flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 border-2 border-[#F5D77F] border-t-transparent rounded-full animate-spin"></span>
+                      <span className="w-3.5 h-3.5 border-2 border-[#E0C9A0] border-t-transparent rounded-full animate-spin"></span>
                       Transferring...
                     </span>
                   ) : (
@@ -4240,7 +4240,7 @@ export default function App() {
                       setShowWalletModal(false);
                       setShowDepositModal(true);
                     }}
-                    className="w-full bg-gradient-to-r from-[#4F46E5] to-[#3B82F6] hover:opacity-90 text-white font-bold py-3 px-3 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/30 transition-all"
+                    className="w-full bg-gradient-to-r from-[#C9A87C] to-[#E0C9A0] hover:opacity-90 text-white font-bold py-3 px-3 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-[#C9A87C]/40 transition-all"
                   >
                     ADD CASH
                   </button>
@@ -4264,7 +4264,7 @@ export default function App() {
 
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                   {walletTransactions.length === 0 ? (
-                    <div className="bg-[#0F172A] border border-gray-800 rounded-2xl p-4 text-center text-xs text-gray-400">
+                    <div className="bg-[#0A0F0D] border border-gray-800 rounded-2xl p-4 text-center text-xs text-gray-400">
                       No transactions recorded yet
                     </div>
                   ) : (
@@ -4273,7 +4273,7 @@ export default function App() {
                       const emoji = tx.type === 'BONUS' ? '🎁' : (tx.type === 'DEPOSIT' ? '💰' : (tx.type === 'WITHDRAW' ? '🏧' : (tx.type === 'BET' ? '🎲' : '🏆')));
                       const statusColorClass = tx.status === 'APPROVED' || tx.status === 'CREDITED' || tx.status === 'WON' ? 'bg-emerald-950 text-emerald-400' : (tx.status === 'PENDING' || tx.status === 'REFUNDED' ? 'bg-amber-950 text-amber-400' : 'bg-red-950 text-red-400');
                       return (
-                        <div key={tx.id || i} className="bg-[#0F172A] border border-gray-800 rounded-2xl p-3 flex justify-between items-center shadow-sm">
+                        <div key={tx.id || i} className="bg-[#0A0F0D] border border-gray-800 rounded-2xl p-3 flex justify-between items-center shadow-sm">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-gray-800 text-white flex items-center justify-center text-lg">
                               {emoji}
@@ -4284,7 +4284,7 @@ export default function App() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className={`text-xs font-black font-mono ${isCredit ? 'text-[#00C853]' : 'text-[#EF4444]'}`}>
+                            <p className={`text-xs font-black font-mono ${isCredit ? 'text-[#2ECC8F]' : 'text-[#EF4444]'}`}>
                               {isCredit ? '+' : '-'}₹{parseFloat(tx.amount || 0).toFixed(2)}
                             </p>
                             <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${statusColorClass}`}>{tx.status}</span>
@@ -4303,11 +4303,11 @@ export default function App() {
         {/* MODAL: ALL TRANSACTIONS */}
         {showAllTxnsModal && (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-[#121927] border border-[#F3D079]/40 rounded-3xl p-5 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
+            <div className="bg-[#0C241B] border border-[#D9B98C]/40 rounded-3xl p-5 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
               <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-800">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">📜</span>
-                  <h3 className="text-base font-black text-[#F3D079]">ALL TRANSACTIONS</h3>
+                  <h3 className="text-base font-black text-[#D9B98C]">ALL TRANSACTIONS</h3>
                 </div>
                 <button
                   onClick={() => setShowAllTxnsModal(false)}
@@ -4323,7 +4323,7 @@ export default function App() {
                   <button
                     key={tab}
                     onClick={() => setTxnFilterTab(tab)}
-                    className={`py-1.5 text-[10px] font-bold rounded-lg transition-colors ${txnFilterTab === tab ? 'bg-[#F3D079] text-black font-black' : 'bg-[#0F172A] text-gray-300 border border-gray-800'}`}
+                    className={`py-1.5 text-[10px] font-bold rounded-lg transition-colors ${txnFilterTab === tab ? 'bg-[#D9B98C] text-black font-black' : 'bg-[#0A0F0D] text-gray-300 border border-gray-800'}`}
                   >
                     {tab}
                   </button>
@@ -4344,7 +4344,7 @@ export default function App() {
                       const emoji = tx.type === 'BONUS' ? '🎁' : (tx.type === 'DEPOSIT' ? '💰' : (tx.type === 'WITHDRAW' ? '🏧' : (tx.type === 'BET' ? '🎲' : '🏆')));
                       const statusColorClass = tx.status === 'APPROVED' || tx.status === 'CREDITED' || tx.status === 'WON' ? 'bg-emerald-950 text-emerald-400' : (tx.status === 'PENDING' || tx.status === 'REFUNDED' ? 'bg-amber-950 text-amber-400' : 'bg-red-950 text-red-400');
                       return (
-                        <div key={tx.id || i} className="bg-[#0F172A] border border-gray-800 rounded-2xl p-3 flex justify-between items-center">
+                        <div key={tx.id || i} className="bg-[#0A0F0D] border border-gray-800 rounded-2xl p-3 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-gray-800 text-white flex items-center justify-center text-lg">
                               {emoji}
@@ -4355,7 +4355,7 @@ export default function App() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className={`text-xs font-black font-mono ${isCredit ? 'text-[#00C853]' : 'text-[#EF4444]'}`}>
+                            <p className={`text-xs font-black font-mono ${isCredit ? 'text-[#2ECC8F]' : 'text-[#EF4444]'}`}>
                               {isCredit ? '+' : '-'}₹{parseFloat(tx.amount || 0).toFixed(2)}
                             </p>
                             <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${statusColorClass}`}>{tx.status}</span>
@@ -4372,7 +4372,7 @@ export default function App() {
         {/* MODAL: USER PROFILE */}
         {showProfileModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-[#121927] border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <div className="bg-[#0C241B] border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
               <button
                 onClick={() => setShowProfileModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center"
@@ -4381,28 +4381,28 @@ export default function App() {
               </button>
 
               <div className="text-center mb-5">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#00C853] to-[#00897B] text-white text-3xl font-black flex items-center justify-center mx-auto mb-3 shadow-lg border-2 border-emerald-400/40">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2ECC8F] to-[#1E8A6E] text-white text-3xl font-black flex items-center justify-center mx-auto mb-3 shadow-lg border-2 border-emerald-400/40">
                   👑
                 </div>
                 <h3 className="text-lg font-black text-white">{user?.name || 'Player'}</h3>
                 <p className="text-xs text-gray-400 font-mono mt-0.5">+91 {user?.mobile || '9999999999'}</p>
-                <span className="inline-block mt-2 px-3 py-0.5 bg-emerald-950 border border-emerald-500/50 text-[#00C853] font-bold text-[10px] uppercase rounded-full">
+                <span className="inline-block mt-2 px-3 py-0.5 bg-emerald-950 border border-emerald-500/50 text-[#2ECC8F] font-bold text-[10px] uppercase rounded-full">
                   Account Active 🟢
                 </span>
               </div>
 
               <div className="space-y-3 mb-5">
-                <div className="bg-[#0F172A] p-4 rounded-2xl border border-gray-800 flex justify-between items-center">
+                <div className="bg-[#0A0F0D] p-4 rounded-2xl border border-gray-800 flex justify-between items-center">
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Wallet Balance</p>
-                    <h4 className="text-lg font-black font-mono text-[#00C853]">₹{user?.balance ? user.balance.toFixed(2) : '0.00'}</h4>
+                    <h4 className="text-lg font-black font-mono text-[#2ECC8F]">₹{user?.balance ? user.balance.toFixed(2) : '0.00'}</h4>
                   </div>
                   <button
                     onClick={() => {
                       setShowProfileModal(false);
                       setShowDepositModal(true);
                     }}
-                    className="px-3 py-2 bg-[#00C853] text-white font-bold text-xs rounded-xl hover:bg-[#00B248] shadow-md"
+                    className="px-3 py-2 bg-[#2ECC8F] text-white font-bold text-xs rounded-xl hover:bg-[#29B876] shadow-md"
                   >
                     + Add Cash
                   </button>
@@ -4436,7 +4436,7 @@ export default function App() {
         {/* MODAL: WITHDRAW CASH */}
         {showWithdrawModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-[#121927] border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <div className="bg-[#0C241B] border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
               <button
                 onClick={() => setShowWithdrawModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center"
@@ -4445,7 +4445,7 @@ export default function App() {
               </button>
 
               <div className="text-center mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#F3D079] to-[#D4AF37] text-slate-950 font-black text-2xl flex items-center justify-center mx-auto mb-2 shadow-lg">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D9B98C] to-[#C9A87C] text-slate-950 font-black text-2xl flex items-center justify-center mx-auto mb-2 shadow-lg">
                   🏦
                 </div>
                 <h3 className="text-lg font-extrabold text-white">Withdraw Cash</h3>
@@ -4453,12 +4453,12 @@ export default function App() {
               </div>
 
               {/* Wallet Balance Info */}
-              <div className="bg-[#0F172A] p-3.5 rounded-2xl border border-gray-800 flex justify-between items-center mb-4">
+              <div className="bg-[#0A0F0D] p-3.5 rounded-2xl border border-gray-800 flex justify-between items-center mb-4">
                 <div>
                   <p className="text-[10px] text-gray-400 uppercase font-bold">Withdrawable Balance (Winnings)</p>
-                  <h4 className="text-base font-black font-mono text-[#00C853]">₹{user?.winning_balance !== undefined ? user.winning_balance.toFixed(2) : (user?.balance ? user.balance.toFixed(2) : '0.00')}</h4>
+                  <h4 className="text-base font-black font-mono text-[#2ECC8F]">₹{user?.winning_balance !== undefined ? user.winning_balance.toFixed(2) : (user?.balance ? user.balance.toFixed(2) : '0.00')}</h4>
                 </div>
-                <span className="text-[10px] bg-yellow-500/10 border border-yellow-500/30 text-[#F3D079] px-2.5 py-1 rounded-full font-bold">
+                <span className="text-[10px] bg-yellow-500/10 border border-yellow-500/30 text-[#D9B98C] px-2.5 py-1 rounded-full font-bold">
                   Min: ₹200
                 </span>
               </div>
@@ -4471,18 +4471,18 @@ export default function App() {
 
               <form onSubmit={handleWithdrawSubmit} className="space-y-4 text-xs">
                 {/* Method Switcher Pills */}
-                <div className="grid grid-cols-2 gap-2 bg-[#0F172A] p-1 rounded-xl border border-gray-800">
+                <div className="grid grid-cols-2 gap-2 bg-[#0A0F0D] p-1 rounded-xl border border-gray-800">
                   <button
                     type="button"
                     onClick={() => setWithdrawMethod('UPI')}
-                    className={`py-2 rounded-lg font-bold transition-all text-center ${withdrawMethod === 'UPI' ? 'bg-[#00C853] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                    className={`py-2 rounded-lg font-bold transition-all text-center ${withdrawMethod === 'UPI' ? 'bg-[#2ECC8F] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
                   >
                     ⚡ UPI ID
                   </button>
                   <button
                     type="button"
                     onClick={() => setWithdrawMethod('Bank')}
-                    className={`py-2 rounded-lg font-bold transition-all text-center ${withdrawMethod === 'Bank' ? 'bg-[#00C853] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                    className={`py-2 rounded-lg font-bold transition-all text-center ${withdrawMethod === 'Bank' ? 'bg-[#2ECC8F] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
                   >
                     🏦 Bank Transfer
                   </button>
@@ -4497,7 +4497,7 @@ export default function App() {
                     placeholder="Enter amount (e.g. 200)"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#00C853]"
+                    className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
                   />
                   <div className="flex gap-2 mt-2">
                     {['200', '500', '1000', '2000', '5000'].map((amt) => (
@@ -4521,7 +4521,7 @@ export default function App() {
                     placeholder="Full name as per Bank / UPI"
                     value={withdrawHolderName}
                     onChange={(e) => setWithdrawHolderName(e.target.value)}
-                    className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#00C853]"
+                    className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#2ECC8F]"
                   />
                 </div>
 
@@ -4534,7 +4534,7 @@ export default function App() {
                       placeholder="e.g. 9999999999@ybl / name@paytm"
                       value={withdrawUpi}
                       onChange={(e) => setWithdrawUpi(e.target.value)}
-                      className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[#00C853]"
+                      className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
                     />
                   </div>
                 ) : (
@@ -4546,7 +4546,7 @@ export default function App() {
                         placeholder="Enter 9-18 digit account number"
                         value={withdrawBankAcc}
                         onChange={(e) => setWithdrawBankAcc(e.target.value)}
-                        className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[#00C853]"
+                        className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
                       />
                     </div>
                     <div>
@@ -4556,7 +4556,7 @@ export default function App() {
                         placeholder="e.g. SBIN0001234"
                         value={withdrawBankIfsc}
                         onChange={(e) => setWithdrawBankIfsc(e.target.value.toUpperCase())}
-                        className="w-full bg-[#0F172A] border border-gray-700 rounded-xl p-3 text-xs text-white font-mono uppercase focus:outline-none focus:border-[#00C853]"
+                        className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-xs text-white font-mono uppercase focus:outline-none focus:border-[#2ECC8F]"
                       />
                     </div>
                   </>
@@ -4565,7 +4565,7 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isWithdrawSubmitting}
-                  className="w-full bg-[#00C853] hover:bg-[#00B248] disabled:bg-gray-700 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg transition-all"
+                  className="w-full bg-[#2ECC8F] hover:bg-[#29B876] disabled:bg-gray-700 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg transition-all"
                 >
                   {isWithdrawSubmitting ? 'PROCESSING...' : 'REQUEST WITHDRAWAL ➔'}
                 </button>
@@ -4578,19 +4578,19 @@ export default function App() {
         {/* MODAL 4: REFERRAL PAGE (DARK LUXURY MATKA THEME)         */}
         {/* ========================================================= */}
         {showReferralModal && (
-          <div className="fixed inset-0 bg-[#0F172A] z-50 overflow-y-auto flex flex-col justify-between">
+          <div className="fixed inset-0 bg-[#0A0F0D] z-50 overflow-y-auto flex flex-col justify-between">
             {/* Top Dark Header */}
-            <div className="bg-[#1E293B] px-4 py-3 border-b border-[#334155] flex justify-between items-center sticky top-0 z-30 shadow-md">
+            <div className="bg-[#123A2C] px-4 py-3 border-b border-[#1E5C46] flex justify-between items-center sticky top-0 z-30 shadow-md">
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setShowReferralModal(false)}
-                  className="text-white text-2xl font-bold hover:text-[#F3D079]"
+                  className="text-white text-2xl font-bold hover:text-[#D9B98C]"
                 >
                   ✕
                 </button>
                 <div>
-                  <h1 className="text-lg font-black text-[#F3D079] tracking-wide leading-tight">Referral</h1>
-                  <p className="text-[10px] font-semibold text-[#94A3B8]">Play Smart • Play Safe • Win Big</p>
+                  <h1 className="text-lg font-black text-[#D9B98C] tracking-wide leading-tight">Referral</h1>
+                  <p className="text-[10px] font-semibold text-[#8FA89B]">Play Smart • Play Safe • Win Big</p>
                 </div>
               </div>
 
@@ -4600,11 +4600,11 @@ export default function App() {
                   setShowReferralModal(false);
                   setShowDepositModal(true);
                 }}
-                className="bg-[#00C853] hover:bg-[#00B248] text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-mono font-black shadow-md transition-all"
+                className="bg-[#2ECC8F] hover:bg-[#29B876] text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-mono font-black shadow-md transition-all"
               >
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                 <span>₹{(user?.balance || 3520).toFixed(2)}</span>
-                <span className="w-5 h-5 rounded-full bg-white text-[#00C853] flex items-center justify-center font-bold text-sm">+</span>
+                <span className="w-5 h-5 rounded-full bg-white text-[#2ECC8F] flex items-center justify-center font-bold text-sm">+</span>
               </button>
             </div>
 
@@ -4621,8 +4621,8 @@ export default function App() {
                   }}
                   className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border ${
                     refFilterType === 'all'
-                      ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                      : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                      ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                      : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                   }`}
                 >
                   All Time
@@ -4638,8 +4638,8 @@ export default function App() {
                   }}
                   className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border ${
                     refFilterType === 'today'
-                      ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                      : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                      ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                      : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                   }`}
                 >
                   Today
@@ -4657,8 +4657,8 @@ export default function App() {
                   }}
                   className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border ${
                     refFilterType === 'yesterday'
-                      ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                      : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                      ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                      : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                   }`}
                 >
                   Yesterday
@@ -4667,8 +4667,8 @@ export default function App() {
                 <label
                   className={`py-2 px-1 text-xs rounded-xl font-bold transition-all border flex items-center justify-center gap-1 cursor-pointer ${
                     refFilterType === 'custom'
-                      ? 'bg-[#2A374A] border-[#F3D079] text-[#F3D079]'
-                      : 'bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:text-white'
+                      ? 'bg-[#1A3F30] border-[#D9B98C] text-[#D9B98C]'
+                      : 'bg-[#123A2C] border-[#1E5C46] text-[#8FA89B] hover:text-white'
                   }`}
                 >
                   <span>📅</span>
@@ -4692,8 +4692,8 @@ export default function App() {
               </div>
 
               {/* CARD 1: TOTAL COMMISSION */}
-              <div className="bg-[#1E293B] rounded-2xl shadow-lg border border-[#334155] overflow-hidden">
-                <div className="bg-[#162238] px-4 py-2.5 flex justify-between items-center text-white">
+              <div className="bg-[#123A2C] rounded-2xl shadow-lg border border-[#1E5C46] overflow-hidden">
+                <div className="bg-[#0A1712] px-4 py-2.5 flex justify-between items-center text-white">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">🎟️</span>
                     <span className="text-xs font-black tracking-wider uppercase">
@@ -4708,9 +4708,9 @@ export default function App() {
                   </button>
                 </div>
                 <div className="p-4 space-y-3">
-                  <div className="bg-[#0F172A] border-2 border-[#F3D079] rounded-2xl py-4 text-center">
-                    <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-widest mb-1">Commission Wallet</p>
-                    <span className="text-2xl font-mono font-black text-[#F3D079]">
+                  <div className="bg-[#0A0F0D] border-2 border-[#D9B98C] rounded-2xl py-4 text-center">
+                    <p className="text-[10px] text-[#8FA89B] font-bold uppercase tracking-widest mb-1">Commission Wallet</p>
+                    <span className="text-2xl font-mono font-black text-[#D9B98C]">
                       ₹{(user?.commission_balance !== undefined ? user.commission_balance : (referralDetails.totalCommission || 0)).toFixed(2)}/-
                     </span>
                   </div>
@@ -4718,7 +4718,7 @@ export default function App() {
                   <button
                     onClick={handleCommissionTransfer}
                     disabled={isTransferringCommission || (user?.commission_balance !== undefined ? user.commission_balance : (referralDetails.totalCommission || 0)) <= 0}
-                    className="w-full bg-gradient-to-r from-[#F3D079] to-[#F59E0B] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black py-3 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-[#D9B98C] to-[#C9A87C] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black py-3 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-all flex items-center justify-center gap-2"
                   >
                     {isTransferringCommission ? (
                       <><span className="animate-spin">⏳</span> Transferring...</>
@@ -4736,8 +4736,8 @@ export default function App() {
 
 
               {/* CARD 2: YOUR REFERRAL CODE */}
-              <div className="bg-[#1E293B] rounded-2xl shadow-lg border border-[#334155] overflow-hidden">
-                <div className="bg-[#00873E] px-4 py-2.5 flex items-center gap-2 text-white">
+              <div className="bg-[#123A2C] rounded-2xl shadow-lg border border-[#1E5C46] overflow-hidden">
+                <div className="bg-[#1C7A45] px-4 py-2.5 flex items-center gap-2 text-white">
                   <span className="text-sm">🎁</span>
                   <span className="text-xs font-black tracking-wider uppercase">YOUR REFERRAL CODE</span>
                 </div>
@@ -4749,8 +4749,8 @@ export default function App() {
 
                     return (
                       <div className="space-y-4">
-                        <div className="bg-[#0F172A] border-2 border-[#F3D079] rounded-2xl py-3.5 px-3">
-                          <div className="text-xl font-mono font-black text-[#F3D079] tracking-[0.2em] select-all whitespace-nowrap overflow-x-auto">
+                        <div className="bg-[#0A0F0D] border-2 border-[#D9B98C] rounded-2xl py-3.5 px-3">
+                          <div className="text-xl font-mono font-black text-[#D9B98C] tracking-[0.2em] select-all whitespace-nowrap overflow-x-auto">
                             {userRefCode}
                           </div>
                         </div>
@@ -4763,7 +4763,7 @@ export default function App() {
                               setCopiedToast(true);
                               setTimeout(() => setCopiedToast(false), 2500);
                             }}
-                            className="bg-[#00873E] hover:bg-[#007033] text-white font-bold py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
+                            className="bg-[#1C7A45] hover:bg-[#17662E] text-white font-bold py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
                           >
                             <span>📋</span>
                             <span>{copiedToast ? 'COPIED!' : 'Copy Code'}</span>
@@ -4773,7 +4773,7 @@ export default function App() {
                             href={whatsappUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="bg-[#F59E0B] hover:bg-[#D97706] text-[#0F172A] font-black py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
+                            className="bg-[#C9A87C] hover:bg-[#B98F57] text-[#0A0F0D] font-black py-2.5 px-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wider shadow-sm transition-all"
                           >
                             <span>🔀</span>
                             <span>Share</span>
@@ -4781,18 +4781,18 @@ export default function App() {
                         </div>
 
                         {/* Step Process Indicator */}
-                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[#334155]">
+                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[#1E5C46]">
                           <div className="flex flex-col items-center">
-                            <div className="w-7 h-7 rounded-full bg-[#0F172A] border border-[#F3D079] flex items-center justify-center font-black text-xs text-[#F3D079] mb-1">1</div>
-                            <span className="text-[10px] font-medium text-[#94A3B8]">Share your code</span>
+                            <div className="w-7 h-7 rounded-full bg-[#0A0F0D] border border-[#D9B98C] flex items-center justify-center font-black text-xs text-[#D9B98C] mb-1">1</div>
+                            <span className="text-[10px] font-medium text-[#8FA89B]">Share your code</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="w-7 h-7 rounded-full bg-[#0F172A] border border-[#F3D079] flex items-center justify-center font-black text-xs text-[#F3D079] mb-1">2</div>
-                            <span className="text-[10px] font-medium text-[#94A3B8]">They sign up</span>
+                            <div className="w-7 h-7 rounded-full bg-[#0A0F0D] border border-[#D9B98C] flex items-center justify-center font-black text-xs text-[#D9B98C] mb-1">2</div>
+                            <span className="text-[10px] font-medium text-[#8FA89B]">They sign up</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="w-7 h-7 rounded-full bg-[#0F172A] border border-[#F3D079] flex items-center justify-center font-black text-xs text-[#F3D079] mb-1">3</div>
-                            <span className="text-[10px] font-medium text-[#94A3B8]">You earn</span>
+                            <div className="w-7 h-7 rounded-full bg-[#0A0F0D] border border-[#D9B98C] flex items-center justify-center font-black text-xs text-[#D9B98C] mb-1">3</div>
+                            <span className="text-[10px] font-medium text-[#8FA89B]">You earn</span>
                           </div>
                         </div>
                       </div>
@@ -4802,8 +4802,8 @@ export default function App() {
               </div>
 
               {/* CARD 3: TOTAL REFERRALS */}
-              <div className="bg-[#1E293B] rounded-2xl shadow-lg border border-[#334155] overflow-hidden">
-                <div className="bg-[#162238] px-4 py-2.5 flex justify-between items-center text-white">
+              <div className="bg-[#123A2C] rounded-2xl shadow-lg border border-[#1E5C46] overflow-hidden">
+                <div className="bg-[#0A1712] px-4 py-2.5 flex justify-between items-center text-white">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">👥</span>
                     <span className="text-xs font-black tracking-wider uppercase">TOTAL REFERRALS</span>
@@ -4811,11 +4811,11 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => fetchWebsiteReferralDetails(refFilterDate)}
-                      className="bg-[#0F172A] border border-[#334155] text-xs text-[#00C853] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 hover:bg-[#1E293B] transition-all"
+                      className="bg-[#0A0F0D] border border-[#1E5C46] text-xs text-[#2ECC8F] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 hover:bg-[#123A2C] transition-all"
                     >
                       <span>🔄</span> Refresh
                     </button>
-                    <div className="bg-[#0F172A] border border-[#F3D079] text-[#F3D079] px-2.5 py-0.5 rounded-full text-xs font-black flex items-center gap-1">
+                    <div className="bg-[#0A0F0D] border border-[#D9B98C] text-[#D9B98C] px-2.5 py-0.5 rounded-full text-xs font-black flex items-center gap-1">
                       <span>👤</span>
                       <span>{referralDetails.referralsCount || 0}</span>
                     </div>
@@ -4826,22 +4826,22 @@ export default function App() {
                   {referralDetails.referredUsers.length === 0 ? (
                     <div className="py-4">
                       <div className="text-4xl mb-2">👥</div>
-                      <p className="text-sm font-bold text-[#94A3B8]">No referrals yet</p>
-                      <p className="text-[11px] text-[#64748B] mt-1">Share your code above to start earning lifetime bet commissions!</p>
+                      <p className="text-sm font-bold text-[#8FA89B]">No referrals yet</p>
+                      <p className="text-[11px] text-[#7D9186] mt-1">Share your code above to start earning lifetime bet commissions!</p>
                     </div>
                   ) : (
                     <div className="text-left space-y-2.5">
                       {referralDetails.referredUsers.map((ref, idx) => (
-                        <div key={idx} className="p-3.5 bg-[#0F172A] rounded-xl border border-[#334155] flex justify-between items-center text-xs">
+                        <div key={idx} className="p-3.5 bg-[#0A0F0D] rounded-xl border border-[#1E5C46] flex justify-between items-center text-xs">
                           <div>
                             <p className="font-bold text-white text-sm">{ref.name}</p>
-                            <p className="text-[#94A3B8] font-mono text-[11px] mt-0.5">{ref.mobile} • {ref.date}</p>
-                            <p className="text-[11px] text-[#F3D079] font-semibold mt-1">
+                            <p className="text-[#8FA89B] font-mono text-[11px] mt-0.5">{ref.mobile} • {ref.date}</p>
+                            <p className="text-[11px] text-[#D9B98C] font-semibold mt-1">
                               Bet Commission: ₹{ref.betCommission.toFixed(2)}
                             </p>
                           </div>
                           <div className="text-right">
-                            <span className="font-mono font-black text-[#00C853] text-base">+₹{ref.totalEarned.toFixed(2)}</span>
+                            <span className="font-mono font-black text-[#2ECC8F] text-base">+₹{ref.totalEarned.toFixed(2)}</span>
                           </div>
                         </div>
                       ))}
@@ -4856,7 +4856,7 @@ export default function App() {
         {/* Company Details Modal */}
         {selectedDetailGame && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-gradient-to-b from-[#1E293B] to-[#0F172A] border-2 border-[#D4AF37]/60 rounded-3xl p-6 shadow-2xl relative text-center text-white">
+            <div className="w-full max-w-sm bg-gradient-to-b from-[#123A2C] to-[#0A0F0D] border-2 border-[#C9A87C]/60 rounded-3xl p-6 shadow-2xl relative text-center text-white">
               {/* Header Bar */}
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-3">
                 <span className="text-xs font-bold text-slate-400">Company details</span>
@@ -4869,13 +4869,13 @@ export default function App() {
               </div>
 
               {/* Game Name */}
-              <h3 className="text-2xl font-black text-[#FFE485] tracking-wide mb-3">
+              <h3 className="text-2xl font-black text-[#F0DDB8] tracking-wide mb-3">
                 {selectedDetailGame}
               </h3>
 
               {/* Hexagon Logo */}
               <div className="w-24 h-24 mx-auto relative flex items-center justify-center my-2">
-                <svg viewBox="0 0 100 100" className="w-full h-full text-yellow-500 fill-[#0F172A] stroke-[#D4AF37] stroke-[4]">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-yellow-500 fill-[#0A0F0D] stroke-[#C9A87C] stroke-[4]">
                   <polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" />
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-4xl">
@@ -4891,7 +4891,7 @@ export default function App() {
                 const resT = sched?.result || '12:40 PM IST';
 
                 return (
-                  <div className="bg-[#0F172A] border border-slate-700/80 rounded-2xl p-4 text-xs space-y-3 text-left my-4">
+                  <div className="bg-[#0A0F0D] border border-slate-700/80 rounded-2xl p-4 text-xs space-y-3 text-left my-4">
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-slate-400">Game Open Time :</span>
                       <span className="font-extrabold text-white font-mono">{openT}</span>
