@@ -2898,8 +2898,14 @@ const adminLogin = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Username and password are required' });
   }
 
-  // Accept nedstarkontop@gmail.com / Y2004S143lovE
-  if (username === 'nedstarkontop@gmail.com' && password === 'Y2004S143lovE') {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return res.status(500).json({ success: false, message: 'Admin credentials are not configured on the server.' });
+  }
+
+  if (username === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     return res.json({
       success: true,
       requireOtp: true,
@@ -2916,8 +2922,12 @@ const verifyAdminOtp = async (req, res) => {
     return res.status(400).json({ success: false, message: 'OTP is required' });
   }
 
-  // Verify via MSG91
-  const ADMIN_PHONE = '7206561420';
+  const ADMIN_PHONE = process.env.ADMIN_PHONE;
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  if (!ADMIN_PHONE || !ADMIN_EMAIL) {
+    return res.status(500).json({ success: false, message: 'Admin credentials are not configured on the server.' });
+  }
+
   try {
     const { verifyOtp } = require('../utils/msg91');
     const result = await verifyOtp(ADMIN_PHONE, otp);
@@ -2928,9 +2938,9 @@ const verifyAdminOtp = async (req, res) => {
         admin: {
           username: 'Admin',
           name: 'Admin',
-          email: 'nedstarkontop@gmail.com',
+          email: ADMIN_EMAIL,
           role: 'Super Admin',
-          mobile: '+917206561420'
+          mobile: '+91' + ADMIN_PHONE
         }
       });
     }
