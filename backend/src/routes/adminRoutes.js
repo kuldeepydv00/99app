@@ -56,7 +56,8 @@ const {
   unblockUser,
   updateUser,
   getLivePlayers,
-  updateLivePlayers
+  updateLivePlayers,
+  updateAutoPlayerConfig
 } = require('../controllers/adminController');
 
 router.get('/notifications', getNotifications);
@@ -133,5 +134,6 @@ router.post('/withdrawals/:id/reject', rejectWithdrawal);
 // Live Players count (User Change feature)
 router.get('/live-players', getLivePlayers);
 router.post('/live-players', updateLivePlayers);
+router.post('/live-players/auto-config', updateAutoPlayerConfig);
 
 module.exports = router;

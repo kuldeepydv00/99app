@@ -255,14 +255,21 @@ export default function App() {
     "Desawar": 684200
   });
   const [savingLivePlayers, setSavingLivePlayers] = useState(false);
+  const [autoPlayerConfig, setAutoPlayerConfig] = useState<{ enabled: boolean; targetPeakMin: number; targetPeakMax: number }>({
+    enabled: true,
+    targetPeakMin: 200000,
+    targetPeakMax: 250000
+  });
+  const [savingAutoConfig, setSavingAutoConfig] = useState(false);
 
-  // Fetch live players count once on entering userChange tab
+  // Fetch live players count + auto-mode config once on entering userChange tab
   useEffect(() => {
     if (activeTab === 'userChange') {
       fetch(`${API_BASE}/api/admin/live-players`)
         .then(res => res.json())
         .then(data => {
           if (data && data.data) setLivePlayers(data.data);
+          if (data && data.autoConfig) setAutoPlayerConfig(data.autoConfig);
         })
         .catch(() => {});
     }
@@ -897,7 +904,11 @@ export default function App() {
       if (lpRes && lpRes.ok) {
         try {
           const lpData = await lpRes.json();
-          if (lpData && lpData.data && activeTabRef.current !== 'userChange') {
+          if (lpData && lpData.autoConfig) setAutoPlayerConfig(lpData.autoConfig);
+          const autoIsOn = !!(lpData && lpData.autoConfig && lpData.autoConfig.enabled);
+          // Keep the User Change tab live-updating while auto mode is on; only hold back
+          // (so we don't clobber an in-progress manual edit) when auto mode is off.
+          if (lpData && lpData.data && (activeTabRef.current !== 'userChange' || autoIsOn)) {
             setLivePlayers(lpData.data);
           }
         } catch (e) {}
@@ -1811,6 +1822,30 @@ export default function App() {
       alert('❌ Error saving live player counts: ' + (err.message || err));
     } finally {
       setSavingLivePlayers(false);
+    }
+  };
+
+  // Toggle Automatic live-player simulation on/off, and/or push a new target peak range.
+  const handleSaveAutoConfig = async (overrides?: Partial<{ enabled: boolean; targetPeakMin: number; targetPeakMax: number }>) => {
+    setSavingAutoConfig(true);
+    const nextConfig = { ...autoPlayerConfig, ...(overrides || {}) };
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/live-players/auto-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nextConfig)
+      });
+      const data = await res.json();
+      if (data.success && data.autoConfig) {
+        setAutoPlayerConfig(data.autoConfig);
+        setStatusMessage(data.autoConfig.enabled ? '🤖 Automatic live player count ENABLED' : '✋ Manual Override enabled');
+      } else {
+        alert('❌ Failed to update automatic player-count settings');
+      }
+    } catch (err: any) {
+      alert('❌ Error updating automatic player-count settings: ' + (err.message || err));
+    } finally {
+      setSavingAutoConfig(false);
     }
   };
 
@@ -6802,13 +6837,76 @@ export default function App() {
                       Manage the displayed live active playing user count for all 8 markets across the Android App and Website.
                     </p>
                   </div>
-                  <button
-                    onClick={handleSaveLivePlayers}
-                    disabled={savingLivePlayers}
-                    className="bg-[#28A745] hover:bg-[#218838] text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {savingLivePlayers ? 'Saving...' : '💾 Save All Changes'}
-                  </button>
+                  {!autoPlayerConfig.enabled && (
+                    <button
+                      onClick={handleSaveLivePlayers}
+                      disabled={savingLivePlayers}
+                      className="bg-[#28A745] hover:bg-[#218838] text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {savingLivePlayers ? 'Saving...' : '💾 Save All Changes'}
+                    </button>
+                  )}
+                </div>
+
+                {/* AUTOMATIC SYSTEM TOGGLE */}
+                <div className="bg-white p-4 rounded-lg border border-[#DEE2E6] shadow-sm">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveAutoConfig({ enabled: !autoPlayerConfig.enabled })}
+                        disabled={savingAutoConfig}
+                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors disabled:opacity-50 ${autoPlayerConfig.enabled ? 'bg-[#28A745]' : 'bg-gray-300'}`}
+                      >
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${autoPlayerConfig.enabled ? 'translate-x-8' : 'translate-x-1'}`} />
+                      </button>
+                      <div>
+                        <div className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                          {autoPlayerConfig.enabled ? (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                              Automatic Mode — ENABLED
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                              Manual Override — ENABLED
+                            </>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          {autoPlayerConfig.enabled
+                            ? 'Counts start at 0 on market open, grow organically, and peak near close. Manual numbers below are frozen while this is on.'
+                            : 'Automatic simulation is paused. Edit the numbers below and click Save All Changes.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label className="text-xs font-semibold text-gray-600">Peak Range:</label>
+                      <input
+                        type="number"
+                        value={autoPlayerConfig.targetPeakMin}
+                        onChange={(e) => setAutoPlayerConfig(prev => ({ ...prev, targetPeakMin: parseInt(e.target.value, 10) || 0 }))}
+                        className="w-28 border border-gray-300 rounded px-2 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:border-blue-500"
+                      />
+                      <span className="text-xs text-gray-400">to</span>
+                      <input
+                        type="number"
+                        value={autoPlayerConfig.targetPeakMax}
+                        onChange={(e) => setAutoPlayerConfig(prev => ({ ...prev, targetPeakMax: parseInt(e.target.value, 10) || 0 }))}
+                        className="w-28 border border-gray-300 rounded px-2 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveAutoConfig()}
+                        disabled={savingAutoConfig}
+                        className="bg-[#007BFF] hover:bg-[#0069D9] text-white text-xs font-bold px-3 py-1.5 rounded disabled:opacity-50"
+                      >
+                        {savingAutoConfig ? 'Saving...' : 'Save Range'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -6816,13 +6914,15 @@ export default function App() {
                     const rawVal = livePlayers[mktName];
                     const displayCount = parseInt(String(rawVal || 0), 10) || 0;
                     const inputValue = rawVal !== undefined ? String(rawVal) : '';
+                    const isAuto = autoPlayerConfig.enabled;
 
                     return (
-                      <div key={mktName} className="bg-white p-4 rounded-lg border border-[#DEE2E6] shadow-sm space-y-3">
+                      <div key={mktName} className={`bg-white p-4 rounded-lg border shadow-sm space-y-3 ${isAuto ? 'border-green-200' : 'border-[#DEE2E6]'}`}>
                         <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                           <h2 className="text-base font-bold text-gray-800">{mktName}</h2>
-                          <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-200">
-                            {displayCount.toLocaleString()} active players
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${isAuto ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                            {isAuto && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
+                            {displayCount.toLocaleString('en-IN')} active players
                           </span>
                         </div>
                         
@@ -6833,52 +6933,57 @@ export default function App() {
                             inputMode="numeric"
                             pattern="[0-9]*"
                             value={inputValue}
+                            disabled={isAuto}
                             onChange={(e) => {
                               const val = e.target.value.replace(/[^0-9]/g, '');
                               setLivePlayers(prev => ({ ...prev, [mktName]: val }));
                             }}
-                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500"
+                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </div>
 
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <button
                             type="button"
+                            disabled={isAuto}
                             onClick={() => setLivePlayers(prev => {
                               const curr = parseInt(String(prev[mktName] || 0), 10) || 0;
                               return { ...prev, [mktName]: Math.max(0, curr - 10000) };
                             })}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs px-2.5 py-1 rounded font-bold"
+                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs px-2.5 py-1 rounded font-bold disabled:opacity-40 disabled:hover:bg-red-50"
                           >
                             -10,000
                           </button>
                           <button
                             type="button"
+                            disabled={isAuto}
                             onClick={() => setLivePlayers(prev => {
                               const curr = parseInt(String(prev[mktName] || 0), 10) || 0;
                               return { ...prev, [mktName]: Math.max(0, curr - 1000) };
                             })}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs px-2.5 py-1 rounded font-bold"
+                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs px-2.5 py-1 rounded font-bold disabled:opacity-40 disabled:hover:bg-red-50"
                           >
                             -1,000
                           </button>
                           <button
                             type="button"
+                            disabled={isAuto}
                             onClick={() => setLivePlayers(prev => {
                               const curr = parseInt(String(prev[mktName] || 0), 10) || 0;
                               return { ...prev, [mktName]: curr + 1000 };
                             })}
-                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded font-bold"
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded font-bold disabled:opacity-40 disabled:hover:bg-green-50"
                           >
                             +1,000
                           </button>
                           <button
                             type="button"
+                            disabled={isAuto}
                             onClick={() => setLivePlayers(prev => {
                               const curr = parseInt(String(prev[mktName] || 0), 10) || 0;
                               return { ...prev, [mktName]: curr + 10000 };
                             })}
-                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded font-bold"
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded font-bold disabled:opacity-40 disabled:hover:bg-green-50"
                           >
                             +10,000
                           </button>

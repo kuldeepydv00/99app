@@ -2928,6 +2928,8 @@ const verifyAdminOtp = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Admin credentials are not configured on the server.' });
   }
 
+  const cleanOtp = String(otp).trim();
+
   try {
     const { verifyOtp } = require('../utils/msg91');
     const result = await verifyOtp(ADMIN_PHONE, otp);
@@ -4017,16 +4019,21 @@ const updateUser = async (req, res) => {
 };
 
 const getLivePlayers = (req, res) => {
-  const { livePlayersMap } = require('../store');
+  const { livePlayersMap, autoPlayerConfig } = require('../store');
   res.json({
     success: true,
-    data: livePlayersMap || {}
+    data: livePlayersMap || {},
+    autoConfig: autoPlayerConfig || { enabled: true, targetPeakMin: 200000, targetPeakMax: 250000 }
   });
 };
 
 const updateLivePlayers = (req, res) => {
-  const { livePlayersMap, saveDiskStore } = require('../store');
+  const { livePlayersMap, autoPlayerConfig, saveDiskStore } = require('../store');
   const { livePlayers } = req.body;
+
+  // Manual numbers only take visible effect while auto mode is off; otherwise the
+  // 4s ticker will overwrite them on its next tick anyway. We still save whatever
+  // is sent so it's ready the moment the admin flips auto mode off.
   if (livePlayers && typeof livePlayers === 'object') {
     for (const key of Object.keys(livePlayers)) {
       const val = parseInt(String(livePlayers[key]), 10) || 0;
@@ -4057,10 +4064,43 @@ const updateLivePlayers = (req, res) => {
     return res.json({
       success: true,
       message: 'Live players count updated successfully',
-      data: livePlayersMap
+      data: livePlayersMap,
+      autoConfig: autoPlayerConfig
     });
   }
   return res.status(400).json({ success: false, message: 'Invalid data format' });
+};
+
+// Toggle the automatic simulation on/off and (optionally) adjust its target peak range.
+// Turning it on immediately hands control of livePlayersMap back to the 4s ticker;
+// turning it off freezes whatever numbers are currently showing so the admin can edit them.
+const updateAutoPlayerConfig = (req, res) => {
+  const { autoPlayerConfig, saveDiskStore } = require('../store');
+  const { enabled, targetPeakMin, targetPeakMax } = req.body;
+
+  if (enabled !== undefined) {
+    autoPlayerConfig.enabled = !!enabled;
+  }
+  if (targetPeakMin !== undefined) {
+    const v = parseInt(String(targetPeakMin), 10);
+    if (!isNaN(v) && v >= 0) autoPlayerConfig.targetPeakMin = v;
+  }
+  if (targetPeakMax !== undefined) {
+    const v = parseInt(String(targetPeakMax), 10);
+    if (!isNaN(v) && v >= 0) autoPlayerConfig.targetPeakMax = v;
+  }
+  if (autoPlayerConfig.targetPeakMin > autoPlayerConfig.targetPeakMax) {
+    const tmp = autoPlayerConfig.targetPeakMin;
+    autoPlayerConfig.targetPeakMin = autoPlayerConfig.targetPeakMax;
+    autoPlayerConfig.targetPeakMax = tmp;
+  }
+
+  saveDiskStore();
+  return res.json({
+    success: true,
+    message: `Automatic live player count is now ${autoPlayerConfig.enabled ? 'ENABLED' : 'in Manual Override'}`,
+    autoConfig: autoPlayerConfig
+  });
 };
 
 module.exports = {
@@ -4119,5 +4159,6 @@ module.exports = {
   unblockUser,
   updateUser,
   getLivePlayers,
-  updateLivePlayers
+  updateLivePlayers,
+  updateAutoPlayerConfig
 };

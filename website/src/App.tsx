@@ -2350,7 +2350,7 @@ export default function App() {
                                 <div>
                                   <h4 className="text-base font-bold text-white">{gameName}</h4>
                                   <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                                    {playerCount.toLocaleString()} people are playing
+                                    {playerCount.toLocaleString('en-IN')} people are playing
                                   </p>
                                   <div className="mt-1.5 flex items-center gap-2">
                                     {isUrgent ? (

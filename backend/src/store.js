@@ -230,6 +230,124 @@ let livePlayersMap = {
   "Disawer": 684200
 };
 
+// ============================================================
+// AUTOMATIC LIVE PLAYER COUNT SIMULATION
+// ------------------------------------------------------------
+// When enabled, livePlayersMap is driven by a background ticker
+// instead of the admin's manual numbers. Each open market's count
+// starts at 0 the moment it opens, follows a smooth S-curve target
+// toward a randomized peak (200,000 - 250,000 by default) timed to
+// land right before that market's close, and gets a small organic
+// +5/+6 (rarely -1/-2) wobble layered on top every tick so the
+// number never looks robotic/round. When a market closes, its count
+// drops back to 0 and a fresh random peak is picked for its next
+// open. Turning autoPlayerConfig.enabled off freezes the ticker so
+// the admin's manual numbers (via updateLivePlayers) take over.
+// ============================================================
+let autoPlayerConfig = {
+  enabled: true,
+  targetPeakMin: 200000,
+  targetPeakMax: 250000,
+  tickIntervalMs: 4000
+};
+
+// Runtime-only per-market state (not persisted; regenerates naturally on restart/next open)
+let livePlayerAutoState = {};
+
+// Smootherstep S-curve: slow start, slow finish (plateau near peak), fast growth through the middle.
+function smootherstep(p) {
+  if (p <= 0) return 0;
+  if (p >= 1) return 1;
+  return p * p * p * (p * (p * 6 - 15) + 10);
+}
+
+// Given a schedule ({openHour, openMinute, closeHour, closeMinute}) and the current IST
+// minute-of-day (fractional), figure out whether the market is currently in its betting
+// window and how far through that window we are (0..1). Handles windows that cross
+// midnight (e.g. Desawar: 7:00 PM -> 4:00 AM).
+function getMarketWindowProgress(sched, nowMinIST) {
+  const openMin = (sched.openHour || 0) * 60 + (sched.openMinute || 0);
+  const closeMin = (sched.closeHour || 0) * 60 + (sched.closeMinute || 0);
+  let duration = (closeMin - openMin + 1440) % 1440;
+  if (duration === 0) duration = 1440;
+  const sinceOpen = (nowMinIST - openMin + 1440) % 1440;
+  const isOpen = sinceOpen <= duration;
+  const p = isOpen ? Math.min(1, sinceOpen / duration) : 0;
+  return { isOpen, p };
+}
+
+function setMarketLiveCount(market, val) {
+  const clean = Math.max(0, Math.round(val));
+  livePlayersMap[market] = clean;
+  if (market === 'Desawar') livePlayersMap['Disawer'] = clean;
+  if (market === 'Shree Ganesh') livePlayersMap['Shri Ganesh'] = clean;
+}
+
+function tickLivePlayerCounts() {
+  try {
+    if (!autoPlayerConfig || !autoPlayerConfig.enabled) return;
+    const istNow = new Date(Date.now() + (5.5 * 60 * 60 * 1000));
+    const nowMinIST = istNow.getUTCHours() * 60 + istNow.getUTCMinutes() + istNow.getUTCSeconds() / 60;
+
+    for (const market of Object.keys(gameSchedulesStore)) {
+      const sched = gameSchedulesStore[market];
+      if (!sched || sched.enabled === false) continue;
+
+      const { isOpen, p } = getMarketWindowProgress(sched, nowMinIST);
+      let state = livePlayerAutoState[market];
+      if (!state) {
+        state = livePlayerAutoState[market] = { wasOpen: false, peakTarget: 0, noise: 0 };
+      }
+
+      if (!isOpen) {
+        // Closed (or not yet open today) -> always 0, whether we just watched it close
+        // or the server simply booted while it was already closed.
+        setMarketLiveCount(market, 0);
+        state.wasOpen = false;
+        continue;
+      }
+
+      if (!state.wasOpen) {
+        // Rising edge: market just opened this session -> pick a fresh peak + starting nudge
+        const min = autoPlayerConfig.targetPeakMin, max = autoPlayerConfig.targetPeakMax;
+        state.peakTarget = Math.round(min + Math.random() * (max - min));
+        state.noise = Math.round(10 + Math.random() * 40); // 10-50 initial users
+        state.wasOpen = true;
+      }
+
+      // Deterministic smooth base along the S-curve toward this session's peak
+      const base = state.peakTarget * smootherstep(p);
+
+      // Organic per-tick texture: mostly +5/+6, ~25% chance of a small -1/-2 dip
+      const delta = (Math.random() < 0.25) ? -(1 + Math.floor(Math.random() * 2)) : (5 + Math.floor(Math.random() * 2));
+      state.noise += delta;
+      // Gently keep the noise layer in a comfortable band so it rides the curve rather than drifting away from it
+      if (state.noise > 60) state.noise -= 3;
+      if (state.noise < -20) state.noise += 3;
+
+      setMarketLiveCount(market, base + state.noise);
+    }
+  } catch (err) {
+    console.error('[LivePlayers] tick error:', err.message);
+  }
+}
+
+let livePlayerTickHandle = null;
+function startLivePlayerTicker() {
+  if (livePlayerTickHandle) return;
+  // Run once immediately so counts are correct (closed markets at 0, open ones on-curve)
+  // from the very first request after boot, instead of waiting for the first interval tick.
+  tickLivePlayerCounts();
+  livePlayerTickHandle = setInterval(tickLivePlayerCounts, (autoPlayerConfig && autoPlayerConfig.tickIntervalMs) || 4000);
+  if (livePlayerTickHandle.unref) livePlayerTickHandle.unref();
+}
+function stopLivePlayerTicker() {
+  if (livePlayerTickHandle) {
+    clearInterval(livePlayerTickHandle);
+    livePlayerTickHandle = null;
+  }
+}
+
 function saveDiskStore() {
   try {
     const data = {
@@ -250,7 +368,8 @@ function saveDiskStore() {
       bannersListStore,
       blockedMobiles,
       deletedMobiles,
-      livePlayersMap
+      livePlayersMap,
+      autoPlayerConfig
     };
     fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2), 'utf-8');
     const legacyPath = path.join(__dirname, 'dataStore.json');
@@ -372,6 +491,7 @@ function loadDiskStore() {
       if (data.blockedMobiles && Array.isArray(data.blockedMobiles)) blockedMobiles.length = 0, blockedMobiles.push(...data.blockedMobiles);
       if (data.deletedMobiles && Array.isArray(data.deletedMobiles)) deletedMobiles.length = 0, deletedMobiles.push(...data.deletedMobiles);
       if (data.livePlayersMap && typeof data.livePlayersMap === 'object') Object.assign(livePlayersMap, data.livePlayersMap);
+      if (data.autoPlayerConfig && typeof data.autoPlayerConfig === 'object') Object.assign(autoPlayerConfig, data.autoPlayerConfig);
       console.log(`[Disk Store] Successfully loaded disk data from ${targetFile}! Registered users: ${registeredUsers.length}`);
     }
   } catch (err) {
@@ -381,6 +501,9 @@ function loadDiskStore() {
 
 // Initial load on server startup
 loadDiskStore();
+
+// Start the automatic live-player-count ticker (no-ops internally if autoPlayerConfig.enabled is false)
+startLivePlayerTicker();
 
 let memoryNotifications = [];
 
@@ -407,5 +530,9 @@ module.exports = {
   purgeOldBets,
   blockedMobiles,
   deletedMobiles,
-  livePlayersMap
+  livePlayersMap,
+  autoPlayerConfig,
+  startLivePlayerTicker,
+  stopLivePlayerTicker,
+  tickLivePlayerCounts
 };

@@ -412,9 +412,13 @@ fun HomeScreen(
                                 else -> 500000
                             }
 
+                        val playerCountFormatted = remember(playerCount) {
+                            java.text.NumberFormat.getNumberInstance(java.util.Locale("en", "IN")).format(playerCount)
+                        }
+
                         LiveGameCard(
                             title = gameName,
-                            subtitle = "$playerCount people are playing",
+                            subtitle = "$playerCountFormatted people are playing",
                             icon = icon,
                             isOpen = isOpen,
                             remainingMins = remainingMins,
