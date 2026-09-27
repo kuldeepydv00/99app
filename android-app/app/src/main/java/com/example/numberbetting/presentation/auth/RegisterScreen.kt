@@ -99,7 +99,7 @@ fun RegisterScreen(
 
                     Text(
                         text = "Create account to continue!",
-                        color = Color(0xFFA0A0A0),
+                        color = Color(0xFF8FA89B),
                         fontSize = 14.sp
                     )
 
@@ -109,15 +109,15 @@ fun RegisterScreen(
                     OutlinedTextField(
                         value = nameInput,
                         onValueChange = { nameInput = it; errorMessage = "" },
-                        placeholder = { Text("Name", color = Color(0xFF666666)) },
+                        placeholder = { Text("Name", color = Color(0xFF7D9186)) },
                         singleLine = true,
                         shape = RoundedCornerShape(50.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color(0xFF1F1F1F),
-                            unfocusedContainerColor = Color(0xFF1F1F1F),
-                            focusedBorderColor = Color(0xFFF3D079),
+                            focusedContainerColor = Color(0xFF0D1512),
+                            unfocusedContainerColor = Color(0xFF0D1512),
+                            focusedBorderColor = Color(0xFFD9B98C),
                             unfocusedBorderColor = Color(0xFF333333)
                         ),
                         modifier = Modifier
@@ -131,15 +131,15 @@ fun RegisterScreen(
                     OutlinedTextField(
                         value = referralInput,
                         onValueChange = { referralInput = it; errorMessage = "" },
-                        placeholder = { Text("Referral code (Optional)", color = Color(0xFF666666)) },
+                        placeholder = { Text("Referral code (Optional)", color = Color(0xFF7D9186)) },
                         singleLine = true,
                         shape = RoundedCornerShape(50.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color(0xFF1F1F1F),
-                            unfocusedContainerColor = Color(0xFF1F1F1F),
-                            focusedBorderColor = Color(0xFFF3D079),
+                            focusedContainerColor = Color(0xFF0D1512),
+                            unfocusedContainerColor = Color(0xFF0D1512),
+                            focusedBorderColor = Color(0xFFD9B98C),
                             unfocusedBorderColor = Color(0xFF333333)
                         ),
                         modifier = Modifier
@@ -158,14 +158,14 @@ fun RegisterScreen(
                             checked = termsAccepted,
                             onCheckedChange = { termsAccepted = it },
                             colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFFF3D079),
-                                uncheckedColor = Color(0xFF666666)
+                                checkedColor = Color(0xFFD9B98C),
+                                uncheckedColor = Color(0xFF7D9186)
                             )
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "By signing up you will agree to our Privacy Policy And Terms",
-                            color = Color(0xFFF3D079),
+                            color = Color(0xFFD9B98C),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -197,9 +197,9 @@ fun RegisterScreen(
                             .background(
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFFFFF1B8),
-                                        Color(0xFFF3D079),
-                                        Color(0xFFE5B842)
+                                        Color(0xFFF0DDB8),
+                                        Color(0xFFD9B98C),
+                                        Color(0xFFC9A87C)
                                     )
                                 ),
                                 shape = RoundedCornerShape(50.dp)
@@ -207,7 +207,7 @@ fun RegisterScreen(
                     ) {
                         Text(
                             text = "SUBMIT & PLAY",
-                            color = Color(0xFF1A1A1A),
+                            color = Color(0xFF0A0F0D),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -221,7 +221,7 @@ fun RegisterScreen(
                             .fillMaxWidth()
                             .height(48.dp)
                             .clip(RoundedCornerShape(50.dp))
-                            .background(Color(0xFF2B2B2B)),
+                            .background(Color(0xFF1E382B)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

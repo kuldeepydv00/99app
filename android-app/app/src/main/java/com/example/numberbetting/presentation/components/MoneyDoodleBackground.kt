@@ -30,7 +30,7 @@ fun MoneyDoodleBackground(
         Brush.radialGradient(
             colors = listOf(
                 Color.Transparent,
-                Color(0xFF0F0E12).copy(alpha = 0.82f)
+                Color(0xFF0B1510).copy(alpha = 0.82f)
             )
         )
     }

@@ -850,7 +850,7 @@ fun AppNavigation() {
                                 context.startActivity(intent)
                             } catch (e: Exception) { }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC9A87C))
                     ) {
                         Text("UPDATE NOW 📥", color = Color.White, fontWeight = FontWeight.Bold)
                     }
@@ -862,7 +862,7 @@ fun AppNavigation() {
                         }
                     }
                 },
-                containerColor = Color(0xFF1E2638),
+                containerColor = Color(0xFF0F2A20),
                 shape = RoundedCornerShape(20.dp)
             )
         }
@@ -871,7 +871,7 @@ fun AppNavigation() {
         if (isAccountDeleted) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF0F172A)
+                color = Color(0xFF0A0F0D)
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -896,7 +896,7 @@ fun AppNavigation() {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "Your account has been deleted or unauthenticated. All historical data was wiped clean. Please register or log in with a new ID to start fresh.",
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFF8FA89B),
                             fontSize = 14.sp,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             lineHeight = 20.sp
@@ -928,7 +928,7 @@ fun AppNavigation() {
         if (isAccountBlocked && !isAccountDeleted) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF0F172A)
+                color = Color(0xFF0A0F0D)
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -953,14 +953,14 @@ fun AppNavigation() {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "Please check your network connection and try again. Retrying connection automatically...",
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFF8FA89B),
                             fontSize = 14.sp,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             lineHeight = 20.sp
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         CircularProgressIndicator(
-                            color = Color(0xFF38BDF8),
+                            color = Color(0xFFD9B98C),
                             modifier = Modifier.size(36.dp)
                         )
                     }

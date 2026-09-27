@@ -105,7 +105,7 @@ fun LoginScreen(
 
                     Text(
                         text = "Enter your mobile number",
-                        color = Color(0xFFA0A0A0),
+                        color = Color(0xFF8FA89B),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Normal
                     )
@@ -121,21 +121,21 @@ fun LoginScreen(
                                 errorMessage = ""
                             }
                         },
-                        placeholder = { Text("Enter mobile number", color = Color(0xFF666666)) },
+                        placeholder = { Text("Enter mobile number", color = Color(0xFF7D9186)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = {
                             if (phoneInput.length == 10) {
-                                Text("✓", color = Color(0xFFF3D079), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text("✓", color = Color(0xFFD9B98C), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             }
                         },
                         shape = RoundedCornerShape(50.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color(0xFF1F1F1F),
-                            unfocusedContainerColor = Color(0xFF1F1F1F),
-                            focusedBorderColor = Color(0xFFF3D079),
+                            focusedContainerColor = Color(0xFF0D1512),
+                            unfocusedContainerColor = Color(0xFF0D1512),
+                            focusedBorderColor = Color(0xFFD9B98C),
                             unfocusedBorderColor = Color(0xFF333333)
                         ),
                         modifier = Modifier
@@ -209,9 +209,9 @@ fun LoginScreen(
                             .background(
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFFFFF1B8),
-                                        Color(0xFFF3D079),
-                                        Color(0xFFE5B842)
+                                        Color(0xFFF0DDB8),
+                                        Color(0xFFD9B98C),
+                                        Color(0xFFC9A87C)
                                     )
                                 ),
                                 shape = RoundedCornerShape(50.dp)
@@ -224,13 +224,13 @@ fun LoginScreen(
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    color = Color(0xFF1A1A1A),
+                                    color = Color(0xFF0A0F0D),
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "SENDING OTP...",
-                                    color = Color(0xFF1A1A1A),
+                                    color = Color(0xFF0A0F0D),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.ExtraBold
                                 )
@@ -238,7 +238,7 @@ fun LoginScreen(
                         } else {
                             Text(
                                 text = "NEXT",
-                                color = Color(0xFF1A1A1A),
+                                color = Color(0xFF0A0F0D),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 1.sp

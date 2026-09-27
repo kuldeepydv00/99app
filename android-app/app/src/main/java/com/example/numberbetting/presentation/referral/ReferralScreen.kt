@@ -181,7 +181,7 @@ fun ReferralScreen(
         topBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF0F172A),
+                color = Color(0xFF0A0F0D),
                 shadowElevation = 4.dp
             ) {
                 Row(
@@ -199,13 +199,13 @@ fun ReferralScreen(
                         Column {
                             Text(
                                 text = "Referral",
-                                color = Color(0xFFF3D079),
+                                color = Color(0xFFD9B98C),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black
                             )
                             Text(
                                 text = "Play Smart • Play Safe • Win Big",
-                                color = Color(0xFF94A3B8),
+                                color = Color(0xFF8FA89B),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -216,7 +216,7 @@ fun ReferralScreen(
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFF00C853))
+                            .background(Color(0xFF2ECC8F))
                             .clickable { onNavigateToWallet() }
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -243,13 +243,13 @@ fun ReferralScreen(
                                 .background(Color.White),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("+", color = Color(0xFF00C853), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Text("+", color = Color(0xFF2ECC8F), fontWeight = FontWeight.Black, fontSize = 14.sp)
                         }
                     }
                 }
             }
         },
-        containerColor = Color(0xFF0F172A)
+        containerColor = Color(0xFF0A0F0D)
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -275,8 +275,8 @@ fun ReferralScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedFilterType == "all") Color(0xFF2A374A) else Color(0xFF1E293B))
-                        .border(1.dp, if (selectedFilterType == "all") Color(0xFFF3D079) else Color(0xFF334155), RoundedCornerShape(10.dp))
+                        .background(if (selectedFilterType == "all") Color(0xFF1A3F30) else Color(0xFF123A2C))
+                        .border(1.dp, if (selectedFilterType == "all") Color(0xFFD9B98C) else Color(0xFF1E5C46), RoundedCornerShape(10.dp))
                         .clickable {
                             selectedFilterType = "all"
                             selectedDateStr = "all"
@@ -288,7 +288,7 @@ fun ReferralScreen(
                 ) {
                     Text(
                         text = "All Time",
-                        color = if (selectedFilterType == "all") Color(0xFFF3D079) else Color(0xFF94A3B8),
+                        color = if (selectedFilterType == "all") Color(0xFFD9B98C) else Color(0xFF8FA89B),
                         fontSize = 11.sp,
                         fontWeight = if (selectedFilterType == "all") FontWeight.Bold else FontWeight.Medium
                     )
@@ -299,8 +299,8 @@ fun ReferralScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedFilterType == "today") Color(0xFF2A374A) else Color(0xFF1E293B))
-                        .border(1.dp, if (selectedFilterType == "today") Color(0xFFF3D079) else Color(0xFF334155), RoundedCornerShape(10.dp))
+                        .background(if (selectedFilterType == "today") Color(0xFF1A3F30) else Color(0xFF123A2C))
+                        .border(1.dp, if (selectedFilterType == "today") Color(0xFFD9B98C) else Color(0xFF1E5C46), RoundedCornerShape(10.dp))
                         .clickable {
                             val todayStr = dateFormat.format(Calendar.getInstance().time)
                             selectedFilterType = "today"
@@ -313,7 +313,7 @@ fun ReferralScreen(
                 ) {
                     Text(
                         text = "Today",
-                        color = if (selectedFilterType == "today") Color(0xFFF3D079) else Color(0xFF94A3B8),
+                        color = if (selectedFilterType == "today") Color(0xFFD9B98C) else Color(0xFF8FA89B),
                         fontSize = 11.sp,
                         fontWeight = if (selectedFilterType == "today") FontWeight.Bold else FontWeight.Medium
                     )
@@ -324,8 +324,8 @@ fun ReferralScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedFilterType == "yesterday") Color(0xFF2A374A) else Color(0xFF1E293B))
-                        .border(1.dp, if (selectedFilterType == "yesterday") Color(0xFFF3D079) else Color(0xFF334155), RoundedCornerShape(10.dp))
+                        .background(if (selectedFilterType == "yesterday") Color(0xFF1A3F30) else Color(0xFF123A2C))
+                        .border(1.dp, if (selectedFilterType == "yesterday") Color(0xFFD9B98C) else Color(0xFF1E5C46), RoundedCornerShape(10.dp))
                         .clickable {
                             val yestCal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
                             val yestStr = dateFormat.format(yestCal.time)
@@ -339,7 +339,7 @@ fun ReferralScreen(
                 ) {
                     Text(
                         text = "Yesterday",
-                        color = if (selectedFilterType == "yesterday") Color(0xFFF3D079) else Color(0xFF94A3B8),
+                        color = if (selectedFilterType == "yesterday") Color(0xFFD9B98C) else Color(0xFF8FA89B),
                         fontSize = 11.sp,
                         fontWeight = if (selectedFilterType == "yesterday") FontWeight.Bold else FontWeight.Medium
                     )
@@ -350,8 +350,8 @@ fun ReferralScreen(
                     modifier = Modifier
                         .weight(1.2f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedFilterType == "custom") Color(0xFF2A374A) else Color(0xFF1E293B))
-                        .border(1.dp, if (selectedFilterType == "custom") Color(0xFFF3D079) else Color(0xFF334155), RoundedCornerShape(10.dp))
+                        .background(if (selectedFilterType == "custom") Color(0xFF1A3F30) else Color(0xFF123A2C))
+                        .border(1.dp, if (selectedFilterType == "custom") Color(0xFFD9B98C) else Color(0xFF1E5C46), RoundedCornerShape(10.dp))
                         .clickable {
                             datePickerDialog.show()
                         }
@@ -363,7 +363,7 @@ fun ReferralScreen(
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             text = if (selectedFilterType == "custom") selectedDateLabel else "Pick Date",
-                            color = if (selectedFilterType == "custom") Color(0xFFF3D079) else Color(0xFF94A3B8),
+                            color = if (selectedFilterType == "custom") Color(0xFFD9B98C) else Color(0xFF8FA89B),
                             fontSize = 11.sp,
                             fontWeight = if (selectedFilterType == "custom") FontWeight.Bold else FontWeight.Medium,
                             maxLines = 1
@@ -376,8 +376,8 @@ fun ReferralScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF123A2C)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E5C46)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -385,7 +385,7 @@ fun ReferralScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF162238))
+                            .background(Color(0xFF0A1712))
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -421,15 +421,15 @@ fun ReferralScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFF0F172A))
-                                .border(1.5.dp, Color(0xFFF3D079), RoundedCornerShape(14.dp))
+                                .background(Color(0xFF0A0F0D))
+                                .border(1.5.dp, Color(0xFFD9B98C), RoundedCornerShape(14.dp))
                                 .padding(vertical = 20.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = if (selectedFilterType == "all") "Lifetime Commission Earned" else "Commission Earned ($selectedDateLabel)",
-                                    color = Color(0xFF94A3B8),
+                                    color = Color(0xFF8FA89B),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.5.sp
@@ -437,7 +437,7 @@ fun ReferralScreen(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = "₹" + (if (totalCommission % 1.0 == 0.0) totalCommission.toInt().toString() else String.format("%.2f", totalCommission)) + "/-",
-                                    color = Color(0xFFF3D079),
+                                    color = Color(0xFFD9B98C),
                                     fontWeight = FontWeight.Black,
                                     fontSize = 30.sp,
                                     fontFamily = FontFamily.Monospace
@@ -453,8 +453,8 @@ fun ReferralScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF123A2C)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E5C46)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -462,7 +462,7 @@ fun ReferralScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF00873E))
+                            .background(Color(0xFF1C7A45))
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -488,14 +488,14 @@ fun ReferralScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFF0F172A))
-                                .border(1.5.dp, Color(0xFFF3D079), RoundedCornerShape(14.dp))
+                                .background(Color(0xFF0A0F0D))
+                                .border(1.5.dp, Color(0xFFD9B98C), RoundedCornerShape(14.dp))
                                 .padding(vertical = 14.dp, horizontal = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = referralCode,
-                                color = Color(0xFFF3D079),
+                                color = Color(0xFFD9B98C),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 20.sp,
                                 fontFamily = FontFamily.Monospace,
@@ -525,7 +525,7 @@ fun ReferralScreen(
                                     .weight(1f)
                                     .height(44.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00873E))
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C7A45))
                             ) {
                                 Text("📋", fontSize = 14.sp)
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -547,11 +547,11 @@ fun ReferralScreen(
                                     .weight(1f)
                                     .height(44.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC9A87C))
                             ) {
                                 Text("🔀", fontSize = 14.sp)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Share", color = Color(0xFF0F172A), fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                Text("Share", color = Color(0xFF0A0F0D), fontWeight = FontWeight.Black, fontSize = 13.sp)
                             }
                         }
 
@@ -568,14 +568,14 @@ fun ReferralScreen(
                                     modifier = Modifier
                                         .size(30.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF0F172A))
-                                        .border(1.dp, Color(0xFFF3D079), CircleShape),
+                                        .background(Color(0xFF0A0F0D))
+                                        .border(1.dp, Color(0xFFD9B98C), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("1", color = Color(0xFFF3D079), fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                    Text("1", color = Color(0xFFD9B98C), fontWeight = FontWeight.Black, fontSize = 13.sp)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Share your code", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Text("Share your code", color = Color(0xFF8FA89B), fontSize = 11.sp, fontWeight = FontWeight.Medium)
                             }
 
                             // Step 2
@@ -584,14 +584,14 @@ fun ReferralScreen(
                                     modifier = Modifier
                                         .size(30.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF0F172A))
-                                        .border(1.dp, Color(0xFFF3D079), CircleShape),
+                                        .background(Color(0xFF0A0F0D))
+                                        .border(1.dp, Color(0xFFD9B98C), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("2", color = Color(0xFFF3D079), fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                    Text("2", color = Color(0xFFD9B98C), fontWeight = FontWeight.Black, fontSize = 13.sp)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("They sign up", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Text("They sign up", color = Color(0xFF8FA89B), fontSize = 11.sp, fontWeight = FontWeight.Medium)
                             }
 
                             // Step 3
@@ -600,14 +600,14 @@ fun ReferralScreen(
                                     modifier = Modifier
                                         .size(30.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF0F172A))
-                                        .border(1.dp, Color(0xFFF3D079), CircleShape),
+                                        .background(Color(0xFF0A0F0D))
+                                        .border(1.dp, Color(0xFFD9B98C), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("3", color = Color(0xFFF3D079), fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                    Text("3", color = Color(0xFFD9B98C), fontWeight = FontWeight.Black, fontSize = 13.sp)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("You earn", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Text("You earn", color = Color(0xFF8FA89B), fontSize = 11.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -618,8 +618,8 @@ fun ReferralScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF123A2C)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E5C46)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -627,7 +627,7 @@ fun ReferralScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF162238))
+                            .background(Color(0xFF0A1712))
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -648,8 +648,8 @@ fun ReferralScreen(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF0F172A))
-                                .border(1.dp, Color(0xFFF3D079), RoundedCornerShape(12.dp))
+                                .background(Color(0xFF0A0F0D))
+                                .border(1.dp, Color(0xFFD9B98C), RoundedCornerShape(12.dp))
                                 .padding(horizontal = 10.dp, vertical = 3.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -657,7 +657,7 @@ fun ReferralScreen(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "$referralsCount",
-                                color = Color(0xFFF3D079),
+                                color = Color(0xFFD9B98C),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 12.sp
                             )
@@ -680,7 +680,7 @@ fun ReferralScreen(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = "No referrals yet",
-                                    color = Color(0xFF94A3B8),
+                                    color = Color(0xFF8FA89B),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -695,8 +695,8 @@ fun ReferralScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(12.dp))
-                                            .background(Color(0xFF0F172A))
-                                            .border(1.dp, Color(0xFF334155), RoundedCornerShape(12.dp))
+                                            .background(Color(0xFF0A0F0D))
+                                            .border(1.dp, Color(0xFF1E5C46), RoundedCornerShape(12.dp))
                                             .padding(12.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
@@ -711,20 +711,20 @@ fun ReferralScreen(
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = "${refItem.mobile} • ${refItem.date}",
-                                                color = Color(0xFF94A3B8),
+                                                color = Color(0xFF8FA89B),
                                                 fontSize = 11.sp
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = "Bet Commission: ₹" + String.format("%.2f", refItem.betCommission),
-                                                color = Color(0xFFF3D079),
+                                                color = Color(0xFFD9B98C),
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
                                         Text(
                                             text = "+₹" + String.format("%.2f", refItem.totalEarned),
-                                            color = Color(0xFF00C853),
+                                            color = Color(0xFF2ECC8F),
                                             fontWeight = FontWeight.Black,
                                             fontSize = 15.sp,
                                             fontFamily = FontFamily.Monospace
@@ -742,8 +742,8 @@ fun ReferralScreen(
                 refreshing = isLoading,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = Color(0xFF1E293B),
-                contentColor = Color(0xFFF3D079)
+                backgroundColor = Color(0xFF123A2C),
+                contentColor = Color(0xFFD9B98C)
             )
         }
     }

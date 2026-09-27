@@ -27,8 +27,8 @@ fun RulesAndRatesDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF121927))
-                .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(24.dp))
+                .background(Color(0xFF0C241B))
+                .border(1.dp, Color(0xFF123A2C), RoundedCornerShape(24.dp))
                 .padding(20.dp)
         ) {
             Column(
@@ -44,13 +44,13 @@ fun RulesAndRatesDialog(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF1E293B))
+                            .background(Color(0xFF123A2C))
                             .clickable { onDismiss() },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "✕",
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFF8FA89B),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -64,7 +64,7 @@ fun RulesAndRatesDialog(
                         .clip(RoundedCornerShape(16.dp))
                         .background(
                             Brush.linearGradient(
-                                listOf(Color(0xFFF3D079), Color(0xFFD4AF37))
+                                listOf(Color(0xFFD9B98C), Color(0xFFC9A87C))
                             )
                         ),
                     contentAlignment = Alignment.Center
@@ -84,7 +84,7 @@ fun RulesAndRatesDialog(
 
                 Text(
                     text = LanguageManager.getText("Official Game Multipliers & Limits", "आधिकारिक गेम गुणक और सीमाएँ"),
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFF8FA89B),
                     fontSize = 12.sp
                 )
 
@@ -100,7 +100,7 @@ fun RulesAndRatesDialog(
                         title = LanguageManager.getText("Single Jodi (00-99)", "सिंगल जोड़ी (00-99)"),
                         subtitle = LanguageManager.getText("₹100 bet pays ₹9,000", "₹100 बेट पर ₹9,000 भुगतान"),
                         badgeText = "90X",
-                        badgeColor = Color(0xFF00C853)
+                        badgeColor = Color(0xFF2ECC8F)
                     )
 
                     // Crossing Matrix
@@ -108,7 +108,7 @@ fun RulesAndRatesDialog(
                         title = LanguageManager.getText("Crossing Matrix", "क्रॉसिंग मैट्रिक्स"),
                         subtitle = LanguageManager.getText("All combination pairs (₹100 pays ₹9,000)", "सभी संयोजन जोड़ियां (₹100 पर ₹9,000)"),
                         badgeText = "90X",
-                        badgeColor = Color(0xFF00C853)
+                        badgeColor = Color(0xFF2ECC8F)
                     )
 
                     // Haruf Ander (Inside)
@@ -116,7 +116,7 @@ fun RulesAndRatesDialog(
                         title = LanguageManager.getText("Haruf Ander (Inside)", "हरुफ़ अंदर"),
                         subtitle = LanguageManager.getText("₹100 bet pays ₹900", "₹100 बेट पर ₹900 भुगतान"),
                         badgeText = "9X",
-                        badgeColor = Color(0xFFF3D079)
+                        badgeColor = Color(0xFFD9B98C)
                     )
 
                     // Haruf Bahar (Outside)
@@ -124,7 +124,7 @@ fun RulesAndRatesDialog(
                         title = LanguageManager.getText("Haruf Bahar (Outside)", "हरुफ़ बाहर"),
                         subtitle = LanguageManager.getText("₹100 bet pays ₹900", "₹100 बेट पर ₹900 भुगतान"),
                         badgeText = "9X",
-                        badgeColor = Color(0xFFF3D079)
+                        badgeColor = Color(0xFFD9B98C)
                     )
 
                     // Platform Limits Box
@@ -132,26 +132,26 @@ fun RulesAndRatesDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF0F172A))
-                            .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(16.dp))
+                            .background(Color(0xFF0A0F0D))
+                            .border(1.dp, Color(0xFF123A2C), RoundedCornerShape(16.dp))
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = LanguageManager.getText("⚡ Min Deposit: ₹100", "⚡ न्यूनतम जमा: ₹100"),
-                            color = Color(0xFFCBD5E1),
+                            color = Color(0xFFC9D6CE),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = LanguageManager.getText("🏦 Min Withdrawal: ₹200", "🏦 न्यूनतम निकासी: ₹200"),
-                            color = Color(0xFFCBD5E1),
+                            color = Color(0xFFC9D6CE),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = LanguageManager.getText("🎲 Min Bet: ₹1", "🎲 न्यूनतम बेट: ₹1"),
-                            color = Color(0xFFCBD5E1),
+                            color = Color(0xFFC9D6CE),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -166,7 +166,7 @@ fun RulesAndRatesDialog(
                         .fillMaxWidth()
                         .height(46.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF00C853))
+                        .background(Color(0xFF2ECC8F))
                         .clickable { onDismiss() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -193,8 +193,8 @@ private fun RateRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF0F172A))
-            .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(16.dp))
+            .background(Color(0xFF0A0F0D))
+            .border(1.dp, Color(0xFF123A2C), RoundedCornerShape(16.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -209,7 +209,7 @@ private fun RateRow(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
-                color = Color(0xFF94A3B8),
+                color = Color(0xFF8FA89B),
                 fontSize = 10.sp
             )
         }

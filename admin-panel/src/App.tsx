@@ -97,7 +97,7 @@ const formatDisplayDate = (d: any, id?: any, fallbackDate?: any): string => {
 
 
 
-const API_BASE = typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com';
+const API_BASE = import.meta.env.DEV ? 'http://localhost:5002' : 'https://newmatkadomain.com';
 
 // Canvas Chart Component for Deposits, Withdraws, etc.
 function CanvasChart({ title, color, dataPoints, chartType, labels }: { title: string; color: string; dataPoints: number[]; chartType: string; labels?: string[] }) {
@@ -660,36 +660,21 @@ export default function App() {
     setOtpSentMessage('');
     setAuthLoading(true);
 
-    const ADMIN_EMAIL = 'nedstarkontop@gmail.com';
-    const ADMIN_PASS = 'Y2004S143lovE';
-    const ADMIN_PHONE = '7206561420';
-
-    if (loginUsername !== ADMIN_EMAIL || loginPassword !== ADMIN_PASS) {
-      setAuthError('Invalid email or password');
-      setAuthLoading(false);
-      return;
-    }
-
-    // Credentials valid — send OTP to admin phone
     try {
-      const res = await fetch(`${API_BASE}/api/user/send-otp`, {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: ADMIN_PHONE })
+        body: JSON.stringify({ username: loginUsername, password: loginPassword })
       });
       const data = await res.json();
-      if (res.ok && data.success !== false) {
+      if (res.ok && data.success) {
         setLoginStep(2);
-        setOtpSentMessage(`OTP sent to +91 ${ADMIN_PHONE.slice(0, 3)}****${ADMIN_PHONE.slice(-3)}`);
+        setOtpSentMessage(data.message || 'OTP sent to registered mobile');
       } else {
-        // Fallback - still proceed to OTP step
-        setLoginStep(2);
-        setOtpSentMessage('OTP sent to registered mobile');
+        setAuthError(data.message || 'Invalid email or password');
       }
     } catch (err) {
-      // If server unreachable, still go to OTP step
-      setLoginStep(2);
-      setOtpSentMessage('OTP sent to registered mobile');
+      setAuthError('Could not reach the server. Please try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -844,18 +829,19 @@ export default function App() {
     setAuthError('');
     setAuthLoading(true);
 
-    const ADMIN_PHONE = '7206561420';
-
     try {
-      const res = await fetch(`${API_BASE}/api/user/verify-otp`, {
+      const res = await fetch(`${API_BASE}/api/admin/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: ADMIN_PHONE, otp: loginOtp })
+        body: JSON.stringify({ otp: loginOtp })
       });
       const data = await res.json();
-      if (res.ok && data.success !== false) {
+      if (res.ok && data.success) {
         setIsAuthenticated(true);
         localStorage.setItem('admin_authenticated', 'true');
+        if (data.token) {
+          localStorage.setItem('admin_token', data.token);
+        }
         setStatusMessage('Welcome back, Admin!');
       } else {
         setAuthError(data.message || 'Invalid OTP. Please check your SMS.');

@@ -284,8 +284,8 @@ fun WalletScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF1E2638),
-                                Color(0xFF131924)
+                                Color(0xFF0F2A20),
+                                Color(0xFF13241C)
                             )
                         )
                     )
@@ -422,12 +422,12 @@ fun WalletScreen(
                         },
                         modifier = Modifier.fillMaxWidth().height(42.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF182234)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3D079).copy(alpha = 0.8f))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D1512)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD9B98C).copy(alpha = 0.8f))
                     ) {
                         Text(
                             text = if (isTransferring) "Transferring..." else "🔄 Transfer Commission to Main Wallet",
-                            color = Color(0xFFF3D079),
+                            color = Color(0xFFD9B98C),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -436,7 +436,7 @@ fun WalletScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             transferMsg, 
-                            color = if (transferMsg.startsWith("✅")) Color(0xFF00C853) else if (transferMsg.startsWith("⚠️")) Color(0xFFF3D079) else Color.Red, 
+                            color = if (transferMsg.startsWith("✅")) Color(0xFF2ECC8F) else if (transferMsg.startsWith("⚠️")) Color(0xFFD9B98C) else Color.Red, 
                             fontSize = 11.sp, 
                             fontWeight = FontWeight.SemiBold
                         )
@@ -540,7 +540,7 @@ fun WalletScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F0D))
                     ) {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Text("No transactions yet", color = TextSecondary, fontSize = 14.sp)
@@ -558,13 +558,13 @@ fun WalletScreen(
                         else -> "💳"
                     }
                     val isRefund = tx.status == "REFUNDED"
-                    val amountColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFF59E0B) else AccentEmerald) else Color(0xFFEF4444)
+                    val amountColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFC9A87C) else AccentEmerald) else Color(0xFFEF4444)
                     val amountPrefix = if (tx.isCredit || isRefund) "+" else "-"
-                    val borderColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFF59E0B).copy(alpha = 0.4f) else AccentEmerald.copy(alpha = 0.3f)) else Color(0xFFEF4444).copy(alpha = 0.3f)
+                    val borderColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFC9A87C).copy(alpha = 0.4f) else AccentEmerald.copy(alpha = 0.3f)) else Color(0xFFEF4444).copy(alpha = 0.3f)
                     val statusColor = when (tx.status) {
                         "CREDITED", "WON", "APPROVED" -> AccentEmerald
-                        "REFUNDED" -> Color(0xFFF59E0B)
-                        "PENDING" -> Color(0xFFF59E0B)
+                        "REFUNDED" -> Color(0xFFC9A87C)
+                        "PENDING" -> Color(0xFFC9A87C)
                         "LOST", "REJECTED" -> Color(0xFFEF4444)
                         else -> TextSecondary
                     }
@@ -572,7 +572,7 @@ fun WalletScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F0D)),
                         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
                     ) {
                         Row(
@@ -597,7 +597,7 @@ fun WalletScreen(
                                         Spacer(modifier = Modifier.height(3.dp))
                                         Text(
                                             text = tx.date,
-                                            color = Color(0xFF94A3B8),
+                                            color = Color(0xFF8FA89B),
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Medium,
                                             fontFamily = FontFamily.Monospace
@@ -632,8 +632,8 @@ fun WalletScreen(
         refreshing = isRefreshing,
         state = pullRefreshState,
         modifier = Modifier.align(Alignment.TopCenter),
-        backgroundColor = Color(0xFF1E293B),
-        contentColor = Color(0xFFF3D079)
+        backgroundColor = Color(0xFF123A2C),
+        contentColor = Color(0xFFD9B98C)
     )
 }
 }
@@ -802,14 +802,14 @@ fun WalletScreen(
                                 modifier = Modifier
                                     .size(72.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF10B981).copy(alpha = 0.15f))
-                                    .border(2.dp, Color(0xFF10B981), CircleShape),
+                                    .background(Color(0xFF2ECC8F).copy(alpha = 0.15f))
+                                    .border(2.dp, Color(0xFF2ECC8F), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text("✅", fontSize = 36.sp)
                             }
                             Spacer(modifier = Modifier.height(14.dp))
-                            Text("Payment Successful!", color = Color(0xFF10B981), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                            Text("Payment Successful!", color = Color(0xFF2ECC8F), fontWeight = FontWeight.Bold, fontSize = 20.sp)
                             Spacer(modifier = Modifier.height(6.dp))
                             Text("₹$creditedAmount Added to Wallet", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Spacer(modifier = Modifier.height(14.dp))
@@ -851,8 +851,8 @@ fun WalletScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(if (depositAmount == quickAmt) AccentIndigo else Color(0xFF26324A))
-                                        .border(1.dp, if (depositAmount == quickAmt) AccentIndigo else Color(0xFF3B4D6C), RoundedCornerShape(8.dp))
+                                        .background(if (depositAmount == quickAmt) AccentIndigo else Color(0xFF172A20))
+                                        .border(1.dp, if (depositAmount == quickAmt) AccentIndigo else Color(0xFF1E4A38), RoundedCornerShape(8.dp))
                                         .clickable {
                                             depositAmount = quickAmt
                                             depositError = ""
@@ -871,7 +871,7 @@ fun WalletScreen(
                         }
                     } else {
                         // STEP 2: In-App Dynamic QR & 1-Click Instant UPI
-                        val encodedPayee = try { java.net.URLEncoder.encode(payeeName.ifEmpty { "99xmatka" }, "UTF-8") } catch (e: Exception) { "95X%20MATKA" }
+                        val encodedPayee = try { java.net.URLEncoder.encode(payeeName.ifEmpty { "99xmatka" }, "UTF-8") } catch (e: Exception) { "99X%20MATKA" }
                         val qrTargetString = if (ekqrBhimLink.isNotEmpty() && ekqrBhimLink.startsWith("upi://")) {
                             ekqrBhimLink
                         } else {
@@ -893,11 +893,11 @@ fun WalletScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (depositCountdownSeconds < 60) Color(0xFF7F1D1D) else Color(0xFF1E293B))
+                                    .background(if (depositCountdownSeconds < 60) Color(0xFF7F1D1D) else Color(0xFF123A2C))
                                     .padding(vertical = 5.dp, horizontal = 10.dp)
                             ) {
                                 Text("⏱️ Session Expires: ", color = TextSecondary, fontSize = 11.sp)
-                                Text(timerText, color = if (depositCountdownSeconds < 60) Color(0xFFEF4444) else Color(0xFFF3D079), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(timerText, color = if (depositCountdownSeconds < 60) Color(0xFFEF4444) else Color(0xFFD9B98C), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -909,7 +909,7 @@ fun WalletScreen(
                                         .size(220.dp)
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(Color.White)
-                                        .border(2.5.dp, Color(0xFFF3D079), RoundedCornerShape(16.dp))
+                                        .border(2.5.dp, Color(0xFFD9B98C), RoundedCornerShape(16.dp))
                                         .padding(10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -922,7 +922,7 @@ fun WalletScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
                                     "Scan with Any UPI App to Pay ₹${currentAmt.toInt()}",
-                                    color = Color(0xFFF3D079),
+                                    color = Color(0xFFD9B98C),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -940,18 +940,18 @@ fun WalletScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFF064E3B).copy(alpha = 0.5f))
+                                    .background(Color(0xFF1E5C46).copy(alpha = 0.5f))
                                     .padding(vertical = 8.dp, horizontal = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(13.dp),
-                                    color = Color(0xFF34D399),
+                                    color = Color(0xFF2ECC8F),
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Auto-verifying payment in background...", color = Color(0xFF34D399), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Text("Auto-verifying payment in background...", color = Color(0xFF2ECC8F), fontSize = 11.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -1191,7 +1191,7 @@ fun WalletScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2ECC8F)),
                     enabled = !isSaving
                 ) {
                     Text(
@@ -1227,8 +1227,8 @@ fun WalletScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF0F172A))
-                            .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(Color(0xFF0A0F0D))
+                            .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
                         Column {
@@ -1239,13 +1239,13 @@ fun WalletScreen(
                             ) {
                                 Text(
                                     text = "🏦 Bank Account",
-                                    color = Color(0xFFF3D079),
+                                    color = Color(0xFFD9B98C),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
                                 )
                                 Text(
                                     text = "Edit Bank Details",
-                                    color = Color(0xFF60A5FA),
+                                    color = Color(0xFFD9B98C),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.clickable {
@@ -1413,8 +1413,8 @@ fun WalletScreen(
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF0F172A))
-                    .border(1.dp, Color(0xFFF3D079), RoundedCornerShape(24.dp))
+                    .background(Color(0xFF0A0F0D))
+                    .border(1.dp, Color(0xFFD9B98C), RoundedCornerShape(24.dp))
                     .padding(18.dp)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -1427,7 +1427,7 @@ fun WalletScreen(
                             Text("📜 ", fontSize = 20.sp)
                             Text(
                                 "ALL TRANSACTIONS",
-                                color = Color(0xFFF3D079),
+                                color = Color(0xFFD9B98C),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Black
                             )
@@ -1449,7 +1449,7 @@ fun WalletScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(if (isSel) Color(0xFFF3D079) else Color(0xFF1E293B))
+                                    .background(if (isSel) Color(0xFFD9B98C) else Color(0xFF123A2C))
                                     .clickable { selectedFilter = f }
                                     .padding(vertical = 6.dp),
                                 contentAlignment = Alignment.Center
@@ -1488,13 +1488,13 @@ fun WalletScreen(
                                     else -> "💳"
                                 }
                                 val isRefund = tx.status == "REFUNDED"
-                                val amountColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFF59E0B) else AccentEmerald) else Color(0xFFEF4444)
+                                val amountColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFC9A87C) else AccentEmerald) else Color(0xFFEF4444)
                                 val amountPrefix = if (tx.isCredit || isRefund) "+" else "-"
-                                val borderColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFF59E0B).copy(alpha = 0.4f) else AccentEmerald.copy(alpha = 0.3f)) else Color(0xFFEF4444).copy(alpha = 0.3f)
+                                val borderColor = if (tx.isCredit || isRefund) (if (isRefund) Color(0xFFC9A87C).copy(alpha = 0.4f) else AccentEmerald.copy(alpha = 0.3f)) else Color(0xFFEF4444).copy(alpha = 0.3f)
                                 val statusColor = when (tx.status) {
                                     "CREDITED", "WON", "APPROVED" -> AccentEmerald
-                                    "REFUNDED" -> Color(0xFFF59E0B)
-                                    "PENDING" -> Color(0xFFF59E0B)
+                                    "REFUNDED" -> Color(0xFFC9A87C)
+                                    "PENDING" -> Color(0xFFC9A87C)
                                     "LOST", "REJECTED" -> Color(0xFFEF4444)
                                     else -> TextSecondary
                                 }
@@ -1502,7 +1502,7 @@ fun WalletScreen(
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(14.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF123A2C)),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
                                 ) {
                                     Row(
@@ -1515,7 +1515,7 @@ fun WalletScreen(
                                                 modifier = Modifier
                                                     .size(36.dp)
                                                     .clip(RoundedCornerShape(10.dp))
-                                                    .background(Color(0xFF0F172A)),
+                                                    .background(Color(0xFF0A0F0D)),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(emoji, fontSize = 16.sp)

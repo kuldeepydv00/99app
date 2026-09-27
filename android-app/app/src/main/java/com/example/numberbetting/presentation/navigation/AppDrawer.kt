@@ -44,7 +44,7 @@ fun AppDrawerContent(
         modifier = Modifier
             .fillMaxHeight()
             .width(310.dp)
-            .background(Color(0xFF070A0F)) // Luxury dark background
+            .background(Color(0xFF070F0B)) // Luxury dark background
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -56,7 +56,7 @@ fun AppDrawerContent(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
-                .border(2.dp, Brush.linearGradient(listOf(Color(0xFFF5D77F), Color(0xFFD4AF37))), CircleShape)
+                .border(2.dp, Brush.linearGradient(listOf(Color(0xFFE0C9A0), Color(0xFFC9A87C))), CircleShape)
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -71,7 +71,7 @@ fun AppDrawerContent(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = userPhone,
-            color = Color(0xFFA69B99),
+            color = Color(0xFF8FA89B),
             fontSize = 14.sp
         )
 
@@ -148,7 +148,7 @@ fun AppDrawerContent(
             ) {
                 Text(
                     text = "English",
-                    color = if (selectedLanguage == "English") Color.White else Color(0xFFA69B99),
+                    color = if (selectedLanguage == "English") Color.White else Color(0xFF8FA89B),
                     fontSize = 15.sp,
                     fontWeight = if (selectedLanguage == "English") FontWeight.Bold else FontWeight.Normal
                 )
@@ -164,7 +164,7 @@ fun AppDrawerContent(
             ) {
                 Text(
                     text = "हिन्दी",
-                    color = if (selectedLanguage == "Hindi") Color.White else Color(0xFFA69B99),
+                    color = if (selectedLanguage == "Hindi") Color.White else Color(0xFF8FA89B),
                     fontSize = 15.sp,
                     fontWeight = if (selectedLanguage == "Hindi") FontWeight.Bold else FontWeight.Normal
                 )

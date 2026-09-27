@@ -195,8 +195,8 @@ fun HomeScreen(
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "95x ",
-                                            color = Color(0xFFF3D079),
+                                            text = "99x ",
+                                            color = Color(0xFFD9B98C),
                                             fontSize = 17.sp,
                                             fontWeight = FontWeight.Black,
                                             letterSpacing = (-0.5).sp
@@ -211,7 +211,7 @@ fun HomeScreen(
                                     }
                                     Text(
                                         text = "TRUST • FAST • WIN",
-                                        color = Color(0xFFF3D079),
+                                        color = Color(0xFFD9B98C),
                                         fontSize = 7.5.sp,
                                         fontWeight = FontWeight.Black,
                                         letterSpacing = 1.5.sp
@@ -236,8 +236,8 @@ fun HomeScreen(
                                 Row(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(20.dp))
-                                        .background(Color(0xFF161F2C))
-                                        .border(1.5.dp, Color(0xFFF3D079), RoundedCornerShape(20.dp))
+                                        .background(Color(0xFF162C21))
+                                        .border(1.5.dp, Color(0xFFD9B98C), RoundedCornerShape(20.dp))
                                         .clickable { onNavigateToWallet() }
                                         .padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -260,7 +260,7 @@ fun HomeScreen(
                                             .clip(CircleShape)
                                             .background(
                                                 Brush.linearGradient(
-                                                    colors = listOf(Color(0xFFFFE485), Color(0xFFD4AF37))
+                                                    colors = listOf(Color(0xFFF0DDB8), Color(0xFFC9A87C))
                                                 )
                                             ),
                                         contentAlignment = Alignment.Center
@@ -310,8 +310,8 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF0F1624))
-                                    .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF081310))
+                                    .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                                     .clickable {
                                         try { uriHandler.openUri("https://newmatkadomain.com") } catch (_: Exception) {}
                                     }
@@ -330,8 +330,8 @@ fun HomeScreen(
                                             modifier = Modifier
                                                 .size(36.dp)
                                                 .clip(CircleShape)
-                                                .background(Color(0xFF182234))
-                                                .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), CircleShape),
+                                                .background(Color(0xFF0D1512))
+                                                .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text("🌐", fontSize = 16.sp)
@@ -340,7 +340,7 @@ fun HomeScreen(
                                         Column {
                                             Text(
                                                 "OUR OFFICIAL WEBSITE",
-                                                color = Color(0xFFF3D079),
+                                                color = Color(0xFFD9B98C),
                                                 fontSize = 8.5.sp,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 letterSpacing = 0.5.sp
@@ -355,7 +355,7 @@ fun HomeScreen(
                                             Spacer(modifier = Modifier.height(1.dp))
                                             Text(
                                                 "Fast • Secure • Always Accessible",
-                                                color = Color(0xFF94A3B8),
+                                                color = Color(0xFF8FA89B),
                                                 fontSize = 8.5.sp,
                                                 fontWeight = FontWeight.Medium
                                             )
@@ -365,11 +365,11 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .size(26.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFF182234))
-                                            .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), CircleShape),
+                                            .background(Color(0xFF0D1512))
+                                            .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("➔", color = Color(0xFFF3D079), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("➔", color = Color(0xFFD9B98C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -470,8 +470,8 @@ fun HomeScreen(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = Color(0xFF1E293B),
-                contentColor = Color(0xFFF3D079)
+                backgroundColor = Color(0xFF123A2C),
+                contentColor = Color(0xFFD9B98C)
             )
         }
     }
@@ -587,15 +587,15 @@ fun MarketHexagonSlidebar(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFFF59E0B),
-                                    Color(0xFFB45309),
-                                    Color(0xFF78350F)
+                                    Color(0xFFC9A87C),
+                                    Color(0xFF9C7B4F),
+                                    Color(0xFF784C0F)
                                 )
                             )
                         )
                         .padding(2.5.dp)
                         .clip(HexagonShape)
-                        .background(Color(0xFF1E293B)),
+                        .background(Color(0xFF123A2C)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -641,8 +641,8 @@ fun CompanyDetailsDialog(
                 .fillMaxWidth()
                 .padding(8.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-            border = BorderStroke(1.5.dp, Color(0xFFF3D079).copy(alpha = 0.6f))
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF123A2C)),
+            border = BorderStroke(1.5.dp, Color(0xFFD9B98C).copy(alpha = 0.6f))
         ) {
             Column(
                 modifier = Modifier
@@ -658,7 +658,7 @@ fun CompanyDetailsDialog(
                 ) {
                     Text(
                         text = "Company details",
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFF8FA89B),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -675,7 +675,7 @@ fun CompanyDetailsDialog(
                 // Game Name Header
                 Text(
                     text = gameName,
-                    color = Color(0xFFFFE485),
+                    color = Color(0xFFF0DDB8),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.Center
@@ -691,15 +691,15 @@ fun CompanyDetailsDialog(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFFF59E0B),
-                                    Color(0xFFB45309),
-                                    Color(0xFF78350F)
+                                    Color(0xFFC9A87C),
+                                    Color(0xFF9C7B4F),
+                                    Color(0xFF784C0F)
                                 )
                             )
                         )
                         .padding(3.dp)
                         .clip(HexagonShape)
-                        .background(Color(0xFF0F172A)),
+                        .background(Color(0xFF0A0F0D)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -714,8 +714,8 @@ fun CompanyDetailsDialog(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-                    border = BorderStroke(1.dp, Color(0xFF334155))
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F0D)),
+                    border = BorderStroke(1.dp, Color(0xFF1E5C46))
                 ) {
                     Column(
                         modifier = Modifier
@@ -727,21 +727,21 @@ fun CompanyDetailsDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Game Open Time :", color = Color(0xFF94A3B8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("Game Open Time :", color = Color(0xFF8FA89B), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Text(openTime, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Game Close Time :", color = Color(0xFF94A3B8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("Game Close Time :", color = Color(0xFF8FA89B), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Text(closeTime, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Game Result Time :", color = Color(0xFF94A3B8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("Game Result Time :", color = Color(0xFF8FA89B), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Text(resultTime, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace)
                         }
                     }
@@ -760,12 +760,12 @@ fun ResultCard(
     winningNumber: String? = null,
     onClick: () -> Unit = {}
 ) {
-    val goldBorder = remember { Color(0xFFFACC15).copy(alpha = 0.3f) }
+    val goldBorder = remember { Color(0xFFD9B98C).copy(alpha = 0.3f) }
     val cardGradient = remember {
         Brush.horizontalGradient(
             colors = listOf(
-                Color(0xFF1E2638),
-                Color(0xFF151C2A)
+                Color(0xFF0F2A20),
+                Color(0xFF152A20)
             )
         )
     }
@@ -792,8 +792,8 @@ fun ResultCard(
                     modifier = Modifier
                         .size(54.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF26324A))
-                        .border(1.dp, Color(0xFF3B4D6C), RoundedCornerShape(16.dp)),
+                        .background(Color(0xFF172A20))
+                        .border(1.dp, Color(0xFF1E4A38), RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(icon, fontSize = 26.sp)
@@ -812,7 +812,7 @@ fun ResultCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = subtitle,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFF8FA89B),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -823,7 +823,7 @@ fun ResultCard(
                         modifier = Modifier
                             .size(46.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF0F2620))
+                            .background(Color(0xFF0F2A20))
                             .border(1.5.dp, AccentEmerald, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
@@ -838,13 +838,13 @@ fun ResultCard(
                 } else {
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFFF59E0B).copy(alpha = 0.15f), RoundedCornerShape(20.dp))
-                            .border(1.dp, Color(0xFFF59E0B), RoundedCornerShape(20.dp))
+                            .background(Color(0xFFC9A87C).copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+                            .border(1.dp, Color(0xFFC9A87C), RoundedCornerShape(20.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = "⏳ RESULT PENDING",
-                            color = Color(0xFFF59E0B),
+                            color = Color(0xFFC9A87C),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp
@@ -865,37 +865,37 @@ fun LiveGameCard(
     remainingMins: Int = -1,
     onPlayClick: () -> Unit
 ) {
-    val goldBorder = remember { Color(0xFFFACC15).copy(alpha = 0.3f) }
+    val goldBorder = remember { Color(0xFFD9B98C).copy(alpha = 0.3f) }
     val cardGradient = remember {
         Brush.horizontalGradient(
             colors = listOf(
-                Color(0xFF1E2638),
-                Color(0xFF151C2A)
+                Color(0xFF0F2A20),
+                Color(0xFF152A20)
             )
         )
     }
     val playGradient = remember {
         Brush.horizontalGradient(
             colors = listOf(
-                Color(0xFFFFE599),
-                Color(0xFFD4AF37),
-                Color(0xFF8C6D13)
+                Color(0xFFF0DDB8),
+                Color(0xFFC9A87C),
+                Color(0xFF8A6D47)
             )
         )
     }
 
     val isUrgent = isOpen && remainingMins in 1..30
-    val badgeBg = if (!isOpen) Color(0xFFF59E0B).copy(alpha = 0.15f)
-                  else if (isUrgent) Color(0xFFF59E0B).copy(alpha = 0.15f)
-                  else Color(0xFFD4AF37).copy(alpha = 0.15f)
+    val badgeBg = if (!isOpen) Color(0xFFC9A87C).copy(alpha = 0.15f)
+                  else if (isUrgent) Color(0xFFC9A87C).copy(alpha = 0.15f)
+                  else Color(0xFFC9A87C).copy(alpha = 0.15f)
 
-    val badgeBorderColor = if (!isOpen) Color(0xFFF59E0B)
-                          else if (isUrgent) Color(0xFFF59E0B)
-                          else Color(0xFFF5D77F).copy(alpha = 0.6f)
+    val badgeBorderColor = if (!isOpen) Color(0xFFC9A87C)
+                          else if (isUrgent) Color(0xFFC9A87C)
+                          else Color(0xFFE0C9A0).copy(alpha = 0.6f)
 
-    val badgeTextColor = if (!isOpen) Color(0xFFF59E0B)
-                         else if (isUrgent) Color(0xFFF59E0B)
-                         else Color(0xFFF5D77F)
+    val badgeTextColor = if (!isOpen) Color(0xFFC9A87C)
+                         else if (isUrgent) Color(0xFFC9A87C)
+                         else Color(0xFFE0C9A0)
 
     val badgeText = if (!isOpen) "⏳ RESULT PENDING"
                     else if (isUrgent) "⏰ $remainingMins MINUTES LEFT"
@@ -923,8 +923,8 @@ fun LiveGameCard(
                     modifier = Modifier
                         .size(54.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF26324A))
-                        .border(1.dp, Color(0xFF3B4D6C), RoundedCornerShape(16.dp)),
+                        .background(Color(0xFF172A20))
+                        .border(1.dp, Color(0xFF1E4A38), RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(icon, fontSize = 26.sp)
@@ -943,7 +943,7 @@ fun LiveGameCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = subtitle,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFF8FA89B),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -1033,12 +1033,12 @@ fun MarketSelectorRow(
                     .width(84.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
-                        if (isActive) Brush.verticalGradient(listOf(Color(0xFF1F293D), Color(0xFF0D121F)))
-                        else Brush.verticalGradient(listOf(Color(0xFF131924), Color(0xFF0F1420)))
+                        if (isActive) Brush.verticalGradient(listOf(Color(0xFF1F3D2E), Color(0xFF0D1F16)))
+                        else Brush.verticalGradient(listOf(Color(0xFF13241C), Color(0xFF0F2018)))
                     )
                     .border(
                         if (isActive) 2.dp else 1.dp,
-                        if (isActive) Color(0xFFD4AF37) else Color(0xFFD4AF37).copy(alpha = 0.4f),
+                        if (isActive) Color(0xFFC9A87C) else Color(0xFFC9A87C).copy(alpha = 0.4f),
                         RoundedCornerShape(16.dp)
                     )
                     .clickable { onGameClick(game) }
@@ -1059,7 +1059,7 @@ fun MarketSelectorRow(
                     modifier = Modifier
                         .height(2.5.dp)
                         .width(20.dp)
-                        .background(Color(0xFFD4AF37), RoundedCornerShape(1.dp))
+                        .background(Color(0xFFC9A87C), RoundedCornerShape(1.dp))
                 )
             }
         }
@@ -1165,8 +1165,8 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .border(1.5.dp, Brush.horizontalGradient(listOf(Color(0xFFF3D079), Color(0xFFD4AF37), Color(0xFFF3D079))), RoundedCornerShape(20.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141720))
+            .border(1.5.dp, Brush.horizontalGradient(listOf(Color(0xFFD9B98C), Color(0xFFC9A87C), Color(0xFFD9B98C))), RoundedCornerShape(20.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF12221A))
     ) {
         if (imageBitmap != null) {
             Image(
@@ -1183,7 +1183,7 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
                     .fillMaxWidth()
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(Color(0xFF1E2638), Color(0xFF10141D), Color(0xFF1C2230))
+                            colors = listOf(Color(0xFF0F2A20), Color(0xFF101D16), Color(0xFF1B3126))
                         )
                     )
                     .padding(16.dp)
@@ -1196,7 +1196,7 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "INDIA'S MOST TRUSTED",
-                            color = Color(0xFFF3D079),
+                            color = Color(0xFFD9B98C),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.sp
@@ -1212,7 +1212,7 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "FAST • SECURE • HIGH PAYOUTS",
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFF8FA89B),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1220,13 +1220,13 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
 
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFFF3D079).copy(alpha = 0.15f), RoundedCornerShape(20.dp))
-                                .border(1.dp, Color(0xFFF3D079), RoundedCornerShape(20.dp))
+                                .background(Color(0xFFD9B98C).copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+                                .border(1.dp, Color(0xFFD9B98C), RoundedCornerShape(20.dp))
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = "INDIA KA SABSE PEHLA KHAIWAL",
-                                color = Color(0xFFF3D079),
+                                color = Color(0xFFD9B98C),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -1239,7 +1239,7 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(
                                     Brush.horizontalGradient(
-                                        colors = listOf(Color(0xFFFFE485), Color(0xFFD4AF37))
+                                        colors = listOf(Color(0xFFF0DDB8), Color(0xFFC9A87C))
                                     )
                                 )
                                 .padding(horizontal = 18.dp, vertical = 9.dp)
@@ -1270,7 +1270,7 @@ fun LuxuryHeroBanner(onPlayNowClick: () -> Unit) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "PLAY BIG WIN BIGGER",
-                            color = Color(0xFFF3D079),
+                            color = Color(0xFFD9B98C),
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Black
                         )
@@ -1302,8 +1302,8 @@ fun TrustBadgeItem(icon: String, title: String, sub: String) {
             modifier = Modifier
                 .size(30.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF161F2C))
-                .border(1.dp, Color(0xFFF3D079).copy(alpha = 0.5f), CircleShape),
+                .background(Color(0xFF162C21))
+                .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(icon, fontSize = 13.sp)
@@ -1311,7 +1311,7 @@ fun TrustBadgeItem(icon: String, title: String, sub: String) {
         Spacer(modifier = Modifier.width(5.dp))
         Column {
             Text(title, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
-            Text(sub, color = Color(0xFF94A3B8), fontSize = 8.sp, fontWeight = FontWeight.Medium)
+            Text(sub, color = Color(0xFF8FA89B), fontSize = 8.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -1324,10 +1324,10 @@ fun RechargeBonusBanner(onRechargeClick: () -> Unit) {
             .clip(RoundedCornerShape(18.dp))
             .background(
                 Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF1A160F), Color(0xFF2D2313), Color(0xFF1A160F))
+                    colors = listOf(Color(0xFF1C160D), Color(0xFF2D2213), Color(0xFF1C160D))
                 )
             )
-            .border(1.dp, Color(0xFFF3D079), RoundedCornerShape(18.dp))
+            .border(1.dp, Color(0xFFD9B98C), RoundedCornerShape(18.dp))
             .clickable { onRechargeClick() }
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
@@ -1342,7 +1342,7 @@ fun RechargeBonusBanner(onRechargeClick: () -> Unit) {
                 Column {
                     Text(
                         text = "GET 8% EXTRA",
-                        color = Color(0xFFF3D079),
+                        color = Color(0xFFD9B98C),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -1360,7 +1360,7 @@ fun RechargeBonusBanner(onRechargeClick: () -> Unit) {
                     .clip(RoundedCornerShape(20.dp))
                     .background(
                         Brush.horizontalGradient(
-                            colors = listOf(Color(0xFFFFE485), Color(0xFFD4AF37))
+                            colors = listOf(Color(0xFFF0DDB8), Color(0xFFC9A87C))
                         )
                     )
                     .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -1558,13 +1558,13 @@ fun BottomNavigationBar(
                 .clip(RoundedCornerShape(30.dp))
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color(0xFF0F172A), Color(0xFF0B101D))
+                        colors = listOf(Color(0xFF0A0F0D), Color(0xFF0B1D14))
                     )
                 )
                 .border(
                     1.5.dp,
                     Brush.horizontalGradient(
-                        colors = listOf(Color(0xFFFFE599), Color(0xFFD4AF37), Color(0xFFFFE599))
+                        colors = listOf(Color(0xFFF0DDB8), Color(0xFFC9A87C), Color(0xFFF0DDB8))
                     ),
                     RoundedCornerShape(30.dp)
                 ),
@@ -1624,8 +1624,8 @@ fun BottomNavigationBar(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFF5D77F).copy(alpha = if (isMyBetSelected) 0.85f else 0.5f),
-                                Color(0xFFD4AF37).copy(alpha = if (isMyBetSelected) 0.45f else 0.2f),
+                                Color(0xFFE0C9A0).copy(alpha = if (isMyBetSelected) 0.85f else 0.5f),
+                                Color(0xFFC9A87C).copy(alpha = if (isMyBetSelected) 0.45f else 0.2f),
                                 Color.Transparent
                             )
                         )
@@ -1639,12 +1639,12 @@ fun BottomNavigationBar(
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(Color(0xFFFFE599), Color(0xFFD4AF37), Color(0xFF8C6D13))
+                            colors = listOf(Color(0xFFF0DDB8), Color(0xFFC9A87C), Color(0xFF8A6D47))
                         )
                     )
                     .border(
                         if (isMyBetSelected) 2.dp else 1.5.dp,
-                        if (isMyBetSelected) Color(0xFFFFF7D6) else Color(0xFFF3D079).copy(alpha = 0.8f),
+                        if (isMyBetSelected) Color(0xFFF5EDE2) else Color(0xFFD9B98C).copy(alpha = 0.8f),
                         CircleShape
                     )
                     .clickable { onTabSelected("MY BET") }
@@ -1652,7 +1652,7 @@ fun BottomNavigationBar(
                     .clip(CircleShape)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(0xFF1E293B), Color(0xFF0A0E17))
+                            colors = listOf(Color(0xFF123A2C), Color(0xFF060B08))
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -1664,13 +1664,13 @@ fun BottomNavigationBar(
                     Icon(
                         imageVector = CrownVectorIcon,
                         contentDescription = "MY BET",
-                        tint = Color(0xFFF5D77F),
+                        tint = Color(0xFFE0C9A0),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.height(1.dp))
                     Text(
                         text = "MY BET",
-                        color = Color(0xFFF5D77F),
+                        color = Color(0xFFE0C9A0),
                         fontSize = 7.5.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = (-0.5).sp
@@ -1701,8 +1701,8 @@ fun BottomNavItem(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFF5D77F).copy(alpha = 0.5f),
-                                Color(0xFFD4AF37).copy(alpha = 0.2f),
+                                Color(0xFFE0C9A0).copy(alpha = 0.5f),
+                                Color(0xFFC9A87C).copy(alpha = 0.2f),
                                 Color.Transparent
                             )
                         )
@@ -1718,7 +1718,7 @@ fun BottomNavItem(
                         colors = listOf(Color(0x55D4AF37), Color(0x358C6D13))
                     )
                 )
-                .border(1.2.dp, Color(0xFFF5D77F).copy(alpha = 0.85f), RoundedCornerShape(22.dp))
+                .border(1.2.dp, Color(0xFFE0C9A0).copy(alpha = 0.85f), RoundedCornerShape(22.dp))
                 .padding(horizontal = 12.dp, vertical = 4.dp)
         } else {
             Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -1732,13 +1732,13 @@ fun BottomNavItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (isSelected) Color(0xFFF5D77F) else Color(0xFF94A3B8),
+                tint = if (isSelected) Color(0xFFE0C9A0) else Color(0xFF8FA89B),
                 modifier = Modifier.size(19.dp)
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                color = if (isSelected) Color(0xFFF5D77F) else Color(0xFF94A3B8),
+                color = if (isSelected) Color(0xFFE0C9A0) else Color(0xFF8FA89B),
                 fontSize = 8.5.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.5.sp
@@ -1837,8 +1837,8 @@ fun PromotionalBannerCard() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .border(1.5.dp, Color(0xFFF3D079), RoundedCornerShape(20.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141414))
+            .border(1.5.dp, Color(0xFFD9B98C), RoundedCornerShape(20.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E1A14))
     ) {
         if (imageBitmap != null) {
             Image(

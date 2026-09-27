@@ -141,7 +141,7 @@ fun OtpScreen(
 
                     Text(
                         text = "We have Send code to your number",
-                        color = Color(0xFFA0A0A0),
+                        color = Color(0xFF8FA89B),
                         fontSize = 15.sp
                     )
 
@@ -184,10 +184,10 @@ fun OtpScreen(
                                     modifier = Modifier
                                         .size(64.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFF222222))
+                                        .background(Color(0xFF182C22))
                                         .border(
                                             1.5.dp,
-                                            if (isFocused) Color(0xFFF3D079) else Color(0xFF333333),
+                                            if (isFocused) Color(0xFFD9B98C) else Color(0xFF333333),
                                             RoundedCornerShape(12.dp)
                                         ),
                                     contentAlignment = Alignment.Center
@@ -272,9 +272,9 @@ fun OtpScreen(
                             .background(
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFFFFF1B8),
-                                        Color(0xFFF3D079),
-                                        Color(0xFFE5B842)
+                                        Color(0xFFF0DDB8),
+                                        Color(0xFFD9B98C),
+                                        Color(0xFFC9A87C)
                                     )
                                 ),
                                 shape = RoundedCornerShape(50.dp)
@@ -287,13 +287,13 @@ fun OtpScreen(
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    color = Color(0xFF1A1A1A),
+                                    color = Color(0xFF0A0F0D),
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "VERIFYING...",
-                                    color = Color(0xFF1A1A1A),
+                                    color = Color(0xFF0A0F0D),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.ExtraBold
                                 )
@@ -301,7 +301,7 @@ fun OtpScreen(
                         } else {
                             Text(
                                 text = "Submit Now",
-                                color = Color(0xFF1A1A1A),
+                                color = Color(0xFF0A0F0D),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -318,7 +318,7 @@ fun OtpScreen(
                     ) {
                         Text(
                             text = "‹ Change Number",
-                            color = Color(0xFFA0A0A0),
+                            color = Color(0xFF8FA89B),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.clickable { onBack() }
@@ -327,14 +327,14 @@ fun OtpScreen(
                         if (resendTimer > 0) {
                             Text(
                                 text = "Resend OTP in ${resendTimer}s",
-                                color = Color(0xFFF3D079),
+                                color = Color(0xFFD9B98C),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         } else {
                             Text(
                                 text = if (isResending) "Sending..." else "Resend OTP ⟳",
-                                color = Color(0xFF00C853),
+                                color = Color(0xFF2ECC8F),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 modifier = Modifier.clickable(enabled = !isResending) {
@@ -382,7 +382,7 @@ fun OtpScreen(
                                 .fillMaxWidth()
                                 .height(50.dp)
                                 .clip(RoundedCornerShape(50.dp))
-                                .background(Color(0xFF2B2B2B)),
+                                .background(Color(0xFF1E382B)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(

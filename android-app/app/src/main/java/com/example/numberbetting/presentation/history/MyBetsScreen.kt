@@ -173,8 +173,8 @@ fun MyBetsScreen(
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(if (isSelected) Color(0xFFF3D079) else Color(0xFF1E293B))
-                                .border(1.dp, if (isSelected) Color(0xFFF3D079) else SurfaceBorder, RoundedCornerShape(20.dp))
+                                .background(if (isSelected) Color(0xFFD9B98C) else Color(0xFF123A2C))
+                                .border(1.dp, if (isSelected) Color(0xFFD9B98C) else SurfaceBorder, RoundedCornerShape(20.dp))
                                 .clickable {
                                     if (key == "CUSTOM") {
                                         datePickerDialog.show()
@@ -186,7 +186,7 @@ fun MyBetsScreen(
                         ) {
                             Text(
                                 text = label,
-                                color = if (isSelected) Color(0xFF0F172A) else Color.White,
+                                color = if (isSelected) Color(0xFF0A0F0D) else Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -208,14 +208,14 @@ fun MyBetsScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSel) Color(0xFF10B981) else Color(0xFF1E2638))
-                                .border(1.dp, if (isSel) Color(0xFF34D399) else SurfaceBorder, RoundedCornerShape(12.dp))
+                                .background(if (isSel) Color(0xFF2ECC8F) else Color(0xFF0F2A20))
+                                .border(1.dp, if (isSel) Color(0xFF2ECC8F) else SurfaceBorder, RoundedCornerShape(12.dp))
                                 .clickable { selectedMarketFilter = mKey }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
                                 text = mKey,
-                                color = if (isSel) Color(0xFF0F172A) else Color.White,
+                                color = if (isSel) Color(0xFF0A0F0D) else Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -318,8 +318,8 @@ fun MyBetsScreen(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = Color(0xFF1E293B),
-                contentColor = Color(0xFFF3D079)
+                backgroundColor = Color(0xFF123A2C),
+                contentColor = Color(0xFFD9B98C)
             )
         }
     }
@@ -369,15 +369,15 @@ fun BetGroupCardItem(group: BetGroup) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF16202E)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF263346))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF162E22)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF163024))
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Top Header Bar
             val statusColor = when (group.status.lowercase()) {
-                "won" -> Color(0xFF22C55E)
+                "won" -> Color(0xFF2ECC8F)
                 "lost" -> Color(0xFFEF4444)
-                else -> Color(0xFFF59E0B)
+                else -> Color(0xFFC9A87C)
             }
             val statusText = when (group.status.lowercase()) {
                 "won" -> "• Completed"
@@ -388,7 +388,7 @@ fun BetGroupCardItem(group: BetGroup) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF263346))
+                    .background(Color(0xFF163024))
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -425,7 +425,7 @@ fun BetGroupCardItem(group: BetGroup) {
 
                 Text(
                     text = formattedDate,
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFF8FA89B),
                     fontSize = 12.sp
                 )
 
@@ -433,7 +433,7 @@ fun BetGroupCardItem(group: BetGroup) {
 
                 Text(
                     text = group.betTypeLabel,
-                    color = Color(0xFFF3D079),
+                    color = Color(0xFFD9B98C),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -442,7 +442,7 @@ fun BetGroupCardItem(group: BetGroup) {
 
                 Text(
                     text = "Amount placed on the numbers",
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFF8FA89B),
                     fontSize = 12.sp
                 )
 
@@ -486,14 +486,14 @@ fun BetGroupCardItem(group: BetGroup) {
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .border(1.dp, Color(0xFF263346), RoundedCornerShape(8.dp))
+                                        .border(1.dp, Color(0xFF163024), RoundedCornerShape(8.dp))
                                 ) {
                                     // Top Box (Number)
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(36.dp)
-                                            .background(Color(0xFF0F172A)),
+                                            .background(Color(0xFF0A0F0D)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -509,12 +509,12 @@ fun BetGroupCardItem(group: BetGroup) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(26.dp)
-                                            .background(Color(0xFFF3D079)),
+                                            .background(Color(0xFFD9B98C)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = "₹$stk",
-                                            color = Color(0xFF0F172A),
+                                            color = Color(0xFF0A0F0D),
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 11.sp
                                         )
@@ -536,7 +536,7 @@ fun BetGroupCardItem(group: BetGroup) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF263346))
+                        .background(Color(0xFF163024))
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -554,14 +554,14 @@ fun BetGroupCardItem(group: BetGroup) {
                 if (group.status.lowercase() == "won") {
                     Text(
                         text = "🎉 Won: +₹${group.totalWin.toInt()}",
-                        color = Color(0xFF00C853),
+                        color = Color(0xFF2ECC8F),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
                 } else {
                     Text(
                         text = "No Rewards",
-                        color = Color(0xFFF3D079),
+                        color = Color(0xFFD9B98C),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )

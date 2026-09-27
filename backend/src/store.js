@@ -123,11 +123,11 @@ let settingsConfig = {
   ekqr_webhook_url: 'https://newmatkadomain.com/api/payment/ekqr/webhook',
   min_deposit: 100,
   max_deposit: 50000,
-  msg91_auth_key: '566370AIKfwtcrpvh6aa17ef3P1',
-  msg91_template_id: '6aa1635ed61d0b5f8e0551e2',
+  msg91_auth_key: process.env.MSG91_AUTH_KEY !== undefined ? process.env.MSG91_AUTH_KEY : '566370AIKfwtcrpvh6aa17ef3P1',
+  msg91_template_id: process.env.MSG91_TEMPLATE_ID !== undefined ? process.env.MSG91_TEMPLATE_ID : '6aa1635ed61d0b5f8e0551e2',
   msg91_otp_length: 4,
   msg91_otp_expiry: 10,
-  msg91_enabled: true
+  msg91_enabled: process.env.MSG91_ENABLED !== undefined ? process.env.MSG91_ENABLED === 'true' : true
 };
 
 let gameSchedulesStore = {

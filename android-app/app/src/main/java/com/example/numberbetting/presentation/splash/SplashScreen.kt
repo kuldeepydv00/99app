@@ -65,7 +65,7 @@ fun SplashScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFFFD700).copy(alpha = 0.08f),
+                        Color(0xFFC9A87C).copy(alpha = 0.08f),
                         Color.Transparent
                     ),
                     radius = size.minDimension * 0.75f
@@ -98,7 +98,7 @@ fun SplashScreen(
                     // Golden Star Ring Border
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         drawCircle(
-                            color = Color(0xFFFFD700).copy(alpha = 0.6f),
+                            color = Color(0xFFC9A87C).copy(alpha = 0.6f),
                             style = Stroke(
                                 width = 3.dp.toPx(),
                                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
@@ -114,12 +114,12 @@ fun SplashScreen(
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        Color(0xFF2C2416),
+                                        Color(0xFF2D2315),
                                         Color(0xFF1A140B)
                                     )
                                 )
                             )
-                            .border(3.dp, Color(0xFFFFD700), CircleShape),
+                            .border(3.dp, Color(0xFFC9A87C), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -140,9 +140,9 @@ fun SplashScreen(
                             .background(
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFFB8860B),
-                                        Color(0xFFFFD700),
-                                        Color(0xFFB8860B)
+                                        Color(0xFF9C7B4F),
+                                        Color(0xFFC9A87C),
+                                        Color(0xFF9C7B4F)
                                     )
                                 ),
                                 shape = RoundedCornerShape(12.dp)
@@ -152,7 +152,7 @@ fun SplashScreen(
                     ) {
                         Text(
                             text = "99xmatka",
-                            color = Color(0xFF100C04),
+                            color = Color(0xFF100B04),
                             fontWeight = FontWeight.Black,
                             fontSize = 15.sp,
                             letterSpacing = 2.sp
@@ -165,7 +165,7 @@ fun SplashScreen(
                 // Welcome Typography
                 Text(
                     text = "Welcome to",
-                    color = Color(0xFFE2E8F0),
+                    color = Color(0xFFC9D6CE),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Medium,
                     fontFamily = FontFamily.SansSerif
@@ -177,7 +177,7 @@ fun SplashScreen(
                     text = "99xmatka App",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFFD700),
+                    color = Color(0xFFC9A87C),
                     letterSpacing = 1.sp,
                     textAlign = TextAlign.Center
                 )
@@ -217,7 +217,7 @@ fun SplashScreen(
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(36.dp),
-                    color = Color(0xFFFFD700),
+                    color = Color(0xFFC9A87C),
                     strokeWidth = 3.5.dp
                 )
             }
@@ -238,12 +238,12 @@ fun GoldenBadgeItem(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF262016),
-                        Color(0xFF141009)
+                        Color(0xFF292013),
+                        Color(0xFF140F09)
                     )
                 )
             )
-            .border(2.dp, Color(0xFFFFD700), CircleShape)
+            .border(2.dp, Color(0xFFC9A87C), CircleShape)
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -255,7 +255,7 @@ fun GoldenBadgeItem(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = title,
-                color = Color(0xFFFFD700),
+                color = Color(0xFFC9A87C),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 10.sp,
                 textAlign = TextAlign.Center

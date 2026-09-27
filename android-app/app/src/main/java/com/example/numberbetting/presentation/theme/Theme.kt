@@ -6,18 +6,18 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val DeepBackground = Color(0xFF070A0F)
-val SurfaceCard = Color(0xFF111723)
-val SurfaceBorder = Color(0xFF232D3F)
-val GoldPrimary = Color(0xFFF3D079)
-val GoldAccent = Color(0xFFEAB308)
-val GoldGlow = Color(0xFFD4AF37)
-val EmeraldSupportBg = Color(0xFF042F2E)
-val EmeraldSupportBorder = Color(0xFF065F46)
-val AccentEmerald = Color(0xFF00E676)
-val AccentIndigo = Color(0xFFF3D079)
-val TextSecondary = Color(0xFF94A3B8)
-val TextMuted = Color(0xFF64748B)
+val DeepBackground = Color(0xFF0A0F0D)
+val SurfaceCard = Color(0xFF123A2C)
+val SurfaceBorder = Color(0xFF1E5C46)
+val GoldPrimary = Color(0xFFD9B98C)
+val GoldAccent = Color(0xFFC9A87C)
+val GoldGlow = Color(0xFFC9A87C)
+val EmeraldSupportBg = Color(0xFF0C241B)
+val EmeraldSupportBorder = Color(0xFF1E5C46)
+val AccentEmerald = Color(0xFF3EE08A)
+val AccentIndigo = Color(0xFFD9B98C)
+val TextSecondary = Color(0xFF8FA89B)
+val TextMuted = Color(0xFF7D9186)
 
 private val ProfessionalDarkColorScheme = darkColorScheme(
     primary = AccentIndigo,

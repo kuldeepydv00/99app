@@ -207,9 +207,9 @@ fun ChartsScreen(
                             onClick = { selectedDate = todayCal.time },
                             label = { Text("Today", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFFACC15),
+                                selectedContainerColor = Color(0xFFD9B98C),
                                 selectedLabelColor = Color.Black,
-                                containerColor = Color(0xFF1E2638),
+                                containerColor = Color(0xFF0F2A20),
                                 labelColor = Color.White
                             )
                         )
@@ -222,9 +222,9 @@ fun ChartsScreen(
                             onClick = { selectedDate = yestCal.time },
                             label = { Text("Yesterday", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFFACC15),
+                                selectedContainerColor = Color(0xFFD9B98C),
                                 selectedLabelColor = Color.Black,
-                                containerColor = Color(0xFF1E2638),
+                                containerColor = Color(0xFF0F2A20),
                                 labelColor = Color.White
                             )
                         )
@@ -235,9 +235,9 @@ fun ChartsScreen(
                             onClick = { datePickerDialog.show() },
                             label = { Text("📅 " + displayDateFormat.format(selectedDate), fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFFACC15),
+                                selectedContainerColor = Color(0xFFD9B98C),
                                 selectedLabelColor = Color.Black,
-                                containerColor = Color(0xFF1E2638),
+                                containerColor = Color(0xFF0F2A20),
                                 labelColor = Color.White
                             )
                         )
@@ -250,7 +250,7 @@ fun ChartsScreen(
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = Color(0xFFFACC15))
+                            CircularProgressIndicator(color = Color(0xFFD9B98C))
                         }
                     } else {
                         LazyColumn(
@@ -275,8 +275,8 @@ fun ChartsScreen(
                     refreshing = isLoading,
                     state = pullRefreshState,
                     modifier = Modifier.align(Alignment.TopCenter),
-                    backgroundColor = Color(0xFF1E293B),
-                    contentColor = Color(0xFFFACC15)
+                    backgroundColor = Color(0xFF123A2C),
+                    contentColor = Color(0xFFD9B98C)
                 )
             }
         }
@@ -301,15 +301,15 @@ fun ChartResultCard(
     winningNumber: String,
     onClick: () -> Unit = {}
 ) {
-    val goldAccent = Color(0xFFFACC15)
-    val cardBackground = Color(0xFF181C24)
-    val numBoxBg = Color(0xFF222834)
+    val goldAccent = Color(0xFFD9B98C)
+    val cardBackground = Color(0xFF15271E)
+    val numBoxBg = Color(0xFF1E382B)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = cardBackground),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2D3545))
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF284A39))
     ) {
         Row(
             modifier = Modifier
@@ -322,7 +322,7 @@ fun ChartResultCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(HexagonShape)
-                    .background(Color(0xFFFACC15).copy(alpha = 0.2f))
+                    .background(Color(0xFFD9B98C).copy(alpha = 0.2f))
                     .border(1.5.dp, goldAccent, HexagonShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -345,7 +345,7 @@ fun ChartResultCard(
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = "Winner Number",
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFF8FA89B),
                     fontSize = 13.sp
                 )
             }
@@ -356,7 +356,7 @@ fun ChartResultCard(
                     .size(width = 68.dp, height = 52.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(numBoxBg)
-                    .border(1.dp, Color(0xFF333D52), RoundedCornerShape(14.dp)),
+                    .border(1.dp, Color(0xFF2F5643), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
