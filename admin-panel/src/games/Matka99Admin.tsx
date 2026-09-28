@@ -166,7 +166,7 @@ export default function Matka99Admin() {
             </select>}>
             {matrix && (
               <div className="grid grid-cols-10 gap-1">
-                {Object.keys(matrix.totals).map(n => (
+                {Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0')).map(n => (
                   <div key={n} style={heat(matrix.totals[n], matrixMax)}
                     className={`rounded-md border px-1 py-1.5 text-center ${matrix.result === n ? 'border-amber-500 ring-2 ring-amber-400' : 'border-gray-200'}`}>
                     <div className="font-mono text-xs font-bold">{n}</div>

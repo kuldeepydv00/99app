@@ -50,7 +50,7 @@ function rulesText(game) {
       : 'An option nobody picked has ₹0 on it, so it counts as the lowest.',
     'If several options tie for the lowest total, one of them is picked at random.',
     `Winning bets pay ${cfg.payout}x the amount bet, into your Winning balance.`,
-    `Bets: ₹${cfg.minBet} minimum, ₹${cfg.maxBet} maximum per option per round.`
+    `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per option per round.`
   ];
 }
 

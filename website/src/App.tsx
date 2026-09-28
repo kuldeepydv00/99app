@@ -5,6 +5,13 @@ import {
   CheckCircle, MessageCircle, Clock, Trophy, ChevronRight, X, Bell 
 } from 'lucide-react';
 import { parseCopyPasteText, ParsedBetItem } from './utils/copyPasteParser';
+import HomeGamesBlocks from './games/HomeGamesBlocks';
+import TradingPage from './games/TradingPage';
+import type { Balances } from './games/TradingPage';
+import Matka99Page from './games/Matka99Page';
+import Matka99Chart from './games/Matka99Chart';
+import NewGamesBets from './games/NewGamesBets';
+import type { TradingGame } from './games/api';
 
 const API_BASE_URLS = [
   typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com',
@@ -683,6 +690,19 @@ export default function App() {
   };
 
   const [activeWebTab, setActiveWebTab] = useState<'home' | 'mybets' | 'charts' | 'referral'>('home');
+  // New games: 99x Matka + Number / Card / Colour Trading
+  const [matka99Market, setMatka99Market] = useState<string | null>(null);
+  const [tradingGame, setTradingGame] = useState<TradingGame | null>(null);
+  const [chartMode, setChartMode] = useState<'matka' | 'matka99'>('matka');
+  const [betsMode, setBetsMode] = useState<'matka' | 'new'>('matka');
+  const applyGameBalances = (b: Balances) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, balance: b.balance, deposit_balance: b.deposit_balance, winning_balance: b.winning_balance, bonus_balance: b.bonus_balance };
+      try { localStorage.setItem('99x_web_user', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+  };
   const [myBetsList, setMyBetsList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -2336,10 +2356,18 @@ export default function App() {
                 <div className="px-4 space-y-6">
                   {/* SECTION 1: LIVE GAMES (Only games currently OPEN for betting!) */}
                   <div className="space-y-3">
-                    <h3 className="text-lg font-extrabold text-white tracking-wide mb-2 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#3EE08A] animate-ping"></span>
-                      Live Games
-                    </h3>
+                    <div className="mb-2 flex items-end justify-between">
+                      <div>
+                        <h3 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
+                          Matka
+                          <span className="rounded-full border border-[#C9A87C]/50 bg-[#C9A87C]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#E0C9A0]">8 MARKETS</span>
+                        </h3>
+                        <p className="mt-0.5 text-[11px] text-gray-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#3EE08A] animate-pulse"></span>
+                          Live now
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="space-y-3">
                       {liveGames.length === 0 ? (
@@ -2405,11 +2433,11 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* SECTION 2: RESULTS (Only closed or declared games!) */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-extrabold text-white tracking-wide mb-2">Results</h3>
+                  {/* SECTION 2: RESULTS (Only closed or declared games!) - compact swipe row */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Today&apos;s results</h4>
 
-                    <div className="space-y-3">
+                    <div className="g-noscroll -mx-4 px-4 flex gap-2.5 overflow-x-auto snap-x pb-1">
                       {resultGames.length === 0 ? (
                         <div className="text-center py-5 bg-[#0C241B] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
                           No closed results yet for today. Live games open above!
@@ -2429,23 +2457,15 @@ export default function App() {
                                 setSelectedGameForBetting(gameName);
                                 setBetMessage('');
                               }}
-                              className="bg-[#0C241B] hover:bg-[#1A3729] p-3.5 rounded-2xl border border-gray-800 shadow-lg flex justify-between items-center cursor-pointer transition-all active:scale-[0.99]"
+                              className="g-lift snap-start shrink-0 w-[150px] bg-[#0C241B] hover:bg-[#1A3729] p-3 rounded-2xl border border-gray-800 shadow-lg flex flex-col items-start gap-2 cursor-pointer"
                             >
-                              <div className="flex items-center gap-3">
-                                {/* 3D Emblem Badge Box */}
-                                <div className="w-12 h-12 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/50 rounded-xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                              <div className="flex items-center gap-2 min-w-0 w-full">
+                                <div className="w-7 h-7 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/50 rounded-lg flex items-center justify-center text-xs shadow-inner shrink-0">
                                   {iconEmoji}
                                 </div>
-
-                                <div>
-                                  <h4 className="text-sm font-bold text-white">{gameName}</h4>
-                                  {isDeclared ? (
-                                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Winner Number · <span className="text-[#E0C9A0] font-semibold">Result Declared</span></p>
-                                  ) : (
-                                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                                      Betting Closed · Result at <span className="font-semibold text-gray-300">{sched?.result || sched?.close || 'soon'}</span>
-                                    </p>
-                                  )}
+                                <div className="min-w-0">
+                                  <h4 className="text-[11px] font-bold text-white truncate">{gameName}</h4>
+                                  <p className="text-[9px] text-gray-500 font-medium">{isDeclared ? 'Declared' : (sched?.result || sched?.close || 'soon')}</p>
                                 </div>
                               </div>
 
@@ -2455,9 +2475,8 @@ export default function App() {
                                   {String(result).padStart(2, '0')}
                                 </div>
                               ) : (
-                                <span className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-[10px] font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                  ⏳ PENDING
+                                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[9px] font-extrabold text-amber-400 uppercase shrink-0">
+                                  Pending
                                 </span>
                               )}
                             </div>
@@ -2470,8 +2489,36 @@ export default function App() {
               );
             })()}
 
+            {/* HOME: 99x Matka + Trading (new games) */}
+            {activeWebTab === 'home' && (
+              <div className="mt-8">
+                <HomeGamesBlocks
+                  onOpenMatka99={(key) => setMatka99Market(key)}
+                  onOpenTrading={(g) => setTradingGame(g)}
+                  onOpenChart99={() => { setChartMode('matka99'); setActiveWebTab('charts'); }}
+                />
+              </div>
+            )}
+
             {/* TAB CONTENT: MY BETS */}
             {activeWebTab === 'mybets' && (
+              <div className="px-4 mb-4">
+                <div className="flex rounded-xl border border-gray-800 bg-[#0A0F0D] p-1">
+                  {(['matka', 'new'] as const).map(m => (
+                    <button key={m} onClick={() => setBetsMode(m)}
+                      className={`flex-1 rounded-lg py-2 text-xs font-extrabold transition-all ${betsMode === m ? 'bg-[#C9A87C] text-slate-950 shadow' : 'text-gray-400 hover:text-white'}`}>
+                      {m === 'matka' ? 'Matka' : '99x & Trading'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {activeWebTab === 'mybets' && betsMode === 'new' && (
+              <div className="px-4">
+                <NewGamesBets mobile={user?.mobile || ''} />
+              </div>
+            )}
+            {activeWebTab === 'mybets' && betsMode === 'matka' && (
               <div className="px-4 space-y-4">
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider text-center">My Bet History</h3>
 
@@ -2721,7 +2768,24 @@ export default function App() {
             )}
 
             {/* TAB CONTENT: CHARTS (100% Interactive & Working!) */}
-            {activeWebTab === 'charts' && (() => {
+            {activeWebTab === 'charts' && (
+              <div className="px-4 mb-4">
+                <div className="flex rounded-xl border border-gray-800 bg-[#0A0F0D] p-1">
+                  {(['matka', 'matka99'] as const).map(m => (
+                    <button key={m} onClick={() => setChartMode(m)}
+                      className={`flex-1 rounded-lg py-2 text-xs font-extrabold transition-all ${chartMode === m ? (m === 'matka' ? 'bg-[#C9A87C] text-slate-950' : 'bg-gradient-to-r from-[#F5EDE2] to-[#E0B7A0] text-slate-950') + ' shadow' : 'text-gray-400 hover:text-white'}`}>
+                      {m === 'matka' ? 'Matka' : '99x Matka'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {activeWebTab === 'charts' && chartMode === 'matka99' && (
+              <div className="px-4">
+                <Matka99Chart />
+              </div>
+            )}
+            {activeWebTab === 'charts' && chartMode === 'matka' && (() => {
               const ALL_GAMES = ["Shiv Parwati", "Delhi Bazar", "Dubai Market", "Shree Ganesh", "Faridabad", "Ghaziabad", "Gali", "Desawar"];
               const liveGames = chartFilter === 'today' ? ALL_GAMES.filter((gName) => isGameBettingOpen(gName, gameSchedules[gName])) : [];
 
@@ -3165,6 +3229,27 @@ export default function App() {
         {/* VIEW 4: FULL-SCREEN PLAY JODI / BIDDING MATRIX UI         */}
         {/* (100% Exact Copy of matkagold.com/matka/play/jodi/39)     */}
         {/* ========================================================= */}
+        {/* NEW GAMES: full-screen pages */}
+        {matka99Market && (
+          <Matka99Page
+            marketKey={matka99Market}
+            mobile={user?.mobile || ''}
+            balance={user?.balance || 0}
+            onBack={() => setMatka99Market(null)}
+            onBalances={applyGameBalances}
+          />
+        )}
+        {tradingGame && (
+          <TradingPage
+            key={tradingGame}
+            game={tradingGame}
+            mobile={user?.mobile || ''}
+            balance={user?.balance || 0}
+            onBack={() => setTradingGame(null)}
+            onBalances={applyGameBalances}
+          />
+        )}
+
         {selectedGameForBetting && (
           <div className="fixed inset-0 bg-[#06120C] text-white z-50 flex flex-col justify-between overflow-y-auto">
             {/* Top Dark Header */}
