@@ -9,3 +9,5 @@ local.properties
 *.apk
 .DS_Store
 backend/src/dataStore.json
+backend/gamesStore.json
+backend/gamesStore.json.tmp

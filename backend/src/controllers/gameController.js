@@ -149,6 +149,11 @@ const placeBet = async (req, res) => {
     targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
   }
 
+  // The logged-in player can only spend their own balance
+  if (!req.authMobile || req.authMobile !== cleanMobile) {
+    return res.status(403).json({ success: false, message: 'You can only place bets from your own account' });
+  }
+
   if (!targetUser && cleanMobile) {
     try {
       const mongoose = require('mongoose');
@@ -518,6 +523,11 @@ const placeBet = async (req, res) => {
 const getMyBets = async (req, res) => {
   const userMobile = req.query.mobile || req.query.user;
   let userBets = [];
+
+  const requestedMobile = String(userMobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== requestedMobile) {
+    return res.json([]);
+  }
 
   if (userMobile && userMobile.trim().length >= 10) {
     const cleanMobile = userMobile.replace(/[^0-9]/g, '').slice(-10);

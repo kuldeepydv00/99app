@@ -373,7 +373,9 @@ function saveDiskStore() {
     };
     fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2), 'utf-8');
     const legacyPath = path.join(__dirname, 'dataStore.json');
-    if (legacyPath !== STORE_FILE && fs.existsSync(legacyPath)) {
+    // Only mirror to the legacy path when no explicit DATA_STORE_PATH was given; otherwise a
+    // test or alternate store would silently overwrite the real src/dataStore.json.
+    if (!process.env.DATA_STORE_PATH && legacyPath !== STORE_FILE && fs.existsSync(legacyPath)) {
       try { fs.writeFileSync(legacyPath, JSON.stringify(data, null, 2), 'utf-8'); } catch (e) {}
     }
   } catch (err) {

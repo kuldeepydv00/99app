@@ -71,9 +71,16 @@ app.get('/api/app/version', (req, res) => {
   });
 });
 
+// Settings fields that must never reach the public app/website (admin reads them via /api/admin/settings)
+const SECRET_SETTING_KEYS = ['msg91_auth_key', 'msg91_template_id', 'ekqr_api_key', 'ekqr_webhook_url'];
 app.get('/api/app/settings', (req, res) => {
   const { settingsConfig } = require('./store');
-  res.json(settingsConfig || {
+  if (settingsConfig) {
+    const publicSettings = { ...settingsConfig };
+    SECRET_SETTING_KEYS.forEach(k => { delete publicSettings[k]; });
+    return res.json(publicSettings);
+  }
+  res.json({
     whatsapp_number: '+917206561420',
     whatsapp_call_number: '+917206561420',
     app_download_link: 'https://newmatkadomain.com/99xmatka.apk',
@@ -87,7 +94,8 @@ app.get('/api/app/settings', (req, res) => {
   });
 });
 
-app.post('/api/admin/update-settings', (req, res) => {
+const { protectAdmin } = require('./middleware/auth');
+app.post('/api/admin/update-settings', protectAdmin, (req, res) => {
   const store = require('./store');
   if (req.body) {
     if (req.body.jodi_rate !== undefined) store.settingsConfig.jodi_rate = parseFloat(req.body.jodi_rate) || 95;
@@ -123,18 +131,23 @@ app.post('/api/admin/update-settings', (req, res) => {
 // Routes
 const { getPaymentMethods, savePaymentMethod, deletePaymentMethod, toggleActivePaymentMethod, getNotifications, sendCustomNotification, deleteNotification } = require('./controllers/adminController');
 app.get('/api/payment-methods', getPaymentMethods);
-app.post('/api/payment-methods', savePaymentMethod);
-app.delete('/api/payment-methods/:id', deletePaymentMethod);
-app.post('/api/payment-methods/:id/toggle', toggleActivePaymentMethod);
+app.post('/api/payment-methods', protectAdmin, savePaymentMethod);
+app.delete('/api/payment-methods/:id', protectAdmin, deletePaymentMethod);
+app.post('/api/payment-methods/:id/toggle', protectAdmin, toggleActivePaymentMethod);
 
 app.get('/api/notifications', getNotifications);
-app.post('/api/send-notification', sendCustomNotification);
-app.delete('/api/notifications/:id', deleteNotification);
+app.post('/api/send-notification', protectAdmin, sendCustomNotification);
+app.delete('/api/notifications/:id', protectAdmin, deleteNotification);
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/game', require('./routes/gameRoutes'));
+app.use('/api/games', require('./routes/gamesRoutes'));
+app.use('/api/admin/games', require('./routes/gamesAdminRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Number / Card / Colour Trading: opens, locks and settles rounds every second
+require('./games/tradingEngine').startTicker();
 app.use('/api/payment', require('./routes/paymentRoutes'));
 
 // EKQR Webhook direct alias routes for all possible callback paths

@@ -339,6 +339,7 @@ fun AppNavigation() {
                                 val conn = url.openConnection() as HttpURLConnection
                                 conn.requestMethod = "GET"
                                 conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
+                                AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                 conn.connectTimeout = 1500
                                 if (conn.responseCode == 200) {
                                     val text = conn.inputStream.bufferedReader().readText()
@@ -724,6 +725,7 @@ fun AppNavigation() {
                                         conn.setRequestProperty("Content-Type", "application/json")
                                         conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
                                         conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+                                        AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                         conn.connectTimeout = 5000
                                         conn.readTimeout = 5000
                                         conn.doOutput = true
