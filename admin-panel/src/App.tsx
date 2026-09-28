@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import TradingAdmin from './games/TradingAdmin';
+import Matka99Admin from './games/Matka99Admin';
 
 // API Base URL
 
@@ -98,6 +100,30 @@ const formatDisplayDate = (d: any, id?: any, fallbackDate?: any): string => {
 
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:5002' : 'https://newmatkadomain.com';
+
+// Every admin API call now requires a valid admin session token (see backend adminRoutes.js).
+// Rather than editing all 50+ individual fetch(...) call sites in this file to attach it,
+// patch window.fetch once at load time: any request to our own /api/admin/* endpoints gets
+// the stored admin_token attached as a Bearer header automatically. Requests to other hosts
+// (or endpoints that don't need it, like /login and /verify-otp themselves) pass through
+// untouched.
+if (typeof window !== 'undefined' && !(window as any).__adminAuthFetchPatched) {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    try {
+      const url = typeof input === 'string' ? input : (input as Request).url || String(input);
+      if (url.startsWith(`${API_BASE}/api/admin/`) && !url.includes('/api/admin/login') && !url.includes('/api/admin/verify-otp')) {
+        const token = localStorage.getItem('admin_token');
+        if (token) {
+          const mergedHeaders = { ...(init?.headers || {}), Authorization: `Bearer ${token}` };
+          return originalFetch(input, { ...(init || {}), headers: mergedHeaders });
+        }
+      }
+    } catch (e) {}
+    return originalFetch(input, init);
+  }) as typeof window.fetch;
+  (window as any).__adminAuthFetchPatched = true;
+}
 
 // Canvas Chart Component for Deposits, Withdraws, etc.
 function CanvasChart({ title, color, dataPoints, chartType, labels }: { title: string; color: string; dataPoints: number[]; chartType: string; labels?: string[] }) {
@@ -231,10 +257,11 @@ export default function App() {
     'dashboard' | 'admins' | 'users' | 'userChange' | 'gameLedger' | 'wallets' |
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
-    'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories'
+    'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
+    'matka99' | 'numberTrading' | 'cardTrading' | 'colourTrading'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'numberTrading', 'cardTrading', 'colourTrading'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -863,6 +890,7 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_token');
     setLoginStep(1);
   };
 
@@ -885,7 +913,7 @@ export default function App() {
         fetch(`${API_BASE}/api/admin/notifications`),
         fetch(`${API_BASE}/api/game/banner`),
         fetch(`${API_BASE}/api/app/version`),
-        fetch(`${API_BASE}/api/app/settings`),
+        fetch(`${API_BASE}/api/admin/settings`),
         fetch(`${API_BASE}/api/admin/banners`),
         fetch(`${API_BASE}/api/admin/results-history`),
         fetch(`${API_BASE}/api/game/schedules`),
@@ -2173,6 +2201,10 @@ export default function App() {
               { id: 'banners', label: 'Banner', icon: '🖼️' },
               { id: 'referral', label: 'Refer & Earn', icon: '🎁' },
               { id: 'gameLedger', label: 'Game Ledger', icon: '📘' },
+              { id: 'matka99', label: '99x Matka', icon: '💎' },
+              { id: 'numberTrading', label: 'Number Trading', icon: '🔢' },
+              { id: 'cardTrading', label: 'Card Trading', icon: '🃏' },
+              { id: 'colourTrading', label: 'Colour Trading', icon: '🎨' },
               { id: 'wallets', label: 'Wallet', icon: '👛' },
               { id: 'walletTransactions', label: 'Wallet Transactions', icon: '🧾' },
               { id: 'deposits', label: 'Deposit Request', icon: '💳' },
@@ -6994,6 +7026,12 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            {/* NEW GAMES */}
+            {activeTab === 'matka99' && <Matka99Admin />}
+            {activeTab === 'numberTrading' && <TradingAdmin key="number" game="number" />}
+            {activeTab === 'cardTrading' && <TradingAdmin key="card" game="card" />}
+            {activeTab === 'colourTrading' && <TradingAdmin key="colour" game="colour" />}
 
           </main>
 
