@@ -66,6 +66,8 @@ fun AppNavigation() {
     var isAccountDeleted by remember { mutableStateOf(false) }
     var liveWhatsAppNumber by remember { mutableStateOf("917206561420") }
     var declaredResultsMap by remember { mutableStateOf<Map<String, Int?>>(emptyMap()) }
+    // New games: which 99x Matka market is open on the 99x betting screen
+    var selectedMatka99Market by remember { mutableStateOf("") }
     var livePlayersMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
     // In-App Auto-Update States (Option B)
@@ -663,7 +665,36 @@ fun AppNavigation() {
                     onNavigateToChart = { currentScreen = "chart" },
                     onNavigateToReferral = { currentScreen = "referral" },
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onRefresh = triggerManualRefresh
+                    onRefresh = triggerManualRefresh,
+                    onNavigateToMatka99 = { key ->
+                        selectedMatka99Market = key
+                        currentScreen = "matka99_betting"
+                    },
+                    onNavigateToTrading = { game -> currentScreen = "trading_$game" },
+                    onNavigateToMatka99Chart = { currentScreen = "matka99_chart" }
+                )
+                "matka99_chart" -> com.example.numberbetting.presentation.games.Matka99ChartScreen(
+                    onBack = { currentScreen = "game" }
+                )
+                "matka99_betting" -> com.example.numberbetting.presentation.games.Matka99BettingScreen(
+                    marketKey = selectedMatka99Market,
+                    mobile = currentUserPhone,
+                    balance = userBalance,
+                    onBack = { currentScreen = "game" },
+                    onBalances = { bal, bonus ->
+                        userBalance = bal
+                        userBonus = bonus
+                    }
+                )
+                "trading_number", "trading_card", "trading_colour" -> com.example.numberbetting.presentation.games.TradingScreen(
+                    game = targetScreen.removePrefix("trading_"),
+                    mobile = currentUserPhone,
+                    balance = userBalance,
+                    onBack = { currentScreen = "game" },
+                    onBalances = { bal, bonus ->
+                        userBalance = bal
+                        userBonus = bonus
+                    }
                 )
                 "betting" -> BettingScreen(
                     gameTitle = selectedGameTitle,
@@ -801,7 +832,8 @@ fun AppNavigation() {
                 "history", "my_bets", "profile" -> MyBetsScreen(
                     placedBetsList = placedBets.toList(),
                     onBack = { currentScreen = "game" },
-                    onRefresh = triggerManualRefresh
+                    onRefresh = triggerManualRefresh,
+                    mobile = currentUserPhone
                 )
                 "chart" -> com.example.numberbetting.presentation.chart.ChartsScreen(
                     onNavigateToHome = { currentScreen = "game" },

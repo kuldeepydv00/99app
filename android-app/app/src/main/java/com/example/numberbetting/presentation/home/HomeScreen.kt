@@ -38,6 +38,8 @@ import com.example.numberbetting.domain.GameScheduleManager
 import com.example.numberbetting.data.ApiConfig
 import com.example.numberbetting.presentation.theme.*
 import com.example.numberbetting.presentation.components.MoneyDoodleBackground
+import com.example.numberbetting.presentation.games.NewGamesHomeSections
+import com.example.numberbetting.presentation.games.OptionTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
@@ -89,7 +91,10 @@ fun HomeScreen(
     onNavigateToChart: () -> Unit = {},
     onNavigateToReferral: () -> Unit = {},
     onMenuClick: () -> Unit = {},
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    onNavigateToMatka99: (String) -> Unit = {},
+    onNavigateToTrading: (String) -> Unit = {},
+    onNavigateToMatka99Chart: () -> Unit = {}
 ) {
     var selectedBottomTab by remember { mutableStateOf("HOME") }
     var showComingSoonDialog by remember { mutableStateOf(false) }
@@ -376,16 +381,33 @@ fun HomeScreen(
                         }
                     }
 
-                    // Live Games Section Title (PERMANENTLY ON TOP)
+                    // Matka section header (the original game; its open markets follow)
                     item {
                         Spacer(modifier = Modifier.height(26.dp))
-                        Text(
-                            text = LanguageManager.getText("Live Games", "लाइव गेम"),
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = LanguageManager.getText("Matka", "मटका"),
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color(0xFFC9A87C).copy(alpha = 0.12f))
+                                    .border(1.dp, Color(0xFFC9A87C).copy(alpha = 0.5f), RoundedCornerShape(50))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text("8 MARKETS", color = Color(0xFFE0C9A0), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF3EE08A)))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(LanguageManager.getText("Live now", "अभी लाइव"), color = Color(0xFF8FA89B), fontSize = 11.sp)
+                        }
                         Spacer(modifier = Modifier.height(14.dp))
                     }
 
@@ -427,41 +449,61 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                // Results Section Title (PERMANENTLY ON BOTTOM)
+                // Matka: today's results as a compact swipe row
                 item {
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = LanguageManager.getText("Results", "परिणाम"),
-                        color = Color.White,
-                        fontSize = 20.sp,
+                        text = LanguageManager.getText("TODAY'S RESULTS", "आज के परिणाम"),
+                        color = Color(0xFFD1D5DB),
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(14.dp))
-                }
-
-                // Results Items List
-                items(resultGames, key = { it }) { gameName ->
-                    val winningNum = declaredResults[gameName]
-                    val sched = GameScheduleManager.schedules[gameName]
-
-                    val icon = getGameIconEmoji(gameName)
-
-                    ResultCard(
-                        title = gameName,
-                        subtitle = if (winningNum != null) LanguageManager.getText("Winning Number", "विजेता नंबर") else LanguageManager.getText("Result to be announced soon", "परिणाम जल्द घोषित होगा") + " at ${sched?.resultTimeStr ?: ""}",
-                        icon = icon,
-                        isLive = false,
-                        winningNumber = winningNum?.let { String.format("%02d", it) },
-                        onClick = {
-                            if (GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN) {
-                                onNavigateToBetting(gameName)
-                            } else {
-                                android.widget.Toast.makeText(context, "⏳ Result Pending for $gameName", android.widget.Toast.LENGTH_SHORT).show()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(resultGames, key = { it }) { gameName ->
+                            val winningNum = declaredResults[gameName]
+                            val sched = GameScheduleManager.schedules[gameName]
+                            Column(
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF0C241B))
+                                    .border(1.dp, Color(0xFF1F2937), RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        if (GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN) {
+                                            onNavigateToBetting(gameName)
+                                        } else {
+                                            android.widget.Toast.makeText(context, "⏳ Result Pending for $gameName", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(getGameIconEmoji(gameName), fontSize = 13.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(gameName, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (winningNum != null) OptionTag("number", String.format("%02d", winningNum))
+                                    else Text("PENDING", color = Color(0xFFF5B544), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    Text((sched?.resultTimeStr ?: "").replace(" IST", ""), color = Color(0xFF6B7280), fontSize = 9.sp)
+                                }
                             }
                         }
+                    }
+                }
+
+                // New games: 99x Matka and Trading (Number / Card / Colour)
+                item {
+                    Spacer(modifier = Modifier.height(30.dp))
+                    NewGamesHomeSections(
+                        onOpenMatka99 = onNavigateToMatka99,
+                        onOpenTrading = onNavigateToTrading,
+                        onOpenChart99 = onNavigateToMatka99Chart
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
                 // Bottom Scroll Padding item

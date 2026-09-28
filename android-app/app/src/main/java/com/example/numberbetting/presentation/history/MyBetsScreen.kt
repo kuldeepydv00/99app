@@ -50,9 +50,11 @@ data class BetItemData(
 fun MyBetsScreen(
     placedBetsList: List<BetItemData> = emptyList(),
     onBack: () -> Unit = {},
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    mobile: String = ""
 ) {
     val scope = rememberCoroutineScope()
+    var showNewGames by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
 
     val pullRefreshState = rememberPullRefreshState(
@@ -153,6 +155,12 @@ fun MyBetsScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(6.dp))
+                com.example.numberbetting.presentation.games.GamesModeToggle(showNewGames = showNewGames, onChange = { showNewGames = it })
+                if (showNewGames) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    com.example.numberbetting.presentation.games.NewGamesBetsList(mobile = mobile)
+                } else {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Date Selector Bar ("Today", "Yesterday", "📅 Calendar")
@@ -312,6 +320,7 @@ fun MyBetsScreen(
                         }
                     }
                 }
+                            }
             }
 
             PullRefreshIndicator(
