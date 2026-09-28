@@ -2892,6 +2892,8 @@ const getReferralStats = async (req, res) => {
 };
 
 // Admin Authentication Handlers
+const { signAdminToken } = require('../utils/tokens');
+
 const adminLogin = async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -2929,20 +2931,6 @@ const verifyAdminOtp = async (req, res) => {
   }
 
   const cleanOtp = String(otp).trim();
-  // Master / Dev OTP Bypass (allows 1234, 9999, 0000, 2004 for admin testing)
-  if (cleanOtp === '1234' || cleanOtp === '9999' || cleanOtp === '0000' || cleanOtp === '2004') {
-    return res.json({
-      success: true,
-      token: 'admin_session_token_' + Date.now(),
-      admin: {
-        username: 'Admin',
-        name: 'Admin',
-        email: ADMIN_EMAIL,
-        role: 'Super Admin',
-        mobile: '+91' + ADMIN_PHONE
-      }
-    });
-  }
 
   try {
     const { verifyOtp } = require('../utils/msg91');
@@ -2950,7 +2938,7 @@ const verifyAdminOtp = async (req, res) => {
     if (result.success) {
       return res.json({
         success: true,
-        token: 'admin_session_token_' + Date.now(),
+        token: signAdminToken(),
         admin: {
           username: 'Admin',
           name: 'Admin',

@@ -462,27 +462,56 @@ exports.handleEkqrWebhook = async (req, res) => {
     console.log('[EKQR Webhook Callback Received]', JSON.stringify(payload, null, 2));
 
     const clientTxnId = payload.client_txn_id || payload.clientTxnId || payload.order_id;
-    const status = String(payload.status || '').toLowerCase();
-    const upiTxnId = payload.upi_txn_id || payload.utr || payload.bank_ref_num || payload.id;
-    const gatewayTxnId = payload.id || payload.order_id;
 
     if (!clientTxnId) {
       console.warn('[EKQR Webhook] No client_txn_id found in webhook payload');
       return res.status(200).json({ status: false, message: 'No client_txn_id provided' });
     }
 
-    if (status === 'success' || status === 'completed' || status === 'txndone' || payload.status === true) {
-      await creditSuccessfulDeposit(clientTxnId, upiTxnId, gatewayTxnId, payload);
-      return res.status(200).json({ status: true, message: 'Webhook processed & deposit credited successfully' });
-    } else {
-      console.log(`[EKQR Webhook] Non-success status: ${status} for txn: ${clientTxnId}`);
-      let dep = memoryDeposits.find(d => String(d.client_txn_id) === String(clientTxnId));
-      if (dep && (status === 'failure' || status === 'failed')) {
-        dep.status = 'Rejected';
-        saveDiskStore();
+    // SECURITY: the webhook body itself is attacker-controlled — anyone who has seen the
+    // shape of a deposit request (e.g. their own past one) could POST a forged "success"
+    // callback here. So we never trust payload.status. Instead, treat the webhook purely
+    // as a "check this transaction now" nudge, and independently ask EKQR's own API what
+    // actually happened, the same verified way checkEkqrStatus()/the background poller do.
+    let dep = memoryDeposits.find(d => String(d.client_txn_id) === String(clientTxnId));
+    const apiKey = getApiKey();
+    const verifyPayload = {
+      key: apiKey,
+      client_txn_id: clientTxnId,
+      txn_date: (dep && dep.txn_date) || getFormattedDate()
+    };
+
+    const verifyResp = await fetch(`${EKQR_API_BASE}/check_order_status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(verifyPayload)
+    });
+    const verifyData = await verifyResp.json();
+    console.log('[EKQR Webhook Independent Verify]', JSON.stringify(verifyData));
+
+    if (verifyData && (verifyData.status === true || verifyData.status === 'success') && verifyData.data) {
+      const orderData = verifyData.data;
+      const orderStatus = String(orderData.status || '').toLowerCase();
+
+      if (orderStatus === 'success' || orderStatus === 'completed' || orderStatus === 'txndone') {
+        const utr = orderData.upi_txn_id || orderData.bank_ref_num || orderData.id;
+        await creditSuccessfulDeposit(clientTxnId, utr, orderData.id, orderData);
+        return res.status(200).json({ status: true, message: 'Webhook processed & deposit credited after independent verification' });
       }
-      return res.status(200).json({ status: true, message: `Status noted: ${status}` });
+
+      if (orderStatus === 'failure' || orderStatus === 'failed') {
+        if (dep) {
+          dep.status = 'Rejected';
+          saveDiskStore();
+        }
+        return res.status(200).json({ status: true, message: `Verified status: ${orderStatus}` });
+      }
+
+      return res.status(200).json({ status: true, message: `Verified status: pending (${orderStatus || 'unknown'})` });
     }
+
+    console.warn(`[EKQR Webhook] Independent verification did not confirm success for txn: ${clientTxnId}; ignoring webhook's own claim.`);
+    return res.status(200).json({ status: true, message: 'Webhook received; awaiting independent verification' });
   } catch (error) {
     console.error('[EKQR Webhook Processing Error]', error);
     // Always return 200 to prevent EKQR from endlessly retrying erroring callbacks

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.numberbetting.data.ApiConfig
+import com.example.numberbetting.domain.AuthManager
 import com.example.numberbetting.domain.LanguageManager
 import com.example.numberbetting.presentation.theme.*
 import kotlinx.coroutines.Dispatchers
@@ -126,6 +127,7 @@ fun WalletScreen(
                             conn.connectTimeout = 3000
                             conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
                             conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+                            AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                             if (conn.responseCode in 200..299) {
                                 val resp = conn.inputStream.bufferedReader().readText()
                                 val json = JSONObject(resp)
@@ -163,6 +165,7 @@ fun WalletScreen(
                     val conn = url.openConnection() as HttpURLConnection
                     conn.requestMethod = "GET"
                     conn.connectTimeout = 5000
+                    AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                     val resp = conn.inputStream.bufferedReader().readText()
                     val arr = JSONArray(resp)
                     val list = mutableListOf<WalletTransaction>()
@@ -397,6 +400,7 @@ fun WalletScreen(
                                         val conn = url.openConnection() as HttpURLConnection
                                         conn.requestMethod = "POST"
                                         conn.setRequestProperty("Content-Type", "application/json")
+                                        AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                         conn.doOutput = true
                                         val body = JSONObject().apply { put("mobile", mobile) }
                                         conn.outputStream.use { it.write(body.toString().toByteArray()) }
@@ -1160,6 +1164,7 @@ fun WalletScreen(
                                             conn.setRequestProperty("Content-Type", "application/json")
                                             conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
                                             conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+                                            AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                             conn.connectTimeout = 3000
                                             conn.doOutput = true
                                             val body = JSONObject().apply {
@@ -1367,6 +1372,7 @@ fun WalletScreen(
                                     conn.setRequestProperty("Content-Type", "application/json")
                                     conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
                                     conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+                                    AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                     conn.connectTimeout = 3000
                                     conn.doOutput = true
                                     val body = JSONObject().apply {

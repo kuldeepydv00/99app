@@ -111,14 +111,26 @@ async function verifyOtp(mobileNumber, otpCode) {
   const cleanMobile = String(mobileNumber).replace(/[^0-9]/g, "").slice(-10);
   const cleanOtp = String(otpCode).trim();
 
-  // Test / Master OTP Bypass (1234, 2004, 9999, 0000)
-  if (cleanOtp === "1234" || cleanOtp === "2004" || cleanOtp === "9999" || cleanOtp === "0000" || TEST_PHONES.includes(cleanMobile)) {
-    console.log("[MSG91 OTP] OTP " + cleanOtp + " verified via test bypass for " + cleanMobile);
+  const { authKey, enabled } = getMsg91Config();
+  const devFallbackActive = !enabled || !authKey;
+
+  // Documented developer test-phone bypass (see admin panel Settings tab): two specific
+  // numbers always accept OTP 1234, regardless of MSG91 config, to save SMS balance while
+  // testing. Scoped to those exact numbers only — not a blanket "any phone, any time" bypass.
+  if (cleanOtp === "1234" && TEST_PHONES.includes(cleanMobile)) {
+    console.log("[MSG91 OTP] OTP 1234 verified via documented test-phone bypass for " + cleanMobile);
     return { success: true, message: "OTP verified successfully (test bypass)" };
   }
 
-  const { authKey, enabled } = getMsg91Config();
-  if (!enabled || !authKey) {
+  // SECURITY: the broader master-code bypass (1234/2004/9999/0000 for ANY phone number)
+  // only applies while dev fallback is active (MSG91 disabled / no auth key configured).
+  // It must never work once real SMS is actually enabled and configured — otherwise anyone,
+  // for any account including admin, could log in with one of these codes in production.
+  if (devFallbackActive) {
+    if (cleanOtp === "1234" || cleanOtp === "2004" || cleanOtp === "9999" || cleanOtp === "0000") {
+      console.log("[MSG91 OTP] OTP " + cleanOtp + " verified via dev-fallback master code for " + cleanMobile);
+      return { success: true, message: "OTP verified (dev fallback)" };
+    }
     return { success: true, message: "OTP verified (dev fallback)" };
   }
 

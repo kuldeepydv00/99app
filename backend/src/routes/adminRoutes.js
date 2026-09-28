@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { protectAdmin } = require('../middleware/auth');
+const { authLimiter, moneyLimiter } = require('../middleware/rateLimit');
 const {
   getStats,
   getUsers,
@@ -60,12 +62,24 @@ const {
   updateAutoPlayerConfig
 } = require('../controllers/adminController');
 
+// Auth endpoints: must stay public, this is how an admin session begins
+router.post('/login', authLimiter, adminLogin);
+router.post('/verify-otp', authLimiter, verifyAdminOtp);
+
+// Public read-only endpoints the live website/Android app call directly (unauthenticated
+// end users, not admins) — these must stay open or the public app breaks.
+router.get('/schedules', getGameSchedules);
+router.get('/declared-results', getDeclaredResults);
+router.get('/payment-methods', getPaymentMethods);
+router.get('/paymentMethods', getPaymentMethods);
+
+// Everything else below is admin-only: every route requires a valid admin session token.
+router.use(protectAdmin);
+
 router.get('/notifications', getNotifications);
 router.post('/send-notification', sendCustomNotification);
 router.delete('/notifications/:id', deleteNotification);
 
-router.post('/login', adminLogin);
-router.post('/verify-otp', verifyAdminOtp);
 router.get('/admins', getAdminAdmins);
 router.get('/winnings', getAdminWinnings);
 router.get('/game-ledger', getGameLedger);
@@ -73,13 +87,11 @@ router.get('/commission-logs', getCommissionLogs);
 router.get('/leaderboard', getLeaderboard);
 router.get('/payouts', getPayouts);
 router.get('/packages', getPackages);
-router.get('/payment-methods', getPaymentMethods);
 router.post('/payment-methods', savePaymentMethod);
 router.post('/payment-methods/save', savePaymentMethod);
 router.delete('/payment-methods/:id', deletePaymentMethod);
 router.post('/payment-methods/:id/toggle', toggleActivePaymentMethod);
 
-router.get('/paymentMethods', getPaymentMethods);
 router.post('/paymentMethods', savePaymentMethod);
 router.delete('/paymentMethods/:id', deletePaymentMethod);
 router.post('/paymentMethods/:id/toggle', toggleActivePaymentMethod);
@@ -109,7 +121,6 @@ router.get('/bids', getAdminBets);
 router.delete('/bets/:id', deleteAdminBid);
 router.delete('/bids/:id', deleteAdminBid);
 router.post('/update-bid', updateAdminBid);
-router.get('/schedules', getGameSchedules);
 router.post('/update-schedule', updateGameSchedule);
 router.post('/toggle-market-status', toggleMarketStatus);
 router.post('/update-user-wallet', updateUserWallet);
@@ -117,19 +128,18 @@ router.post('/declare-result', declareGameResult);
 router.post('/clear-result', clearGameResult);
 router.post('/edit-result', editGameResult);
 router.get('/results-history', getResultsHistory);
-router.get('/declared-results', getDeclaredResults);
 
 // Deposits routes
 router.get('/deposits', getDeposits);
 router.post('/deposits/request', createDepositRequest);
-router.post('/deposits/:id/approve', approveDeposit);
-router.post('/deposits/:id/reject', rejectDeposit);
+router.post('/deposits/:id/approve', moneyLimiter, approveDeposit);
+router.post('/deposits/:id/reject', moneyLimiter, rejectDeposit);
 
 // Withdrawals routes
 router.get('/withdrawals', getWithdrawals);
 router.post('/withdrawals/request', createWithdrawalRequest);
-router.post('/withdrawals/:id/approve', approveWithdrawal);
-router.post('/withdrawals/:id/reject', rejectWithdrawal);
+router.post('/withdrawals/:id/approve', moneyLimiter, approveWithdrawal);
+router.post('/withdrawals/:id/reject', moneyLimiter, rejectWithdrawal);
 
 // Live Players count (User Change feature)
 router.get('/live-players', getLivePlayers);

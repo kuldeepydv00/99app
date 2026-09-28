@@ -1,6 +1,7 @@
 const { userWalletStore, registeredUsers, memoryDeposits, memoryWithdrawals, memoryBets, saveDiskStore } = require('../store');
 const { formatDateKey } = require('../historicalChartStore');
 const msg91 = require('../utils/msg91');
+const { signUserToken } = require('../utils/tokens');
 
 function getISTDateStr(d) {
   if (!d) d = new Date();
@@ -204,6 +205,9 @@ const getUserProfile = async (req, res) => {
   const { mobile } = req.query;
   let targetUser = null;
   const cleanMob = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMob) {
+    return res.status(403).json({ success: false, message: 'You can only view your own profile' });
+  }
   const { blockedMobiles, deletedMobiles } = require('../store');
 
   if (cleanMob && cleanMob.length >= 10 && deletedMobiles && deletedMobiles.includes(cleanMob)) {
@@ -299,6 +303,9 @@ const getWalletBalance = async (req, res) => {
   const { mobile } = req.query;
   let targetUser = null;
   const cleanMob = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMob) {
+    return res.status(403).json({ success: false, message: 'You can only view your own wallet' });
+  }
   const { blockedMobiles, deletedMobiles } = require('../store');
 
   if (cleanMob && cleanMob.length >= 10 && deletedMobiles && deletedMobiles.includes(cleanMob)) {
@@ -434,6 +441,10 @@ const getWalletBalance = async (req, res) => {
 // @route   POST /api/user/wallet/balance
 const updateWalletBalance = async (req, res) => {
   const { amount, mobile } = req.body;
+  const cleanMobileCheck = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMobileCheck) {
+    return res.status(403).json({ success: false, message: 'You can only update your own wallet balance' });
+  }
   const val = parseFloat(amount);
   if (!isNaN(val)) {
     let targetUser = null;
@@ -504,6 +515,7 @@ const getTransactions = async (req, res) => {
   try {
     const { mobile } = req.query;
     const cleanMobile = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+    if (!req.authMobile || req.authMobile !== cleanMobile) return res.json([]);
     if (!cleanMobile || cleanMobile.length < 10) return res.json([]);
 
     const targetUser = registeredUsers.find(u => (u.mobile || u.phone || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
@@ -710,6 +722,9 @@ const submitDeposit = async (req, res) => {
   const { user, mobile, amount, method, utr } = req.body;
 
   const cleanMobile = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMobile) {
+    return res.status(403).json({ success: false, message: 'You can only submit a deposit for your own account' });
+  }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
 
   const numAmount = parseFloat(amount) || 500;
@@ -781,6 +796,9 @@ const requestWithdrawal = async (req, res) => {
   }
 
   const cleanMobile = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMobile) {
+    return res.status(403).json({ success: false, message: 'You can only request a withdrawal for your own account' });
+  }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
 
   const withdrawable = targetUser ? parseFloat(((targetUser.deposit_balance || 0) + (targetUser.winning_balance || 0)).toFixed(2)) : 0.00;
@@ -880,6 +898,9 @@ const requestWithdrawal = async (req, res) => {
 const saveBankDetails = async (req, res) => {
   const { mobile, account_name, account_number, ifsc_code, bank_name, upi_id } = req.body;
   const cleanMobile = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMobile) {
+    return res.status(403).json({ success: false, message: 'You can only save your own bank details' });
+  }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
 
   const accName = (account_name || '').trim();
@@ -950,6 +971,9 @@ const saveBankDetails = async (req, res) => {
 // @route   GET /api/user/bank-details
 const getBankDetails = async (req, res) => {
   const cleanMobile = (req.query.mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMobile) {
+    return res.status(403).json({ success: false, message: 'You can only view your own bank details' });
+  }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
 
   let accNo = targetUser ? (targetUser.account_number || targetUser.accountNumber || null) : null;
@@ -1123,7 +1147,7 @@ const verifySmsOtp = async (req, res) => {
         }
       } catch (e) {}
     }
-    return res.json({ success: true, message: 'OTP verified successfully', user });
+    return res.json({ success: true, message: 'OTP verified successfully', user, token: signUserToken(cleanMobile) });
   }
 
   return res.status(400).json({ success: false, message: verifyResult.message || 'Invalid OTP code! Please try again.' });
@@ -1476,6 +1500,9 @@ const transferCommissionToWallet = async (req, res) => {
   if (!mobile) return res.status(400).json({ success: false, message: 'Mobile is required' });
 
   const cleanMobile = mobile.replace(/[^0-9]/g, '').slice(-10);
+  if (!req.authMobile || req.authMobile !== cleanMobile) {
+    return res.status(403).json({ success: false, message: 'You can only transfer your own commission' });
+  }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
 
   if (!targetUser) return res.status(404).json({ success: false, message: 'User not found' });

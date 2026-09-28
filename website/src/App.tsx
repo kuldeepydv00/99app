@@ -12,14 +12,30 @@ const API_BASE_URLS = [
   'http://localhost:5002'
 ];
 
+// Attach the logged-in user's session token (issued at OTP verification) to every
+// request automatically, so protected endpoints (wallet, deposits, withdrawals, profile,
+// bank details) work without every call site having to remember to add it.
+const getAuthHeaders = (): Record<string, string> => {
+  try {
+    const token = localStorage.getItem('99x_web_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch (e) {
+    return {};
+  }
+};
+
 const fetchApi = async (endpoint: string, options: any = {}) => {
+  const mergedOptions = {
+    ...options,
+    headers: { ...getAuthHeaders(), ...(options.headers || {}) }
+  };
   for (const base of API_BASE_URLS) {
     try {
-      const res = await fetch(`${base}${endpoint}`, options);
+      const res = await fetch(`${base}${endpoint}`, mergedOptions);
       if (res.ok) return res;
     } catch (e) {}
   }
-  return fetch(`${API_BASE_URLS[0]}${endpoint}`, options);
+  return fetch(`${API_BASE_URLS[0]}${endpoint}`, mergedOptions);
 };
 
 interface GameSchedule {
@@ -801,7 +817,7 @@ export default function App() {
             setIsWebUserDeleted(true);
             setIsWebUserBlocked(false);
             setUser(null);
-            localStorage.removeItem('99x_web_user');
+            localStorage.removeItem('99x_web_user'); localStorage.removeItem('99x_web_token');
           } else if (uData.is_blocked || uData.error === 'NO_INTERNET') {
             setIsWebUserBlocked(true);
             setIsWebUserDeleted(false);
@@ -983,6 +999,10 @@ export default function App() {
           setOtpInput('');
           setIsVerifyingOtp(false);
           return;
+        }
+
+        if (verifyData.token) {
+          try { localStorage.setItem('99x_web_token', verifyData.token); } catch (e) {}
         }
 
         // OTP Verified successfully!
@@ -2012,7 +2032,7 @@ export default function App() {
                       onClick={() => {
                         setUser(null);
                         setMyBetsList([]);
-                        localStorage.removeItem('99x_web_user');
+                        localStorage.removeItem('99x_web_user'); localStorage.removeItem('99x_web_token');
                         localStorage.removeItem('99x_web_view');
                         localStorage.removeItem('99x_web_tab');
                         localStorage.removeItem('99x_selected_game');

@@ -297,6 +297,7 @@ fun AppNavigation() {
                             val conn = url.openConnection() as HttpURLConnection
                             conn.requestMethod = "GET"
                             conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
+                            AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                             conn.connectTimeout = 1500
                             if (conn.responseCode == 200) {
                                 ApiConfig.cachedWorkingUrl = baseUrl
@@ -589,6 +590,7 @@ fun AppNavigation() {
                     val conn = url.openConnection() as HttpURLConnection
                     conn.requestMethod = "GET"
                     conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
+                    AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                     conn.connectTimeout = 1500
                     if (conn.responseCode == 200) {
                         ApiConfig.cachedWorkingUrl = baseUrl
@@ -769,6 +771,7 @@ fun AppNavigation() {
                                     conn.setRequestProperty("Content-Type", "application/json")
                                     conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
                                     conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+                                    AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                     conn.connectTimeout = 1500
                                     conn.doOutput = true
                                     val body = JSONObject().apply {

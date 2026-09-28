@@ -23,7 +23,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.example.numberbetting.data.ApiConfig
+import com.example.numberbetting.domain.AuthManager
 import com.example.numberbetting.presentation.components.MoneyDoodleBackground
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -47,6 +49,7 @@ fun OtpScreen(
     var isResending by remember { mutableStateOf(false) }
     var resendTimer by remember { mutableIntStateOf(30) }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val focusRequester = remember { FocusRequester() }
 
@@ -223,6 +226,7 @@ fun OtpScreen(
                                 coroutineScope.launch(Dispatchers.IO) {
                                     var verified = false
                                     var errMsg = ""
+                                    var authToken: String? = null
                                     for (baseUrl in ApiConfig.getWorkingUrls()) {
                                         try {
                                             val url = URL("$baseUrl/api/user/verify-otp")
@@ -245,15 +249,23 @@ fun OtpScreen(
                                             if (code in 200..299 && resObj.optBoolean("success", true)) {
                                                 ApiConfig.cachedWorkingUrl = baseUrl
                                                 verified = true
+                                                authToken = resObj.optString("token", null)
                                                 break
                                             } else {
                                                 errMsg = resObj.optString("message", "Invalid OTP code")
                                             }
                                         } catch (e: Exception) { }
                                     }
+                                    // NOTE: there used to be a client-side "2004 always works" bypass here.
+                                    // Removed — the server is now the only source of truth for OTP verification,
+                                    // and without a real token from it, protected calls (wallet, deposits, etc.)
+                                    // would fail anyway.
+                                    if (verified && authToken != null) {
+                                        AuthManager.saveAuthToken(context, authToken!!)
+                                    }
                                     withContext(Dispatchers.Main) {
                                         isVerifying = false
-                                        if (verified || fullOtpInput == "2004") {
+                                        if (verified) {
                                             onVerifyOtpSuccess(true)
                                         } else {
                                             errorMessage = if (errMsg.isNotEmpty()) errMsg else "Invalid OTP code. Please check your SMS."

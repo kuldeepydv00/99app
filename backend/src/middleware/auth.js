@@ -1,42 +1,41 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { verifyToken } = require('../utils/tokens');
 
-const protect = async (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      req.user = await User.findById(decoded.id).select('-password_hash');
-      
-      if (!req.user) {
-        return res.status(401).json({ message: 'Not authorized, user not found' });
-      }
-      
-      if (!req.user.is_active) {
-        return res.status(401).json({ message: 'Not authorized, account disabled' });
-      }
-
-      next();
-    } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
+// Requires a valid user JWT (issued at OTP verification). Sets req.authMobile so
+// controllers can confirm the caller is acting on their own account, never someone
+// else's — this app identifies users by mobile number everywhere, so that's what
+// the token carries and what every protected controller must check ownership against.
+const protectUser = (req, res, next) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Not authorized, no token' });
+  }
+  try {
+    const decoded = verifyToken(header.split(' ')[1]);
+    if (!decoded || !decoded.mobile) {
+      return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
-  }
-};
-
-const admin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+    req.authMobile = decoded.mobile;
     next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as an admin' });
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Not authorized, token invalid or expired' });
   }
 };
 
-module.exports = { protect, admin };
+// Requires a valid admin JWT (issued at admin login + OTP verification).
+const protectAdmin = (req, res, next) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Not authorized, admin login required' });
+  }
+  try {
+    const decoded = verifyToken(header.split(' ')[1]);
+    if (!decoded || decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized as admin' });
+    }
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Not authorized, admin session invalid or expired' });
+  }
+};
+
+module.exports = { protectUser, protectAdmin };
