@@ -3252,7 +3252,7 @@ export default function App() {
 
             {/* Sub-header Underline Category Selector (JODI | PASTE | CROSSING | HAROOF) */}
             <div className="bg-[#0A0F0D] border-b border-gray-800/60 px-4 py-2 sticky top-[53px] z-20 flex justify-center gap-6 shadow-md">
-              {(['Jodi', 'Paste', 'Crossing', 'Haruf'] as const).map((t) => {
+              {(['Jodi', 'Paste', 'Crossing', 'Haruf'] as const).filter((t) => !(bet99 && t === 'Paste')).map((t) => {
                 const label = t === 'Haruf' ? 'HAROOF' : t.toUpperCase();
                 const isActive = betCategory === t;
                 return (
@@ -3296,8 +3296,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* Paste / Type Toggle Header Pill & Formats Badge (in Jodi & Paste modes) */}
-              {(betCategory === 'Jodi' || betCategory === 'Paste') && (
+              {/* Paste / Type Toggle Header Pill & Formats Badge (in Jodi & Paste modes; not on 99x Matka) */}
+              {!bet99 && (betCategory === 'Jodi' || betCategory === 'Paste') && (
                 <div className="flex justify-between items-center bg-[#153324] p-2 rounded-xl mb-3 border border-gray-800">
                   <div className="flex items-center gap-1.5 bg-[#0A0F0D] p-1 rounded-lg border border-gray-800">
                     <button
@@ -3329,7 +3329,7 @@ export default function App() {
               )}
 
               {/* PASTE TAB: Smart Copy-Paste Betting Engine (Auto-Parser) matching media_1789228099608.png */}
-              {betCategory === 'Paste' && (
+              {betCategory === 'Paste' && !bet99 && (
                 <div className="space-y-3">
                   <div className="bg-[#0D1512] border border-gray-800 p-3 rounded-2xl">
                     <div className="flex gap-2">

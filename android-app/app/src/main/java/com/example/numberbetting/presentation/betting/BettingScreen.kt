@@ -808,7 +808,7 @@ fun BettingScreen(
                     .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                listOf("JODI", "PASTE", "CROSSING", "HAROOF").forEach { tab ->
+                listOf("JODI", "PASTE", "CROSSING", "HAROOF").filter { !(is99 && it == "PASTE") }.forEach { tab ->
                     val isSelected = selectedTab == tab
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -870,7 +870,7 @@ fun BettingScreen(
                 "JODI" -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Top Pill Controls Row (Paste | Type | Formats) matching reference image media_1789228099608.png!
-                        Row(
+                        if (!is99) Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 4.dp, vertical = 4.dp),
