@@ -680,15 +680,18 @@ fun AppNavigation() {
                 "matka99_chart" -> com.example.numberbetting.presentation.games.Matka99ChartScreen(
                     onBack = { currentScreen = "game" }
                 )
-                "matka99_betting" -> com.example.numberbetting.presentation.games.Matka99BettingScreen(
-                    marketKey = selectedMatka99Market,
+                // 99x Matka uses the same betting screen as normal Matka (Jodi / Paste / Crossing / Haroof)
+                "matka99_betting" -> BettingScreen(
+                    gameTitle = "99x Matka",
+                    userBalance = userBalance,
+                    matka99Key = selectedMatka99Market,
                     mobile = currentUserPhone,
-                    balance = userBalance,
-                    onBack = { currentScreen = "game" },
-                    onBalances = { bal, bonus ->
+                    onMatka99Balances = { bal, bonus ->
                         userBalance = bal
                         userBonus = bonus
-                    }
+                    },
+                    onNavigateToWallet = { currentScreen = "wallet" },
+                    onBack = { currentScreen = "game" }
                 )
                 "trading_number", "trading_card", "trading_colour" -> com.example.numberbetting.presentation.games.TradingScreen(
                     game = targetScreen.removePrefix("trading_"),

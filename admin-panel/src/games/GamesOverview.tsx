@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiGet, inr, istToday, istDateTime, usePolling, Card, Kpi, Pill, OptionLabel, PlayerCell, downloadCsv, ExportButton } from './common';
+import { apiGet, inr, istToday, istDateTime, usePolling, Card, Kpi, Pill, OptionLabel, PlayerCell, downloadCsv, ExportButton, matkaPick } from './common';
 import type { OpenUser } from './common';
 
 type GameKey = 'matka99' | 'number' | 'card' | 'colour';
@@ -200,7 +200,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
                           <div className="text-[11px] text-gray-500">{w.label}{w.market ? ` · ${w.market}` : ''}{w.roundId ? ` · ${w.roundId}` : ''} · {istDateTime(w.at)}</div>
                         </td>
                         <td className="py-2 text-right">
-                          <OptionLabel game={w.game === 'matka99' ? 'number' : w.game} value={w.option} />
+                          {w.game === 'matka99' ? <span className="font-mono font-bold">{matkaPick(w.option)}</span> : <OptionLabel game={w.game} value={w.option} />}
                           <div className="font-bold tabular-nums text-emerald-700">{inr(w.win_amount)}</div>
                           <div className="text-[10px] text-gray-400">bet {inr(w.amount)}</div>
                         </td>

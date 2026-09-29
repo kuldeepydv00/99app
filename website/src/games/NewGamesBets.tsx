@@ -37,7 +37,9 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
           {list.map(b => (
             <div key={b.id} className="flex items-center justify-between border-b border-gray-900 px-3 py-2.5 last:border-0">
               <div className="flex items-center gap-2.5">
-                <OptionTag game={b.game === 'matka99' ? 'number' : b.game} value={b.option} />
+                {/^[AB]\d$/.test(b.option)
+                  ? <span className="rounded-md border border-[#E0B7A0]/50 bg-[#0A0F0D] px-1.5 py-0.5 text-[11px] font-extrabold text-[#F5EDE2]">{b.option[0] === 'A' ? 'Andar' : 'Bahar'} {b.option[1]}</span>
+                  : <OptionTag game={b.game === 'matka99' ? 'number' : b.game} value={b.option} />}
                 <div>
                   <p className="text-xs font-bold text-white">{b.game === 'matka99' ? b.marketName : LABEL[b.game]} · {inr(b.amount)}</p>
                   <p className="font-mono text-[10px] text-gray-500">{b.game === 'matka99' ? b.dateKey : b.roundId}</p>

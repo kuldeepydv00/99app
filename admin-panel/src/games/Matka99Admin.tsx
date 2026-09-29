@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   apiGet, apiPost, inr, istToday, istTime, istDateTime, heat, usePolling, Card, Kpi, Pill,
-  BetStatus, PlayerCell, ConfirmDialog, DailyReport, ExportButton, downloadCsv
+  BetStatus, PlayerCell, ConfirmDialog, DailyReport, ExportButton, downloadCsv, matkaPick
 } from './common';
 import type { OpenUser } from './common';
 
@@ -91,7 +91,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
 
   const exportBets = () => downloadCsv(`99x-bets_${date}${betFilter.market ? '_' + betFilter.market : ''}.csv`, [
     ['Time (IST)', 'Market', 'Market date', 'Player', 'Mobile', 'Number', 'Amount', 'Status', 'Win'],
-    ...bets.map(b => [istDateTime(b.created_at), b.marketName, b.dateKey, b.user, b.mobile, b.option, b.amount, b.status, b.win_amount || 0])
+    ...bets.map(b => [istDateTime(b.created_at), b.marketName, b.dateKey, b.user, b.mobile, matkaPick(b.option), b.amount, b.status, b.win_amount || 0])
   ]);
 
   return (
@@ -99,7 +99,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DEE2E6] bg-white p-4 shadow-sm">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-[#212529]"><span>💎</span>99x Matka</h1>
-          <p className="mt-1 text-xs text-gray-500">Same 8 markets and timings as Matka, renamed · Jodi only · fixed 99x payout · <b>results are automatic</b> at each market’s result time: the number with the lowest total bet wins, ties random</p>
+          <p className="mt-1 text-xs text-gray-500">Same 8 markets and timings as Matka, renamed · Jodi pays 99x, Haroof (Andar/Bahar) pays 9.9x · <b>results are automatic</b> at each market’s result time: the number with the lowest total bet wins, ties random</p>
         </div>
         <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
           Market date (IST)
@@ -196,6 +196,24 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
                 ))}
               </div>
             )}
+            {matrix?.haroof && (Object.values(matrix.haroof.andar as Record<string, number>).some(v => v > 0) || Object.values(matrix.haroof.bahar as Record<string, number>).some(v => v > 0)) && (
+              <div className="mt-3 grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
+                {(['andar', 'bahar'] as const).map(side => (
+                  <div key={side} className="rounded-lg border border-gray-200 p-2">
+                    <div className="mb-1 font-bold text-gray-700">Haroof {side === 'andar' ? 'Andar (1st digit)' : 'Bahar (2nd digit)'} · pays 9.9x</div>
+                    <div className="grid grid-cols-10 gap-1">
+                      {Array.from({ length: 10 }, (_, d) => String(d)).map(d => (
+                        <div key={d} className="rounded border border-gray-100 py-1 text-center">
+                          <div className="font-mono font-bold">{d}</div>
+                          <div className="text-[10px] tabular-nums text-gray-500">{matrix.haroof[side][d] ? inr(matrix.haroof[side][d]) : '—'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[11px] text-gray-500 md:col-span-2">Matrix amounts include Haroof bets split evenly over the 10 numbers they cover — that is what the automatic result compares.</p>
+              </div>
+            )}
           </Card>
         </div>
         <div className="space-y-4">
@@ -237,7 +255,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
                     <input type="number" value={limits.maxBet} onChange={e => setLimits({ ...limits, maxBet: e.target.value })} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 font-bold" /></label>
                 </div>
                 <button onClick={saveLimits} className="w-full rounded-lg bg-[#007BFF] py-2 text-xs font-bold text-white hover:bg-[#0069D9]">Save limits</button>
-                <p className="text-[11px] text-gray-500">Payout is fixed at 99x and cannot be changed.</p>
+                <p className="text-[11px] text-gray-500">Payouts are fixed (Jodi 99x, Haroof 9.9x) and cannot be changed.</p>
               </div>
             )}
           </Card>
@@ -270,7 +288,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
                   <td className="px-2 py-2 text-gray-500">{istTime(b.created_at)}</td>
                   <td className="px-2 py-2 font-semibold">{b.marketName}</td>
                   <td className="px-2 py-2"><PlayerCell name={b.user} mobile={b.mobile} onOpenUser={onOpenUser} /></td>
-                  <td className="px-2 py-2 font-mono text-sm font-extrabold">{b.option}</td>
+                  <td className="px-2 py-2 font-mono text-sm font-extrabold">{matkaPick(b.option)}</td>
                   <td className="px-2 py-2 text-right tabular-nums">{inr(b.amount)}</td>
                   <td className="px-2 py-2"><BetStatus status={b.status} /></td>
                   <td className="px-2 py-2 text-right font-bold tabular-nums">{b.win_amount ? inr(b.win_amount) : '—'}</td>

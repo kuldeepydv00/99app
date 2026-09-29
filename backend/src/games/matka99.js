@@ -8,7 +8,31 @@ const { getMarketCycleDate, isGameInOpenWindow, getISTDateStr, parseMins } = req
 const { GameError } = require('./tradingEngine');
 
 const FIXED_PAYOUT = 99;
+// Haroof covers 10 numbers, so its fixed payout is 99x spread over them.
+const HAROOF_PAYOUT = 9.9;
 const pad = n => String(n).padStart(2, '0');
+// Haroof bets are stored with option 'A<digit>' (Andar = first digit) or 'B<digit>' (Bahar = second digit).
+const isHaroofOpt = opt => /^[AB]\d$/.test(String(opt || ''));
+function betWins(b, number) {
+  if (isHaroofOpt(b.option)) return b.option[0] === 'A' ? number[0] === b.option[1] : number[1] === b.option[1];
+  return b.option === number;
+}
+// Money on each number counting Haroof bets split evenly over the 10 numbers they cover (in paise, exact).
+function effectivePaise(bets) {
+  const t = {};
+  for (let i = 0; i < 100; i++) t[pad(i)] = 0;
+  for (const b of bets) {
+    if (isHaroofOpt(b.option)) {
+      const d = b.option[1];
+      for (const n of Object.keys(t)) {
+        if ((b.option[0] === 'A' ? n[0] : n[1]) === d) t[n] += Math.round(b.amount * 10);
+      }
+    } else if (t[b.option] !== undefined) {
+      t[b.option] += Math.round(b.amount * 100);
+    }
+  }
+  return t;
+}
 const NUMBERS = Array.from({ length: 100 }, (_, i) => pad(i));
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
@@ -18,11 +42,13 @@ function rulesText() {
   const cfg = state.matka99.config;
   return [
     'Each 99x market is declared automatically at its result time. 99x results are separate from the regular Matka results.',
-    'The number (00–99) with the lowest total amount bet on it in that market wins.',
+    'The number (00–99) with the lowest total amount bet on it in that market wins. A Haroof bet counts as its amount split evenly over the 10 numbers it covers.',
+    `Jodi: pick a number 00–99. It wins if it is the result and pays ${FIXED_PAYOUT}x.`,
+    `Haroof: pick a digit for Andar (the result’s first digit) or Bahar (the second digit). It wins if that digit matches and pays ${HAROOF_PAYOUT}x.`,
     'A number nobody picked has ₹0 on it, so it counts as the lowest. With 100 numbers, some number usually has ₹0, so most results land on a number nobody picked and no one wins.',
     'If several numbers tie for the lowest total, one of them is picked at random.',
-    `Winning bets pay ${FIXED_PAYOUT}x the amount bet, into your Winning balance.`,
-    `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per number per market.`
+    'Winnings go to your Winning balance.',
+    `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per number (or Haroof digit) per market.`
   ];
 }
 
@@ -61,17 +87,14 @@ function resultAtFor(key, dateKey) {
 
 // Totals per number for a market date and the currently-lowest numbers.
 function lowestFor(key, dateKey) {
-  const totals = {};
-  NUMBERS.forEach(n => { totals[n] = 0; });
-  for (const b of state.bets) {
-    if (b.game === 'matka99' && b.market === key && b.dateKey === dateKey && b.status === 'pending') {
-      totals[b.option] = wallet.round2((totals[b.option] || 0) + b.amount);
-    }
-  }
+  const pending = state.bets.filter(b => b.game === 'matka99' && b.market === key && b.dateKey === dateKey && b.status === 'pending');
+  const paise = effectivePaise(pending);
   let min = Infinity;
-  NUMBERS.forEach(n => { if (totals[n] < min) min = totals[n]; });
-  const lowest = NUMBERS.filter(n => totals[n] === min);
-  return { totals, min: wallet.round2(min), lowest };
+  NUMBERS.forEach(n => { if (paise[n] < min) min = paise[n]; });
+  const lowest = NUMBERS.filter(n => paise[n] === min);
+  const totals = {};
+  NUMBERS.forEach(n => { totals[n] = paise[n] / 100; });
+  return { totals, min: wallet.round2(min / 100), lowest };
 }
 
 function getMarkets() {
@@ -79,6 +102,7 @@ function getMarkets() {
   return {
     serverTime: Date.now(),
     payout: FIXED_PAYOUT,
+    haroofPayout: HAROOF_PAYOUT,
     minBet: state.matka99.config.minBet,
     maxBet: state.matka99.config.maxBet,
     autoResults: true,
@@ -101,6 +125,20 @@ function getMarkets() {
       };
     })
   };
+}
+
+// 'andar' / 'bahar' when a slip item is a Haroof bet (side, type or an 'A3'/'B3' option), else null
+function haroofSide(it) {
+  const side = String(it.side || '').toLowerCase();
+  if (side === 'andar' || side === 'ander' || side === 'a') return 'andar';
+  if (side === 'bahar' || side === 'b') return 'bahar';
+  const type = String(it.type || it.bet_type || '').toUpperCase();
+  if (type.includes('ANDER') || type.includes('ANDAR')) return 'andar';
+  if (type.includes('BAHAR')) return 'bahar';
+  const o = String(it.option || '');
+  if (/^[Aa]\d$/.test(o)) return 'andar';
+  if (/^[Bb]\d$/.test(o)) return 'bahar';
+  return null;
 }
 
 function normalizeNumber(raw) {
@@ -127,13 +165,21 @@ function placeBets(mobile, marketInput, items) {
   if (items.length > 100) throw new GameError(400, 'Too many bets in one slip');
 
   const cfg = state.matka99.config;
-  const merged = {};
+  const merged = {};   // option -> amount: 'NN' for Jodi, 'A<d>' / 'B<d>' for Haroof
   for (const it of items) {
-    const num = normalizeNumber(it.number !== undefined ? it.number : it.option);
     const amt = Number(it.amount !== undefined ? it.amount : it.bet_amount);
-    if (!num) throw new GameError(400, 'Numbers must be 00 to 99');
+    const side = haroofSide(it);
+    let opt;
+    if (side) {
+      const digit = String(it.digit !== undefined ? it.digit : (it.number !== undefined ? it.number : (it.option || ''))).replace(/^[ABab]/, '').trim();
+      if (!/^\d$/.test(digit)) throw new GameError(400, 'Haroof digits must be 0 to 9');
+      opt = (side === 'andar' ? 'A' : 'B') + digit;
+    } else {
+      opt = normalizeNumber(it.number !== undefined ? it.number : it.option);
+      if (!opt) throw new GameError(400, 'Numbers must be 00 to 99');
+    }
     if (!Number.isFinite(amt) || amt <= 0 || Math.floor(amt) !== amt) throw new GameError(400, 'Bet amounts must be whole rupees');
-    merged[num] = (merged[num] || 0) + amt;
+    merged[opt] = (merged[opt] || 0) + amt;
   }
 
   const clean = wallet.cleanMobile(mobile);
@@ -145,8 +191,9 @@ function placeBets(mobile, marketInput, items) {
   }
   let total = 0;
   for (const [num, amt] of Object.entries(merged)) {
-    if (amt < cfg.minBet) throw new GameError(400, `Minimum bet is ₹${cfg.minBet} per number`);
-    if ((already[num] || 0) + amt > cfg.maxBet) throw new GameError(400, `Maximum is ₹${cfg.maxBet} per number per market (${num})`);
+    const label = isHaroofOpt(num) ? `${num[0] === 'A' ? 'Andar' : 'Bahar'} ${num[1]}` : num;
+    if (amt < cfg.minBet) throw new GameError(400, `Minimum bet is ₹${cfg.minBet} per ${isHaroofOpt(num) ? 'Haroof digit' : 'number'}`);
+    if ((already[num] || 0) + amt > cfg.maxBet) throw new GameError(400, `Maximum is ₹${cfg.maxBet} per number per market (${label})`);
     total += amt;
   }
 
@@ -164,8 +211,10 @@ function placeBets(mobile, marketInput, items) {
       id: `m99_${t}_${crypto.randomInt(1e9)}`,
       game: 'matka99', market: m.key, marketName: m.name, dateKey,
       mobile: clean, user: u.name || `User ${clean.slice(-4)}`,
-      option: num, amount: amt, multiplier: FIXED_PAYOUT,
-      potential_win: wallet.round2(amt * FIXED_PAYOUT),
+      option: num, amount: amt,
+      kind: isHaroofOpt(num) ? 'haroof' : 'jodi',
+      multiplier: isHaroofOpt(num) ? HAROOF_PAYOUT : FIXED_PAYOUT,
+      potential_win: wallet.round2(amt * (isHaroofOpt(num) ? HAROOF_PAYOUT : FIXED_PAYOUT)),
       ...wallet.shareOf(split, total, amt),
       status: 'pending', win_amount: 0, result: null,
       created_at: createdAt
@@ -279,7 +328,7 @@ function previewDeclare(marketInput, dateKey, numberInput) {
   if (!num) throw new GameError(400, 'Result must be 00 to 99');
   const date = dateKey ? getISTDateStr(dateKey) : getISTDateStr(new Date());
   const bets = betsFor(m.key, date).filter(b => b.status === 'pending');
-  const winning = bets.filter(b => b.option === num);
+  const winning = bets.filter(b => betWins(b, num));
   return {
     market: m.name, key: m.key, date, number: num,
     betCount: bets.length,
@@ -303,7 +352,7 @@ function declare(marketInput, dateKey, numberInput, { bypassWindowCheck = false,
   let winners = 0, totalPaid = 0, anyCredit = false;
   for (const b of betsFor(m.key, p.date)) {
     if (b.status !== 'pending') continue;
-    if (b.option === p.number) {
+    if (betWins(b, p.number)) {
       const win = wallet.round2(b.amount * b.multiplier);
       b.status = 'won'; b.win_amount = win; winners += 1; totalPaid += win;
       const u = wallet.findUser(b.mobile);
@@ -402,7 +451,7 @@ function getOverview(dateInput) {
       const declaredNum = (state.matka99.results[date] || {})[mk.key] || null;
       const resultAt = resultAtFor(mk.key, date);
       const low = declaredNum ? null : lowestFor(mk.key, date);
-      const payNow = low ? low.lowest.map(n => bets.filter(b => b.status === 'pending' && b.option === n).reduce((s2, b) => s2 + b.amount * b.multiplier, 0)) : [];
+      const payNow = low ? low.lowest.map(n => bets.filter(b => b.status === 'pending' && betWins(b, n)).reduce((s2, b) => s2 + b.amount * b.multiplier, 0)) : [];
       const sum = arr => wallet.round2(arr.reduce((s, b) => s + b.amount, 0));
       return {
         ...mk,
@@ -433,14 +482,21 @@ function getMatrix(marketInput, dateInput) {
   const m = resolveMarket(marketInput);
   if (!m) throw new GameError(400, 'Unknown 99x market');
   const date = dateInput ? getISTDateStr(dateInput) : getISTDateStr(new Date());
-  const totals = {};
-  for (let i = 0; i < 100; i++) totals[pad(i)] = 0;
-  const counts = { ...totals };
-  for (const b of betsFor(m.key, date)) {
-    totals[b.option] = wallet.round2(totals[b.option] + b.amount);
-    counts[b.option] += 1;
+  const all = betsFor(m.key, date);
+  const paise = effectivePaise(all);
+  const totals = {}, counts = {}, jodi = {};
+  for (let i = 0; i < 100; i++) { const n = pad(i); totals[n] = paise[n] / 100; counts[n] = 0; jodi[n] = 0; }
+  const haroof = { andar: {}, bahar: {} };
+  for (let d = 0; d < 10; d++) { haroof.andar[d] = 0; haroof.bahar[d] = 0; }
+  for (const b of all) {
+    if (isHaroofOpt(b.option)) {
+      const side = b.option[0] === 'A' ? 'andar' : 'bahar';
+      haroof[side][b.option[1]] = wallet.round2(haroof[side][b.option[1]] + b.amount);
+    } else if (counts[b.option] !== undefined) {
+      counts[b.option] += 1; jodi[b.option] = wallet.round2(jodi[b.option] + b.amount);
+    }
   }
-  return { market: m.name, key: m.key, date, totals, counts, result: (state.matka99.results[date] || {})[m.key] || null };
+  return { market: m.name, key: m.key, date, totals, counts, jodi, haroof, result: (state.matka99.results[date] || {})[m.key] || null };
 }
 
 function getAdminBets({ market, date, mobile, number, status, limit = 500 } = {}) {
@@ -482,7 +538,7 @@ function updateLimits({ minBet, maxBet }) {
 }
 
 module.exports = {
-  FIXED_PAYOUT, resolveMarket, getMarkets, placeBets, previewDeclare, declare, getChart, getMyBets,
+  FIXED_PAYOUT, HAROOF_PAYOUT, isHaroofOpt, betWins, resolveMarket, getMarkets, placeBets, previewDeclare, declare, getChart, getMyBets,
   getOverview, getMatrix, getAdminBets, setEnabled, updateLimits, undoDeclare, refundMarket, getDailyReport,
   scheduleFor, isDeclared, autoDeclareDue, startAutoResults, resultAtFor, lowestFor, RULE_LINE, rulesText
 };

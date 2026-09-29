@@ -158,10 +158,16 @@ fun OptionTag(game: String, value: String?, large: Boolean = false) {
                     .padding(horizontal = if (large) 0.dp else 6.dp, vertical = if (large) 0.dp else 2.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(value, color = GameColors.Champagne, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace, fontSize = if (large) 18.sp else 12.sp)
+                Text(matkaPick(value), color = GameColors.Champagne, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace, fontSize = if (large) 18.sp else 12.sp)
             }
         }
     }
+}
+
+/** 99x Haroof picks are stored as "A3" / "B3": show them as "Andar 3" / "Bahar 3". */
+fun matkaPick(option: String?): String {
+    val o = option ?: return "—"
+    return if (Regex("^[AB]\\d$").matches(o)) (if (o[0] == 'A') "Andar " else "Bahar ") + o[1] else o
 }
 
 /** Ring that empties as the betting window runs out; amber in the last 10%, grey when locked. */

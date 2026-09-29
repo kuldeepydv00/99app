@@ -13,6 +13,7 @@ import Matka99Page from './games/Matka99Page';
 import Matka99Chart from './games/Matka99Chart';
 import NewGamesBets from './games/NewGamesBets';
 import type { TradingGame } from './games/api';
+import { gamesPost } from './games/api';
 
 const API_BASE_URLS = [
   typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com',
@@ -697,7 +698,18 @@ export default function App() {
   const [chartMode, setChartMode] = useState<'matka' | 'matka99'>('matka');
   // Home shows one picture box per game; Matka and 99x Matka open their own market pages.
   const [homeSection, setHomeSection] = useState<null | 'matka' | 'matka99'>(null);
-  const gamesLobby = useLobby(activeWebTab === 'home');
+  // 99x Matka markets open the same betting screen as Matka (Jodi / Paste / Crossing / Haroof); bets go to the 99x API
+  const [bet99, setBet99] = useState<null | { key: string; name: string }>(null);
+  const [show99Rules, setShow99Rules] = useState(false);
+  const gamesLobby = useLobby(activeWebTab === 'home' || !!bet99);
+  const bet99Market = bet99 && gamesLobby ? gamesLobby.matka99.markets.find(m => m.key === bet99.key) || null : null;
+  const bet99Open = !!bet99Market?.isOpen;
+  const openMatka99Betting = (key: string) => {
+    const m = gamesLobby?.matka99.markets.find(x => x.key === key);
+    setBet99({ key, name: m?.name || key });
+    setBetCategory('Jodi'); setJodiGrid({}); setCopyPasteParsedList([]); setCopyPasteInputText(''); setCrossingDigits(''); setBetMessage('');
+    setSelectedGameForBetting(m?.name || key);
+  };
   const openHomeSection = (sec: 'matka' | 'matka99') => { setHomeSection(sec); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
   const closeHomeSection = () => {
     setHomeSection(null);
@@ -724,12 +736,14 @@ export default function App() {
   }, [activeWebTab]);
 
   useEffect(() => {
-    if (selectedGameForBetting) {
+    // Only Matka markets are restored after a reload; a 99x market goes back to the home screen
+    if (selectedGameForBetting && !bet99) {
       localStorage.setItem('99x_selected_game', selectedGameForBetting);
     } else {
       localStorage.removeItem('99x_selected_game');
     }
-  }, [selectedGameForBetting]);
+    if (!selectedGameForBetting && bet99) setBet99(null);
+  }, [selectedGameForBetting, bet99]);
 
   // Load saved session & bets on launch & immediately sync live profile
   useEffect(() => {
@@ -1123,7 +1137,11 @@ export default function App() {
       return;
     }
 
-    if (!selectedGameForBetting || !isGameBettingOpen(selectedGameForBetting, gameSchedules[selectedGameForBetting])) {
+    if (bet99 && !bet99Open) {
+      setBetMessage(`⏳ Betting is closed for ${bet99.name}. Result at ${bet99Market?.resultTime || 'the result time'}.`);
+      return;
+    }
+    if (!selectedGameForBetting || (!bet99 && !isGameBettingOpen(selectedGameForBetting, gameSchedules[selectedGameForBetting]))) {
       setBetMessage(`⏳ Result is PENDING for ${selectedGameForBetting || 'this market'}.`);
       return;
     }
@@ -1169,6 +1187,25 @@ export default function App() {
 
     if (user.balance < totalReq) {
       setBetMessage(`Insufficient wallet balance (Need ₹${totalReq})! Please add money.`);
+      return;
+    }
+
+    if (bet99) {
+      try {
+        const d = await gamesPost<{ balances: Balances }>('/api/games/matka99/bet', {
+          mobile: user.mobile,
+          market: bet99.key,
+          bets: activeBets.map(b => b.type === 'HAROOF_ANDER' ? { side: 'andar', digit: b.num, amount: b.amt }
+            : b.type === 'HAROOF_BAHAR' ? { side: 'bahar', digit: b.num, amount: b.amt }
+            : { number: b.num, amount: b.amt })
+        });
+        applyGameBalances(d.balances);
+        setBetMessage(`🎉 Bet placed successfully! ₹${totalReq} on ${bet99.name}`);
+        setJodiGrid({}); setCopyPasteInputText(''); setCrossingDigits(''); setCopyPasteParsedList([]);
+        setTimeout(() => setBetMessage(''), 2500);
+      } catch (err: any) {
+        setBetMessage(`Error: ${err?.message || 'Bet placement failed'}`);
+      }
       return;
     }
 
@@ -2422,11 +2459,11 @@ export default function App() {
                 <SectionHeader
                   title="99x Matka"
                   badge="FIXED 99x"
-                  subtitle={`${gamesLobby ? gamesLobby.matka99.markets.filter(m => m.enabled && m.isOpen).length : 0} open now · lowest total bet wins · pays 99x`}
+                  subtitle={`${gamesLobby ? gamesLobby.matka99.markets.filter(m => m.enabled && m.isOpen).length : 0} open now · lowest total bet wins · Jodi 99x · Haroof 9.9x`}
                   onBack={closeHomeSection}
                   right={<button onClick={() => { setChartMode('matka99'); setActiveWebTab('charts'); }} className="shrink-0 text-[12px] font-bold text-[#E0C9A0] hover:text-white">Chart ›</button>}
                 />
-                <Matka99Section lobby={gamesLobby} onOpenMatka99={(key) => setMatka99Market(key)} />
+                <Matka99Section lobby={gamesLobby} onOpenMatka99={(key) => openMatka99Betting(key)} />
               </div>
             )}
 
@@ -3195,9 +3232,12 @@ export default function App() {
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-base font-black text-white tracking-wide">
-                  {selectedGameForBetting}
-                </h2>
+                <div>
+                  <h2 className="text-base font-black text-white tracking-wide">
+                    {selectedGameForBetting}
+                  </h2>
+                  {bet99 && <p className="text-[10px] font-bold text-[#E0B7A0]">99x Matka · Jodi {gamesLobby?.matka99.payout || 99}x · Haroof {gamesLobby?.matka99.haroofPayout || 9.9}x</p>}
+                </div>
               </div>
 
               {/* Wallet Badge (Dark Gold / Emerald Pill) */}
@@ -3236,6 +3276,18 @@ export default function App() {
 
             {/* Main Bidding Cards Area (100% Copy of Android App Dark Theme Grid) */}
             <div className="p-3.5 flex-1 pb-32 max-w-md mx-auto w-full bg-[#0B1D14]">
+              {bet99 && (
+                <div className="mb-3 rounded-xl border border-[#E0B7A0]/40 bg-gradient-to-br from-[#2A2320]/80 to-[#0A0F0D] p-3">
+                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-extrabold uppercase tracking-wide ${bet99Open ? 'bg-[#3EE08A]/15 text-[#3EE08A]' : 'bg-white/10 text-gray-300'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${bet99Open ? 'animate-pulse bg-[#3EE08A]' : 'bg-gray-400'}`} />{bet99Open ? 'Betting open' : 'Closed'}
+                    </span>
+                    <span className="text-gray-400">Close {bet99Market?.close || '—'} · Result {bet99Market?.resultTime || '—'}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] font-semibold leading-snug text-gray-200">{gamesLobby?.matka99.ruleLine || 'Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.'}</p>
+                  <button onClick={() => setShow99Rules(true)} className="mt-1 text-[11px] font-bold text-[#E0C9A0] underline hover:text-white">How it works</button>
+                </div>
+              )}
               {betMessage && (
                 <div className={`p-3 rounded-xl text-xs font-bold mb-4 text-center ${
                   betMessage.includes('successfully') ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/50' : 'bg-red-950/80 text-red-400 border border-red-500/50'
@@ -3808,9 +3860,23 @@ export default function App() {
               </div>
             )}
 
+            {bet99 && show99Rules && (
+              <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60" onClick={() => setShow99Rules(false)}>
+                <div className="w-full max-w-md rounded-t-3xl border-t border-[#E0B7A0]/40 bg-[#0C1712] p-5 pb-8" onClick={e => e.stopPropagation()}>
+                  <h3 className="text-base font-black text-white">How 99x Matka works</h3>
+                  <ul className="mt-3 space-y-2.5 text-xs leading-relaxed text-gray-300">
+                    {(gamesLobby?.matka99.rules || []).map((line, i) => (
+                      <li key={i} className="flex gap-2"><span className="text-[#E0B7A0]">•</span><span>{line}</span></li>
+                    ))}
+                  </ul>
+                  <button onClick={() => setShow99Rules(false)} className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#F0DDB8] to-[#C9A87C] py-3 text-sm font-black text-[#0A0F0D]">Got it</button>
+                </div>
+              </div>
+            )}
+
             {/* Bottom Sticky Dark Action Bar */}
             <div className="fixed bottom-[74px] left-1/2 -translate-x-1/2 w-full max-w-md bg-[#0A0F0D] border-t border-gray-800/90 p-3 flex gap-3 items-center z-40 shadow-2xl backdrop-blur-md">
-              {isGameBettingOpen(selectedGameForBetting, gameSchedules[selectedGameForBetting]) ? (
+              {(bet99 ? bet99Open : isGameBettingOpen(selectedGameForBetting, gameSchedules[selectedGameForBetting])) ? (
                 <>
                   <button 
                     onClick={() => {
@@ -3842,7 +3908,9 @@ export default function App() {
               ) : (
                 <div className="flex-1 bg-[#123A2C] border border-amber-500/40 text-[#E0C9A0] font-bold py-3.5 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-inner">
                   <span>⏳</span>
-                  <span>Betting CLOSED for {selectedGameForBetting} {declaredResults[selectedGameForBetting] ? `(Winner: ${declaredResults[selectedGameForBetting]})` : '(Result Pending)'}</span>
+                  <span>{bet99
+                    ? `Betting CLOSED for ${bet99.name} · ${bet99Market?.todayResult ? `Result ${bet99Market.todayResult}` : `Result at ${bet99Market?.resultTime || '—'}`}`
+                    : `Betting CLOSED for ${selectedGameForBetting} ${declaredResults[selectedGameForBetting] ? `(Winner: ${declaredResults[selectedGameForBetting]})` : '(Result Pending)'}`}</span>
                 </div>
               )}
             </div>

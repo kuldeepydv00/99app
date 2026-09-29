@@ -27,7 +27,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.example.numberbetting.domain.GameScheduleManager
+import com.example.numberbetting.presentation.games.GamesApi
+import com.example.numberbetting.presentation.games.shortTime
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import com.example.numberbetting.presentation.components.MoneyDoodleBackground
 import com.example.numberbetting.presentation.history.BetItemData
 import com.example.numberbetting.presentation.theme.*
@@ -241,6 +248,10 @@ fun BettingScreen(
     onDeductBalance: (Double) -> Unit = {},
     onNavigateToWallet: () -> Unit = {},
     onBetPlaced: (List<BetItemData>) -> Unit = {},
+    // 99x Matka mode: same betting screen, bets go to the 99x API (Jodi 99x, Haroof 9.9x)
+    matka99Key: String? = null,
+    mobile: String = "",
+    onMatka99Balances: (balance: Double, bonus: Double) -> Unit = { _, _ -> },
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf("JODI") } // JODI, PASTE, CROSSING, HAROOF
@@ -276,7 +287,39 @@ fun BettingScreen(
 
     val schedule = GameScheduleManager.schedules[gameTitle]
     val gameState = GameScheduleManager.getGameState(gameTitle, emptyMap())
-    val isOpen = gameState == GameScheduleManager.GameState.OPEN
+    // ---- 99x Matka mode ----
+    val is99 = matka99Key != null
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var m99Data by remember { mutableStateOf<JSONObject?>(null) }
+    var m99Placing by remember { mutableStateOf(false) }
+    var show99Rules by remember { mutableStateOf(false) }
+    LaunchedEffect(matka99Key) {
+        if (matka99Key == null) return@LaunchedEffect
+        while (true) {
+            try { m99Data = GamesApi.get(context, "/api/games/matka99/markets") } catch (e: Exception) { }
+            delay(15000)
+        }
+    }
+    val m99Market: JSONObject? = remember(m99Data, matka99Key) {
+        val arr = m99Data?.optJSONArray("markets")
+        var found: JSONObject? = null
+        if (arr != null) {
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                if (o.optString("key") == matka99Key) found = o
+            }
+        }
+        found
+    }
+    fun m99Str(o: JSONObject?, k: String): String = if (o == null || o.isNull(k)) "" else o.optString(k, "")
+    val displayTitle = if (is99) m99Str(m99Market, "name").ifEmpty { gameTitle } else gameTitle
+    val isOpen = if (is99) (m99Market?.optBoolean("isOpen") ?: false) else gameState == GameScheduleManager.GameState.OPEN
+    val m99ClosedText = when {
+        m99Market == null -> "Loading market…"
+        m99Str(m99Market, "resultTime").isNotEmpty() -> "Betting closed for $displayTitle · result at ${shortTime(m99Str(m99Market, "resultTime"))}"
+        else -> "Betting closed for $displayTitle"
+    }
 
     // Calculate total active stakes & count dynamically based on active tab
     val crossingGeneratedJodis = remember(crossingDigitsInput, crossingWithJora) {
@@ -369,6 +412,80 @@ fun BettingScreen(
                         Button(
                             onClick = {
                                 minBetErrorMsg = ""
+                                if (matka99Key != null) {
+                                    if (m99Placing) return@Button
+                                    val bets = JSONArray()
+                                    var total = 0
+                                    var count = 0
+                                    val addJodi = { num: Int, amt: Int ->
+                                        if (amt >= 1) {
+                                            bets.put(JSONObject().put("number", formatJodiDisplay(num)).put("amount", amt))
+                                            total += amt
+                                            count++
+                                        }
+                                    }
+                                    val addHaroof = { side: String, digit: Int, amt: Int ->
+                                        if (amt >= 1) {
+                                            bets.put(JSONObject().put("side", side).put("digit", digit).put("amount", amt))
+                                            total += amt
+                                            count++
+                                        }
+                                    }
+                                    when (selectedTab) {
+                                        "JODI" -> jodiStakesMap.forEach { (n, v) -> addJodi(n, v.toIntOrNull() ?: 0) }
+                                        "PASTE" -> {
+                                            val list = if (copyPasteParsedList.isNotEmpty()) copyPasteParsedList
+                                            else parseCopyPasteTextKotlin(copyPasteInputText, copyPasteWithPalat).also { copyPasteParsedList = it }
+                                            list.forEach { addJodi(it.numKey, it.amount) }
+                                        }
+                                        "CROSSING" -> if (perCrossingStake >= 1) crossingGeneratedJodis.forEach { addJodi(it, perCrossingStake) }
+                                        "HAROOF" -> {
+                                            harufAnderStakesMap.forEach { (d, v) -> addHaroof("andar", d, v.toIntOrNull() ?: 0) }
+                                            harufBaharStakesMap.forEach { (d, v) -> addHaroof("bahar", d, v.toIntOrNull() ?: 0) }
+                                        }
+                                    }
+                                    if (count == 0) {
+                                        minBetErrorMsg = when (selectedTab) {
+                                            "PASTE" -> "Paste valid numbers with amount e.g. 12 34 @20"
+                                            "CROSSING" -> "Enter digits (e.g. 123) and a stake per Jodi"
+                                            "HAROOF" -> "Enter amount on at least one Haroof number"
+                                            else -> "Please enter stake amount on at least 1 number"
+                                        }
+                                        return@Button
+                                    }
+                                    if (mobile.length < 10) {
+                                        minBetErrorMsg = "Please log in to place bets."
+                                        return@Button
+                                    }
+                                    if (total > userBalance + 0.001) {
+                                        showInsufficientBalanceDialog = true
+                                        return@Button
+                                    }
+                                    m99Placing = true
+                                    val tabAtSend = selectedTab
+                                    val placedCount = count
+                                    val placedTotal = total
+                                    val body = JSONObject().put("mobile", mobile).put("market", matka99Key).put("bets", bets)
+                                    scope.launch {
+                                        try {
+                                            val d = GamesApi.post(context, "/api/games/matka99/bet", body)
+                                            val bal = d.optJSONObject("balances")
+                                            if (bal != null) onMatka99Balances(bal.optDouble("balance", userBalance), bal.optDouble("bonus_balance", 0.0))
+                                            when (tabAtSend) {
+                                                "JODI" -> jodiStakesMap.clear()
+                                                "PASTE" -> { copyPasteInputText = ""; copyPasteParsedList = emptyList() }
+                                                "CROSSING" -> crossingDigitsInput = ""
+                                                "HAROOF" -> { harufAnderStakesMap.clear(); harufBaharStakesMap.clear() }
+                                            }
+                                            successToastMsg = "🎉 $placedCount ${if (placedCount == 1) "bet" else "bets"} placed for ₹$placedTotal!"
+                                            showSuccessToast = true
+                                        } catch (e: Exception) {
+                                            minBetErrorMsg = e.message ?: "Could not place bet"
+                                        }
+                                        m99Placing = false
+                                    }
+                                    return@Button
+                                }
                                 if (selectedTab == "JODI") {
                                     val validBets = jodiStakesMap.filter { (it.value.toIntOrNull() ?: 0) >= 1 }
                                     if (validBets.isEmpty()) {
@@ -525,7 +642,7 @@ fun BettingScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2ECC8F))
                         ) {
                             Text(
-                                text = "PLACE BET • ₹$currentTotalStakeSum",
+                                text = if (m99Placing) "PLACING…" else "PLACE BET • ₹$currentTotalStakeSum",
                                 color = Color.White,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 15.sp,
@@ -540,7 +657,7 @@ fun BettingScreen(
                     color = Color(0xFF0D1512)
                 ) {
                     Text(
-                        text = "⏳ Result Pending for $gameTitle",
+                        text = if (is99) "⏳ $m99ClosedText" else "⏳ Result Pending for $gameTitle",
                         color = Color(0xFFC9A87C),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
@@ -577,13 +694,24 @@ fun BettingScreen(
                         Text("←", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = gameTitle,
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 1
-                    )
+                    Column {
+                        Text(
+                            text = displayTitle,
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1
+                        )
+                        if (is99) {
+                            Text(
+                                text = "99x Matka · Jodi 99x · Haroof 9.9x",
+                                color = Color(0xFFD9B98C),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -609,6 +737,67 @@ fun BettingScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("+", color = Color(0xFF2ECC8F), fontWeight = FontWeight.Black, fontSize = 15.sp)
+                }
+            }
+
+            if (is99) {
+                val ruleLine = m99Str(m99Data, "ruleLine").ifEmpty { "Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random." }
+                val closeT = shortTime(m99Str(m99Market, "close"))
+                val resultT = shortTime(m99Str(m99Market, "resultTime"))
+                val last = m99Market?.optJSONObject("lastResult")
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0D1512))
+                        .border(1.dp, Color(0xFF1E5C46), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (m99Market != null) {
+                            Text(
+                                text = if (isOpen) "OPEN" else "CLOSED",
+                                color = if (isOpen) Color(0xFF2ECC8F) else Color(0xFFEF4444),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background((if (isOpen) Color(0xFF2ECC8F) else Color(0xFFEF4444)).copy(alpha = 0.15f))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = listOfNotNull(
+                                closeT.takeIf { it.isNotEmpty() }?.let { "Close $it" },
+                                resultT.takeIf { it.isNotEmpty() }?.let { "Result $it" }
+                            ).joinToString(" · "),
+                            color = Color(0xFF8FA89B),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "How it works",
+                            color = Color(0xFFD9B98C),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier
+                                .clickable { show99Rules = true }
+                                .padding(start = 6.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(ruleLine, color = Color(0xFFD1D5DB), fontSize = 11.sp, lineHeight = 15.sp)
+                    if (last != null && m99Str(last, "number").isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Last result: ${m99Str(last, "number")}" + (m99Str(last, "date").takeIf { it.isNotEmpty() }?.let { " ($it)" } ?: ""),
+                            color = Color(0xFF8FA89B),
+                            fontSize = 11.sp
+                        )
+                    }
                 }
             }
 
@@ -657,7 +846,7 @@ fun BettingScreen(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "⏳ RESULT PENDING FOR THIS MARKET",
+                        text = if (is99) "⏳ ${m99ClosedText.uppercase()}" else "⏳ RESULT PENDING FOR THIS MARKET",
                         color = Color(0xFFC9A87C),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
@@ -665,6 +854,16 @@ fun BettingScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
+            }
+
+            if (minBetErrorMsg.isNotEmpty() && selectedTab != "JODI") {
+                Text(
+                    text = minBetErrorMsg,
+                    color = Color(0xFFEF4444),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
             }
 
             when (selectedTab) {
@@ -1666,6 +1865,39 @@ fun BettingScreen(
         )
     }
 
+    if (show99Rules) {
+        val rulesArr = m99Data?.optJSONArray("rules")
+        AlertDialog(
+            onDismissRequest = { show99Rules = false },
+            confirmButton = {
+                TextButton(onClick = { show99Rules = false }) {
+                    Text("Got it", color = Color(0xFFD9B98C), fontWeight = FontWeight.Bold)
+                }
+            },
+            title = { Text("How 99x Matka works", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val lines = if (rulesArr != null && rulesArr.length() > 0) (0 until rulesArr.length()).map { rulesArr.optString(it) }
+                    else listOf(
+                        "Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.",
+                        "Jodi pays 99x your stake.",
+                        "Haroof (Andar/Bahar) pays 9.9x your stake."
+                    )
+                    lines.forEach { line ->
+                        Row {
+                            Text("•  ", color = Color(0xFFD9B98C), fontSize = 12.sp)
+                            Text(line, color = Color(0xFFD1D5DB), fontSize = 12.sp, lineHeight = 17.sp)
+                        }
+                    }
+                }
+            },
+            containerColor = Color(0xFF0A0F0D)
+        )
+    }
+
     // Success Dialog
     if (showSuccessToast) {
         AlertDialog(
@@ -1673,7 +1905,7 @@ fun BettingScreen(
             title = { Text("🎉 Bet Placed Successfully!", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Game: $gameTitle", color = Color(0xFF8FA89B), fontSize = 14.sp)
+                    Text("Game: $displayTitle", color = Color(0xFF8FA89B), fontSize = 14.sp)
                     Text(successToastMsg, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text("Remaining Balance: ₹ ${String.format("%.2f", userBalance)}", color = Color(0xFF2ECC8F), fontSize = 14.sp)

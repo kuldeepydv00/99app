@@ -292,3 +292,7 @@ export function ExportButton({ onClick, disabled }: { onClick: () => void; disab
       className="rounded border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold hover:bg-gray-50 disabled:opacity-40">⬇ CSV</button>
   );
 }
+
+// 99x Matka pick label: 'A3' -> 'Andar 3', 'B7' -> 'Bahar 7', Jodi numbers unchanged
+export const matkaPick = (option: string | null | undefined) =>
+  option && /^[AB]\d$/.test(option) ? `${option[0] === 'A' ? 'Andar' : 'Bahar'} ${option[1]}` : (option ?? '—');

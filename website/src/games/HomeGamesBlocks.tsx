@@ -8,7 +8,7 @@ import MarketTile, { shortTime } from './MarketTile';
 export type Lobby = {
   serverTime: number;
   trading: Record<TradingGame, { label: string; enabled: boolean; payout: number; round: { roundId: string; start: number; lock: number; end: number; status: string }; lastResult: { result: string } | null }>;
-  matka99: { payout: number; markets: { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; lastResult: { number: string; date: string } | null; todayResult: string | null }[] };
+  matka99: { payout: number; haroofPayout?: number; ruleLine?: string; rules?: string[]; markets: { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; lastResult: { number: string; date: string } | null; todayResult: string | null }[] };
 };
 
 /** Polls the games lobby every 5 s while `enabled`. Returns null until the first load. */
