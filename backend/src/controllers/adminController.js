@@ -2451,6 +2451,8 @@ const getBannerConfig = async (req, res) => {
       }
     }
   } catch (e) {}
+  // The old default image pointed at a placeholder domain that doesn't exist: treat it as "no custom image"
+  if (/newmatkadomain\.com\/app_header\.png/.test(String(bannerConfig.imageUrl || ''))) bannerConfig.imageUrl = '';
   res.json(bannerConfig);
 };
 

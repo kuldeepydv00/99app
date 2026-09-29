@@ -89,7 +89,8 @@ let bannerConfig = {
   commissionText: '4% लाइफटाइम कमिशन आपकी टीम के हर दांव पर',
   minDeposit: '100',
   minWithdrawal: '200',
-  imageUrl: 'https://newmatkadomain.com/app_header.png'
+  // Empty = no custom banner image: the website shows its built-in hero and the app its own banner.
+  imageUrl: ''
 };
 
 let referralConfig = {
@@ -481,6 +482,8 @@ function loadDiskStore() {
       }
       if (data.chartRecords) Object.assign(chartRecords, data.chartRecords);
       if (data.bannerConfig) Object.assign(bannerConfig, data.bannerConfig);
+      // Older default pointed at a placeholder domain that doesn't exist
+      if (/newmatkadomain\.com\/app_header\.png/.test(String(bannerConfig.imageUrl || ''))) bannerConfig.imageUrl = '';
       if (data.referralConfig) Object.assign(referralConfig, data.referralConfig);
       if (data.appVersionConfig) Object.assign(appVersionConfig, data.appVersionConfig);
       appVersionConfig.latestVersionCode = 59;
