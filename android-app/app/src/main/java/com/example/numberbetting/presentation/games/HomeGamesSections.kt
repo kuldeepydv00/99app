@@ -3,7 +3,6 @@ package com.example.numberbetting.presentation.games
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -34,14 +32,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 /**
- * Home page blocks under Matka: "99x Matka" (open markets + results row) and
+ * Home page blocks under Matka: "99x Matka" (all markets as square tiles) and
  * "Trading" (Number / Card / Colour tiles with live countdowns). One lobby call feeds both.
  */
 @Composable
@@ -112,85 +109,23 @@ private fun Matka99HomeBlock(m99: JSONObject?, onOpen: (String) -> Unit, onOpenC
         Spacer(Modifier.weight(1f))
         Text("Chart ›", color = GameColors.GoldLight, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onOpenChart() })
     }
-    Text("Same markets, new names. Every winning Jodi pays 99x.", color = GameColors.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
+    Text("${open.size} open now · every winning Jodi pays 99x", color = GameColors.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
     Spacer(Modifier.height(12.dp))
 
-    if (open.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(GameColors.Surface).padding(vertical = 18.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("No 99x market is open right now.", color = GameColors.Muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        }
-    } else {
-        open.forEach { m ->
-            val key = m.optString("key")
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Brush.linearGradient(listOf(Color(0xFF1A2A22), GameColors.Deep)))
-                    .border(1.dp, GameColors.Rose.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                    .clickable { onOpen(key) }
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Brush.linearGradient(listOf(Color(0xFF2A2320), GameColors.Deep)))
-                        .border(1.dp, GameColors.Rose.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("99x", color = GameColors.Ivory, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(m.optString("name"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Text("Closes ${m.optString("close")} · pays 99x", color = GameColors.Muted, fontSize = 11.sp)
-                    Spacer(Modifier.height(5.dp))
-                    StatusPill(open = true)
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(RoseGradient)
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
-                    Text("PLAY →", color = GameColors.Deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-        }
-    }
-
-    if (closed.isNotEmpty()) {
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            closed.forEach { m ->
-                val today = m.optString("todayResult", "")
-                val last = m.optJSONObject("lastResult")?.optString("number", "") ?: ""
-                val res = if (today.isNotEmpty() && today != "null") today else last
-                Column(
-                    modifier = Modifier
-                        .width(136.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(GameColors.Surface)
-                        .border(1.dp, Color(0xFF1F2937), RoundedCornerShape(14.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    Text(m.optString("name"), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (res.isNotEmpty() && res != "null") OptionTag("number", res)
-                        else Text("PENDING", color = GameColors.Amber, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                        Spacer(Modifier.weight(1f))
-                        val rt = m.optString("resultTime", "")
-                        Text((if (rt.isEmpty() || rt == "null") m.optString("close") else rt).replace(" IST", ""), color = Color(0xFF6B7280), fontSize = 9.sp)
-                    }
-                }
-            }
-        }
+    TileGrid(open + closed) { m, tileModifier ->
+        val key = m.optString("key")
+        val isOpen = m.optBoolean("isOpen")
+        val today = m.optString("todayResult", "").takeIf { it.isNotEmpty() && it != "null" }
+        val rt = m.optString("resultTime", "").takeIf { it.isNotEmpty() && it != "null" } ?: m.optString("close")
+        MarketTile(
+            icon = "99x",
+            name = m.optString("name"),
+            sub = if (isOpen) "Pays ${formatPayout(m99?.optDouble("payout", 99.0) ?: 99.0)}x" else "Opens ${shortTime(m.optString("open"))}",
+            state = if (isOpen) TileState.Open("Closes ${shortTime(m.optString("close"))}") else TileState.Closed(today, shortTime(rt)),
+            onClick = { onOpen(key) },
+            modifier = tileModifier,
+            rose = true
+        )
     }
 }
 

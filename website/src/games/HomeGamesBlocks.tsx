@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { gamesGet } from './api';
 import type { TradingGame } from './api';
 import { clock, useServerNow, OptionTag, COLOURS } from './ui';
+import MarketTile, { shortTime } from './MarketTile';
 
 type Lobby = {
   serverTime: number;
@@ -57,55 +58,29 @@ export default function HomeGamesBlocks({ onOpenMatka99, onOpenTrading, onOpenCh
               <span className="g-shimmer">99x Matka</span>
               <span className="rounded-full border border-[#E0B7A0]/60 bg-[#E0B7A0]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#F5EDE2]">FIXED 99x</span>
             </h3>
-            <p className="mt-0.5 text-[11px] text-gray-400">Same markets, new names. Every winning Jodi pays 99x.</p>
+            <p className="mt-0.5 text-[11px] text-gray-400">{openMarkets.length} open now · every winning Jodi pays 99x</p>
           </div>
           {onOpenChart99 && (
             <button onClick={onOpenChart99} className="text-[11px] font-bold text-[#E0C9A0] hover:text-white">Chart ›</button>
           )}
         </div>
 
-        {openMarkets.length === 0 ? (
-          <div className="rounded-2xl border border-gray-800 bg-[#0C241B] py-5 text-center text-xs font-semibold text-gray-400">
-            No 99x market is open right now.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {openMarkets.map((m, i) => (
-              <button key={m.key} onClick={() => onOpenMatka99(m.key)} style={{ animationDelay: `${i * 60}ms` }}
-                className="g-rise g-lift group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-[#E0B7A0]/40 bg-gradient-to-br from-[#1A2A22] to-[#0A0F0D] p-4 text-left shadow-xl hover:border-[#E0B7A0]/80">
-                <span className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#E0B7A0]/10 blur-2xl" />
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E0B7A0]/60 bg-gradient-to-br from-[#2A2320] to-[#0A0F0D] text-sm font-extrabold text-[#F5EDE2] shadow-inner">99x</div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">{m.name}</h4>
-                    <p className="mt-0.5 text-[11px] font-medium text-gray-400">Closes {m.close} · pays 99x</p>
-                    <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#3EE08A]/40 bg-[#3EE08A]/10 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#3EE08A]">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3EE08A]" />Betting open
-                    </span>
-                  </div>
-                </div>
-                <span className="rounded-xl bg-gradient-to-r from-[#F5EDE2] to-[#E0B7A0] px-4 py-2.5 text-sm font-extrabold text-[#0A0F0D] shadow-lg transition-transform group-hover:scale-105">PLAY →</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {closedMarkets.length > 0 && (
-          <div className="g-noscroll -mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 pb-1">
-            {closedMarkets.map(m => {
-              const res = m.todayResult || m.lastResult?.number || null;
-              return (
-                <div key={m.key} className="min-w-[132px] snap-start rounded-xl border border-gray-800 bg-[#0C241B] px-3 py-2.5">
-                  <p className="truncate text-[11px] font-bold text-white">{m.name}</p>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    {res ? <OptionTag game="number" value={res} /> : <span className="text-[10px] font-extrabold uppercase text-amber-400">Pending</span>}
-                    <span className="text-[9px] text-gray-500">{m.resultTime || m.close}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <div className="grid grid-cols-3 gap-2.5">
+          {[...openMarkets, ...closedMarkets].map((m, i) => (
+            <MarketTile
+              key={m.key}
+              accent="rose"
+              delay={i * 50}
+              icon="99x"
+              name={m.name}
+              sub={m.isOpen ? `Pays ${lobby.matka99.payout}x` : `Opens ${shortTime(m.open)}`}
+              state={m.isOpen
+                ? { kind: 'open', note: `Closes ${shortTime(m.close)}` }
+                : { kind: 'closed', result: m.todayResult || null, note: shortTime(m.resultTime || m.close) }}
+              onClick={() => onOpenMatka99(m.key)}
+            />
+          ))}
+        </div>
       </section>
 
       {/* ---------------- TRADING ---------------- */}

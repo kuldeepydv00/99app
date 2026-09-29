@@ -39,7 +39,10 @@ import com.example.numberbetting.data.ApiConfig
 import com.example.numberbetting.presentation.theme.*
 import com.example.numberbetting.presentation.components.MoneyDoodleBackground
 import com.example.numberbetting.presentation.games.NewGamesHomeSections
-import com.example.numberbetting.presentation.games.OptionTag
+import com.example.numberbetting.presentation.games.MarketTile
+import com.example.numberbetting.presentation.games.TileGrid
+import com.example.numberbetting.presentation.games.TileState
+import com.example.numberbetting.presentation.games.shortTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
@@ -406,95 +409,52 @@ fun HomeScreen(
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                             Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF3EE08A)))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(LanguageManager.getText("Live now", "अभी लाइव"), color = Color(0xFF8FA89B), fontSize = 11.sp)
+                            Text(LanguageManager.getText("${liveGames.size} open now", "${liveGames.size} अभी खुले"), color = Color(0xFF8FA89B), fontSize = 11.sp)
                         }
                         Spacer(modifier = Modifier.height(14.dp))
                     }
 
-                    // Live Games Items List
-                    items(liveGames, key = { it }) { gameName ->
-                        val sched = GameScheduleManager.schedules[gameName]
-                        val gameState = GameScheduleManager.getGameState(gameName, declaredResults)
-                        val isOpen = gameState == GameScheduleManager.GameState.OPEN
-                        val remainingMins = GameScheduleManager.getRemainingMinutesToClose(gameName)
-
-                        val icon = getGameIconEmoji(gameName)
-
-                        val playerCount = livePlayers[gameName]
-                            ?: livePlayers[if (gameName == "Shree Ganesh") "Shri Ganesh" else if (gameName == "Shri Ganesh") "Shree Ganesh" else if (gameName == "Desawar") "Disawer" else if (gameName == "Disawer") "Desawar" else gameName]
-                            ?: when(gameName) {
-                                "Shiv Parwati" -> 487556
-                                "Delhi Bazar" -> 614919
-                                "Dubai Market" -> 452810
-                                "Shree Ganesh" -> 392152
-                                "Faridabad" -> 345825
-                                "Ghaziabad" -> 298700
-                                "Gali" -> 512400
-                                "Desawar" -> 684200
-                                else -> 500000
-                            }
-
-                        val playerCountFormatted = remember(playerCount) {
-                            java.text.NumberFormat.getNumberInstance(java.util.Locale("en", "IN")).format(playerCount)
-                        }
-
-                        LiveGameCard(
-                            title = gameName,
-                            subtitle = "$playerCountFormatted people are playing",
-                            icon = icon,
-                            isOpen = isOpen,
-                            remainingMins = remainingMins,
-                            onPlayClick = { onNavigateToBetting(gameName) }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                // Matka: today's results as a compact swipe row
-                item {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = LanguageManager.getText("TODAY'S RESULTS", "आज के परिणाम"),
-                        color = Color(0xFFD1D5DB),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        items(resultGames, key = { it }) { gameName ->
-                            val winningNum = declaredResults[gameName]
+                    // All 8 Matka markets as square tiles (open first, then closed), like the Trading tiles
+                    item {
+                        TileGrid(liveGames + resultGames) { gameName, tileModifier ->
                             val sched = GameScheduleManager.schedules[gameName]
-                            Column(
-                                modifier = Modifier
-                                    .width(140.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF0C241B))
-                                    .border(1.dp, Color(0xFF1F2937), RoundedCornerShape(14.dp))
-                                    .clickable {
-                                        if (GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN) {
-                                            onNavigateToBetting(gameName)
-                                        } else {
-                                            android.widget.Toast.makeText(context, "⏳ Result Pending for $gameName", android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(getGameIconEmoji(gameName), fontSize = 13.sp)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(gameName, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            val isOpen = GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN
+                            val remainingMins = if (isOpen) GameScheduleManager.getRemainingMinutesToClose(gameName) else 0
+                            val isUrgent = remainingMins in 1..30
+                            val playerCount = livePlayers[gameName]
+                                ?: livePlayers[if (gameName == "Shree Ganesh") "Shri Ganesh" else if (gameName == "Shri Ganesh") "Shree Ganesh" else if (gameName == "Desawar") "Disawer" else if (gameName == "Disawer") "Desawar" else gameName]
+                                ?: when (gameName) {
+                                    "Shiv Parwati" -> 487556
+                                    "Delhi Bazar" -> 614919
+                                    "Dubai Market" -> 452810
+                                    "Shree Ganesh" -> 392152
+                                    "Faridabad" -> 345825
+                                    "Ghaziabad" -> 298700
+                                    "Gali" -> 512400
+                                    "Desawar" -> 684200
+                                    else -> 500000
                                 }
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (winningNum != null) OptionTag("number", String.format("%02d", winningNum))
-                                    else Text("PENDING", color = Color(0xFFF5B544), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Text((sched?.resultTimeStr ?: "").replace(" IST", ""), color = Color(0xFF6B7280), fontSize = 9.sp)
-                                }
+                            val playerCountFormatted = remember(playerCount) {
+                                java.text.NumberFormat.getNumberInstance(java.util.Locale("en", "IN")).format(playerCount)
                             }
+                            val winningNum = declaredResults[gameName]
+                            MarketTile(
+                                icon = getGameIconEmoji(gameName),
+                                name = gameName,
+                                sub = if (isOpen) "$playerCountFormatted playing" else "Opens ${shortTime(sched?.openTimeStr)}",
+                                state = when {
+                                    isOpen && isUrgent -> TileState.Urgent("$remainingMins min left")
+                                    isOpen -> TileState.Open("Closes ${shortTime(sched?.closeTimeStr)}")
+                                    else -> TileState.Closed(winningNum?.let { String.format("%02d", it) }, shortTime(sched?.resultTimeStr))
+                                },
+                                onClick = {
+                                    if (isOpen) onNavigateToBetting(gameName)
+                                    else android.widget.Toast.makeText(context, "Betting is closed for $gameName. Opens ${shortTime(sched?.openTimeStr)}.", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = tileModifier
+                            )
                         }
                     }
-                }
 
                 // New games: 99x Matka and Trading (Number / Card / Colour)
                 item {

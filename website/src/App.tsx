@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { parseCopyPasteText, ParsedBetItem } from './utils/copyPasteParser';
 import HomeGamesBlocks from './games/HomeGamesBlocks';
+import MarketTile, { shortTime } from './games/MarketTile';
 import TradingPage from './games/TradingPage';
 import type { Balances } from './games/TradingPage';
 import Matka99Page from './games/Matka99Page';
@@ -2364,125 +2365,34 @@ export default function App() {
                         </h3>
                         <p className="mt-0.5 text-[11px] text-gray-400 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#3EE08A] animate-pulse"></span>
-                          Live now
+                          {liveGames.length} open now
                         </p>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      {liveGames.length === 0 ? (
-                        <div className="text-center py-6 bg-[#0C241B] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
-                          No games currently open for betting. Check results below!
-                        </div>
-                      ) : (
-                        liveGames.map((gameName) => {
-                          const sched = gameSchedules[gameName] || DEFAULT_SCHEDULES[gameName];
-                          const remainingMins = getRemainingMinutesToClose(gameName, sched);
-                          const isUrgent = remainingMins > 0 && remainingMins <= 30;
-
-                          const iconEmoji = getGameIcon(gameName);
-
-                          const playerCount = livePlayersMap[gameName] || livePlayersMap[gameName === 'Shree Ganesh' ? 'Shri Ganesh' : (gameName === 'Desawar' ? 'Disawer' : gameName)] || 487550;
-
-                          return (
-                            <div 
-                              key={`live_${gameName}`}
-                              className="bg-[#0C241B] p-4 rounded-2xl border border-[#C9A87C]/30 shadow-xl flex justify-between items-center transition-all hover:border-[#C9A87C]/60"
-                            >
-                              <div className="flex items-center gap-3">
-                                {/* 3D Emblem Badge Box */}
-                                <div className="w-12 h-12 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/60 rounded-xl flex items-center justify-center text-2xl shadow-inner shrink-0">
-                                  {iconEmoji}
-                                </div>
-
-                                <div>
-                                  <h4 className="text-base font-bold text-white">{gameName}</h4>
-                                  <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                                    {playerCount.toLocaleString('en-IN')} people are playing
-                                  </p>
-                                  <div className="mt-1.5 flex items-center gap-2">
-                                    {isUrgent ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A87C]/15 border border-[#C9A87C]/50 text-[10px] font-extrabold text-[#C9A87C] uppercase tracking-wider">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#C9A87C] animate-pulse"></span>
-                                        ⏰ {remainingMins} MINS LEFT
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A87C]/15 border border-[#E0C9A0]/50 text-[10px] font-extrabold text-[#E0C9A0] uppercase tracking-wider">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#E0C9A0] animate-ping"></span>
-                                        BETTING OPEN
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Action Button: PLAY ➔ (100% Gold & Black Theme) */}
-                              <button
-                                onClick={() => {
-                                  setSelectedGameForBetting(gameName);
-                                  setBetMessage('');
-                                }}
-                                className="bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47] hover:brightness-110 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(212,175,55,0.4)] flex items-center gap-1 shrink-0 transition-all active:scale-95 cursor-pointer"
-                              >
-                                PLAY ➔
-                              </button>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  {/* SECTION 2: RESULTS (Only closed or declared games!) - compact swipe row */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Today&apos;s results</h4>
-
-                    <div className="g-noscroll -mx-4 px-4 flex gap-2.5 overflow-x-auto snap-x pb-1">
-                      {resultGames.length === 0 ? (
-                        <div className="text-center py-5 bg-[#0C241B] rounded-2xl border border-gray-800 text-gray-400 text-xs font-semibold">
-                          No closed results yet for today. Live games open above!
-                        </div>
-                      ) : (
-                        resultGames.map((gameName) => {
-                          const result = declaredResults[gameName] ?? declaredResults[gameName === 'Desawar' ? 'Disawer' : (gameName === 'Shree Ganesh' ? 'Shri Ganesh' : gameName)];
-                          const isDeclared = (result !== undefined && result !== null && String(result) !== '');
-                          const sched = gameSchedules[gameName] || DEFAULT_SCHEDULES[gameName];
-
-                          const iconEmoji = getGameIcon(gameName);
-
-                          return (
-                            <div 
-                              key={`result_${gameName}`}
-                              onClick={() => {
-                                setSelectedGameForBetting(gameName);
-                                setBetMessage('');
-                              }}
-                              className="g-lift snap-start shrink-0 w-[150px] bg-[#0C241B] hover:bg-[#1A3729] p-3 rounded-2xl border border-gray-800 shadow-lg flex flex-col items-start gap-2 cursor-pointer"
-                            >
-                              <div className="flex items-center gap-2 min-w-0 w-full">
-                                <div className="w-7 h-7 bg-gradient-to-br from-[#123A2C] to-[#0A0F0D] border border-[#C9A87C]/50 rounded-lg flex items-center justify-center text-xs shadow-inner shrink-0">
-                                  {iconEmoji}
-                                </div>
-                                <div className="min-w-0">
-                                  <h4 className="text-[11px] font-bold text-white truncate">{gameName}</h4>
-                                  <p className="text-[9px] text-gray-500 font-medium">{isDeclared ? 'Declared' : (sched?.result || sched?.close || 'soon')}</p>
-                                </div>
-                              </div>
-
-                              {/* Right Gold Winner Number Badge Box or Pending Status */}
-                              {isDeclared ? (
-                                <div className="w-10 h-10 rounded-xl bg-[#0A0F0D] border border-[#C9A87C]/50 flex items-center justify-center font-mono font-bold text-base text-[#F0DDB8] shadow-md shrink-0">
-                                  {String(result).padStart(2, '0')}
-                                </div>
-                              ) : (
-                                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[9px] font-extrabold text-amber-400 uppercase shrink-0">
-                                  Pending
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {[...liveGames, ...resultGames].map((gameName, i) => {
+                        const sched = gameSchedules[gameName] || DEFAULT_SCHEDULES[gameName];
+                        const isOpen = liveGames.includes(gameName);
+                        const remainingMins = isOpen ? getRemainingMinutesToClose(gameName, sched) : 0;
+                        const isUrgent = remainingMins > 0 && remainingMins <= 30;
+                        const playerCount = livePlayersMap[gameName] || livePlayersMap[gameName === 'Shree Ganesh' ? 'Shri Ganesh' : (gameName === 'Desawar' ? 'Disawer' : gameName)] || 487550;
+                        const result = declaredResults[gameName] ?? declaredResults[gameName === 'Desawar' ? 'Disawer' : (gameName === 'Shree Ganesh' ? 'Shri Ganesh' : gameName)];
+                        const isDeclared = result !== undefined && result !== null && String(result) !== '';
+                        return (
+                          <MarketTile
+                            key={`mk_${gameName}`}
+                            delay={i * 50}
+                            icon={getGameIcon(gameName)}
+                            name={gameName}
+                            sub={isOpen ? `${playerCount.toLocaleString('en-IN')} playing` : `Opens ${shortTime(sched?.open)}`}
+                            state={isOpen
+                              ? (isUrgent ? { kind: 'urgent', note: `${remainingMins} min left` } : { kind: 'open', note: `Closes ${shortTime(sched?.close)}` })
+                              : { kind: 'closed', result: isDeclared ? String(result).padStart(2, '0') : null, note: shortTime(sched?.result) }}
+                            onClick={() => { setSelectedGameForBetting(gameName); setBetMessage(''); }}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
