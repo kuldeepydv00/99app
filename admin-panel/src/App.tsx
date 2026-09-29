@@ -104,6 +104,21 @@ const formatDisplayDate = (d: any, id?: any, fallbackDate?: any): string => {
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:5002' : 'https://newmatkadomain.com';
 
+// Set when the page loads with an old, expired admin session (shown on the login screen).
+let sessionExpiredOnLoad = false;
+
+// True when the stored admin token exists and has not expired (reads the JWT's exp claim).
+function hasValidAdminToken(): boolean {
+  try {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return false;
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return !payload.exp || payload.exp * 1000 > Date.now() + 30000;
+  } catch {
+    return false;
+  }
+}
+
 // Every admin API call now requires a valid admin session token (see backend adminRoutes.js).
 // Rather than editing all 50+ individual fetch(...) call sites in this file to attach it,
 // patch window.fetch once at load time: any request to our own /api/admin/* endpoints gets
@@ -117,10 +132,12 @@ if (typeof window !== 'undefined' && !(window as any).__adminAuthFetchPatched) {
       const url = typeof input === 'string' ? input : (input as Request).url || String(input);
       if (url.startsWith(`${API_BASE}/api/admin/`) && !url.includes('/api/admin/login') && !url.includes('/api/admin/verify-otp')) {
         const token = localStorage.getItem('admin_token');
-        if (token) {
-          const mergedHeaders = { ...(init?.headers || {}), Authorization: `Bearer ${token}` };
-          return originalFetch(input, { ...(init || {}), headers: mergedHeaders });
-        }
+        const mergedHeaders = token ? { ...(init?.headers || {}), Authorization: `Bearer ${token}` } : (init?.headers || {});
+        return originalFetch(input, { ...(init || {}), headers: mergedHeaders }).then(res => {
+          // An expired / missing admin session: tell the app so it can show the login screen
+          if (res.status === 401) window.dispatchEvent(new Event('admin-session-expired'));
+          return res;
+        });
       }
     } catch (e) {}
     return originalFetch(input, init);
@@ -245,13 +262,19 @@ function CanvasChart({ title, color, dataPoints, chartType, labels }: { title: s
 export default function App() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('admin_authenticated') === 'true';
+    const wasLoggedIn = localStorage.getItem('admin_authenticated') === 'true';
+    const ok = wasLoggedIn && hasValidAdminToken();
+    if (!ok) {
+      if (wasLoggedIn) sessionExpiredOnLoad = true;
+      localStorage.removeItem('admin_authenticated'); localStorage.removeItem('admin_token');
+    }
+    return ok;
   });
   const [loginStep, setLoginStep] = useState<1 | 2>(1);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginOtp, setLoginOtp] = useState('');
-  const [authError, setAuthError] = useState('');
+  const [authError, setAuthError] = useState(() => (sessionExpiredOnLoad ? 'Your admin session has expired. Please log in again.' : ''));
   const [authLoading, setAuthLoading] = useState(false);
   const [otpSentMessage, setOtpSentMessage] = useState('');
 
@@ -903,6 +926,21 @@ export default function App() {
     localStorage.removeItem('admin_token');
     setLoginStep(1);
   };
+
+  // Admin sessions last 12 hours. When the server says the session is no longer valid
+  // (or the token's time is up), go back to the login screen instead of showing errors.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const expire = () => {
+      handleLogout();
+      setAuthError('Your admin session has expired. Please log in again.');
+    };
+    const onExpired = () => expire();
+    window.addEventListener('admin-session-expired', onExpired);
+    const timer = setInterval(() => { if (!hasValidAdminToken()) expire(); }, 60000);
+    return () => { window.removeEventListener('admin-session-expired', onExpired); clearInterval(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   // Fetch Live Data
   const fetchLiveData = async () => {
