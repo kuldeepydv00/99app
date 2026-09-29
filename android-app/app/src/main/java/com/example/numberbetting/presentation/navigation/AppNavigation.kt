@@ -68,6 +68,8 @@ fun AppNavigation() {
     var declaredResultsMap by remember { mutableStateOf<Map<String, Int?>>(emptyMap()) }
     // New games: which 99x Matka market is open on the 99x betting screen
     var selectedMatka99Market by remember { mutableStateOf("") }
+    // Home page section: "" = game boxes, "matka" = Matka markets, "matka99" = 99x Matka markets
+    var homeSection by remember { mutableStateOf("") }
     var livePlayersMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
     // In-App Auto-Update States (Option B)
@@ -96,7 +98,7 @@ fun AppNavigation() {
             scope.launch { drawerState.close() }
         } else {
             when (currentScreen) {
-                "game" -> activity?.finish()
+                "game" -> if (homeSection.isNotEmpty()) homeSection = "" else activity?.finish()
                 "login" -> activity?.finish()
                 "register" -> currentScreen = "login"
                 "otp" -> currentScreen = "login"
@@ -671,7 +673,9 @@ fun AppNavigation() {
                         currentScreen = "matka99_betting"
                     },
                     onNavigateToTrading = { game -> currentScreen = "trading_$game" },
-                    onNavigateToMatka99Chart = { currentScreen = "matka99_chart" }
+                    onNavigateToMatka99Chart = { currentScreen = "matka99_chart" },
+                    homeSection = homeSection,
+                    onHomeSectionChange = { homeSection = it }
                 )
                 "matka99_chart" -> com.example.numberbetting.presentation.games.Matka99ChartScreen(
                     onBack = { currentScreen = "game" }

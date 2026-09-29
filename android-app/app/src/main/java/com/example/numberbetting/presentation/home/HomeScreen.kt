@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
@@ -38,7 +39,11 @@ import com.example.numberbetting.domain.GameScheduleManager
 import com.example.numberbetting.data.ApiConfig
 import com.example.numberbetting.presentation.theme.*
 import com.example.numberbetting.presentation.components.MoneyDoodleBackground
-import com.example.numberbetting.presentation.games.NewGamesHomeSections
+import com.example.numberbetting.presentation.games.GameBoxes
+import com.example.numberbetting.presentation.games.Matka99Section
+import com.example.numberbetting.presentation.games.SectionHeader
+import com.example.numberbetting.presentation.games.matka99OpenCount
+import com.example.numberbetting.presentation.games.rememberLobby
 import com.example.numberbetting.presentation.games.MarketTile
 import com.example.numberbetting.presentation.games.TileGrid
 import com.example.numberbetting.presentation.games.TileState
@@ -97,9 +102,21 @@ fun HomeScreen(
     onRefresh: () -> Unit = {},
     onNavigateToMatka99: (String) -> Unit = {},
     onNavigateToTrading: (String) -> Unit = {},
-    onNavigateToMatka99Chart: () -> Unit = {}
+    onNavigateToMatka99Chart: () -> Unit = {},
+    homeSection: String = "",
+    onHomeSectionChange: (String) -> Unit = {}
 ) {
     var selectedBottomTab by remember { mutableStateOf("HOME") }
+    // Games lobby (99x Matka + Trading) for the home boxes and the 99x Matka page
+    val gamesLobby = rememberLobby()
+    val listState = rememberLazyListState()
+    var lastHomeSection by remember { mutableStateOf(homeSection) }
+    LaunchedEffect(homeSection) {
+        // Opening a section starts at its top; coming back lands on the game boxes (item 5)
+        if (homeSection.isNotEmpty()) listState.scrollToItem(0)
+        else if (lastHomeSection.isNotEmpty()) listState.scrollToItem(5)
+        lastHomeSection = homeSection
+    }
     var showComingSoonDialog by remember { mutableStateOf(false) }
     var comingSoonFeatureName by remember { mutableStateOf("") }
     var selectedDetailGame by remember { mutableStateOf<String?>(null) }
@@ -151,7 +168,7 @@ fun HomeScreen(
                 onTabSelected = { tab ->
                     selectedBottomTab = tab
                     when (tab) {
-                        "HOME" -> { }
+                        "HOME" -> onHomeSectionChange("")
                         "WALLET" -> onNavigateToWallet()
                         "REFERRAL" -> onNavigateToReferral()
                         "MY BET" -> onNavigateToMyBets()
@@ -175,6 +192,7 @@ fun HomeScreen(
                     .pullRefresh(pullRefreshState)
             ) {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 18.dp)
@@ -282,188 +300,200 @@ fun HomeScreen(
 
 
 
-                    // Market Selector Row (Directly below top header bar, matching website)
-                    item {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        MarketSelectorRow(
-                            games = gamesList,
-                            onGameClick = { selectedDetailGame = it }
-                        )
-                    }
+                    if (homeSection.isEmpty()) {
+                        // Market Selector Row (Directly below top header bar, matching website)
+                        item {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            MarketSelectorRow(
+                                games = gamesList,
+                                onGameClick = { selectedDetailGame = it }
+                            )
+                        }
 
-                    // Luxury Hero Promo Banner
-                    item {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        LuxuryHeroBanner(onPlayNowClick = {
-                            if (liveGames.isNotEmpty()) onNavigateToBetting(liveGames.first())
-                            else onNavigateToBetting("Gali")
-                        })
-                    }
+                        // Luxury Hero Promo Banner
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            LuxuryHeroBanner(onPlayNowClick = {
+                                if (liveGames.isNotEmpty()) onNavigateToBetting(liveGames.first())
+                                else onNavigateToBetting("Gali")
+                            })
+                        }
 
-                    // 3 Trust Badges Row
-                    item {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        TrustBadgesRow()
-                    }
+                        // 3 Trust Badges Row
+                        item {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            TrustBadgesRow()
+                        }
 
-                    // Official Website Card (Full Width Stacked Layout matching Image 4)
-                    item {
-                        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // Official Website Card (Full Width)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF081310))
-                                    .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        try { uriHandler.openUri("https://newmatkadomain.com") } catch (_: Exception) {}
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                        // Official Website Card (Full Width Stacked Layout matching Image 4)
+                        item {
+                            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                // Official Website Card (Full Width)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFF081310))
+                                        .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                                        .clickable {
+                                            try { uriHandler.openUri("https://newmatkadomain.com") } catch (_: Exception) {}
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 12.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        Row(
+                                            modifier = Modifier.weight(1f),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFF0D1512))
+                                                    .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text("🌐", fontSize = 16.sp)
+                                            }
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Column {
+                                                Text(
+                                                    "OUR OFFICIAL WEBSITE",
+                                                    color = Color(0xFFD9B98C),
+                                                    fontSize = 8.5.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    letterSpacing = 0.5.sp
+                                                )
+                                                Spacer(modifier = Modifier.height(1.dp))
+                                                Text(
+                                                    "newmatkadomain.com",
+                                                    color = Color.White,
+                                                    fontSize = 12.5.sp,
+                                                    fontWeight = FontWeight.Black
+                                                )
+                                                Spacer(modifier = Modifier.height(1.dp))
+                                                Text(
+                                                    "Fast • Secure • Always Accessible",
+                                                    color = Color(0xFF8FA89B),
+                                                    fontSize = 8.5.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
                                         Box(
                                             modifier = Modifier
-                                                .size(36.dp)
+                                                .size(26.dp)
                                                 .clip(CircleShape)
                                                 .background(Color(0xFF0D1512))
                                                 .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Text("🌐", fontSize = 16.sp)
+                                            Text("➔", color = Color(0xFFD9B98C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         }
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column {
-                                            Text(
-                                                "OUR OFFICIAL WEBSITE",
-                                                color = Color(0xFFD9B98C),
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                letterSpacing = 0.5.sp
-                                            )
-                                            Spacer(modifier = Modifier.height(1.dp))
-                                            Text(
-                                                "newmatkadomain.com",
-                                                color = Color.White,
-                                                fontSize = 12.5.sp,
-                                                fontWeight = FontWeight.Black
-                                            )
-                                            Spacer(modifier = Modifier.height(1.dp))
-                                            Text(
-                                                "Fast • Secure • Always Accessible",
-                                                color = Color(0xFF8FA89B),
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF0D1512))
-                                            .border(1.dp, Color(0xFFD9B98C).copy(alpha = 0.5f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("➔", color = Color(0xFFD9B98C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Matka section header (the original game; its open markets follow)
+                    // Home > Matka: all 8 markets as tiles
+                    if (homeSection == "matka") {
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            SectionHeader(
+                                title = LanguageManager.getText("Matka", "मटका"),
+                                badge = "8 MARKETS",
+                                subtitle = LanguageManager.getText("${liveGames.size} open now · tap a market to play", "${liveGames.size} अभी खुले · खेलने के लिए टैप करें"),
+                                onBack = { onHomeSectionChange("") }
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
+
+                        // All 8 Matka markets as square tiles (open first, then closed), like the Trading tiles
+                        item {
+                            TileGrid(liveGames + resultGames) { gameName, tileModifier ->
+                                val sched = GameScheduleManager.schedules[gameName]
+                                val isOpen = GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN
+                                val remainingMins = if (isOpen) GameScheduleManager.getRemainingMinutesToClose(gameName) else 0
+                                val isUrgent = remainingMins in 1..30
+                                val playerCount = livePlayers[gameName]
+                                    ?: livePlayers[if (gameName == "Shree Ganesh") "Shri Ganesh" else if (gameName == "Shri Ganesh") "Shree Ganesh" else if (gameName == "Desawar") "Disawer" else if (gameName == "Disawer") "Desawar" else gameName]
+                                    ?: when (gameName) {
+                                        "Shiv Parwati" -> 487556
+                                        "Delhi Bazar" -> 614919
+                                        "Dubai Market" -> 452810
+                                        "Shree Ganesh" -> 392152
+                                        "Faridabad" -> 345825
+                                        "Ghaziabad" -> 298700
+                                        "Gali" -> 512400
+                                        "Desawar" -> 684200
+                                        else -> 500000
+                                    }
+                                val playerCountFormatted = remember(playerCount) {
+                                    java.text.NumberFormat.getNumberInstance(java.util.Locale("en", "IN")).format(playerCount)
+                                }
+                                val winningNum = declaredResults[gameName]
+                                MarketTile(
+                                    icon = getGameIconEmoji(gameName),
+                                    name = gameName,
+                                    sub = if (isOpen) "$playerCountFormatted playing" else "Opens ${shortTime(sched?.openTimeStr)}",
+                                    state = when {
+                                        isOpen && isUrgent -> TileState.Urgent("$remainingMins min left")
+                                        isOpen -> TileState.Open("Closes ${shortTime(sched?.closeTimeStr)}")
+                                        else -> TileState.Closed(winningNum?.let { String.format("%02d", it) }, shortTime(sched?.resultTimeStr))
+                                    },
+                                    onClick = {
+                                        if (isOpen) onNavigateToBetting(gameName)
+                                        else android.widget.Toast.makeText(context, "Betting is closed for $gameName. Opens ${shortTime(sched?.openTimeStr)}.", android.widget.Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = tileModifier
+                                )
+                            }
+                        }
+                    }
+
+                // Home: one picture box per game (Matka, 99x Matka, Number, Card, Colour)
+                if (homeSection.isEmpty()) {
                     item {
                         Spacer(modifier = Modifier.height(26.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = LanguageManager.getText("Matka", "मटका"),
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .background(Color(0xFFC9A87C).copy(alpha = 0.12f))
-                                    .border(1.dp, Color(0xFFC9A87C).copy(alpha = 0.5f), RoundedCornerShape(50))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                            ) {
-                                Text("8 MARKETS", color = Color(0xFFE0C9A0), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                            }
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF3EE08A)))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(LanguageManager.getText("${liveGames.size} open now", "${liveGames.size} अभी खुले"), color = Color(0xFF8FA89B), fontSize = 11.sp)
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
+                        GameBoxes(
+                            lobby = gamesLobby,
+                            matkaOpen = liveGames.size,
+                            matkaTotal = liveGames.size + resultGames.size,
+                            onOpenMatka = { onHomeSectionChange("matka") },
+                            onOpenMatka99 = { onHomeSectionChange("matka99") },
+                            onOpenTrading = onNavigateToTrading
+                        )
                     }
+                }
 
-                    // All 8 Matka markets as square tiles (open first, then closed), like the Trading tiles
+                // Home > 99x Matka: its markets as tiles
+                if (homeSection == "matka99") {
                     item {
-                        TileGrid(liveGames + resultGames) { gameName, tileModifier ->
-                            val sched = GameScheduleManager.schedules[gameName]
-                            val isOpen = GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN
-                            val remainingMins = if (isOpen) GameScheduleManager.getRemainingMinutesToClose(gameName) else 0
-                            val isUrgent = remainingMins in 1..30
-                            val playerCount = livePlayers[gameName]
-                                ?: livePlayers[if (gameName == "Shree Ganesh") "Shri Ganesh" else if (gameName == "Shri Ganesh") "Shree Ganesh" else if (gameName == "Desawar") "Disawer" else if (gameName == "Disawer") "Desawar" else gameName]
-                                ?: when (gameName) {
-                                    "Shiv Parwati" -> 487556
-                                    "Delhi Bazar" -> 614919
-                                    "Dubai Market" -> 452810
-                                    "Shree Ganesh" -> 392152
-                                    "Faridabad" -> 345825
-                                    "Ghaziabad" -> 298700
-                                    "Gali" -> 512400
-                                    "Desawar" -> 684200
-                                    else -> 500000
-                                }
-                            val playerCountFormatted = remember(playerCount) {
-                                java.text.NumberFormat.getNumberInstance(java.util.Locale("en", "IN")).format(playerCount)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        SectionHeader(
+                            title = "99x Matka",
+                            badge = "FIXED 99x",
+                            subtitle = "${matka99OpenCount(gamesLobby)} open now · every winning Jodi pays 99x",
+                            onBack = { onHomeSectionChange("") },
+                            right = {
+                                Text(
+                                    "Chart ›", color = Color(0xFFE0C9A0), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable { onNavigateToMatka99Chart() }.padding(8.dp)
+                                )
                             }
-                            val winningNum = declaredResults[gameName]
-                            MarketTile(
-                                icon = getGameIconEmoji(gameName),
-                                name = gameName,
-                                sub = if (isOpen) "$playerCountFormatted playing" else "Opens ${shortTime(sched?.openTimeStr)}",
-                                state = when {
-                                    isOpen && isUrgent -> TileState.Urgent("$remainingMins min left")
-                                    isOpen -> TileState.Open("Closes ${shortTime(sched?.closeTimeStr)}")
-                                    else -> TileState.Closed(winningNum?.let { String.format("%02d", it) }, shortTime(sched?.resultTimeStr))
-                                },
-                                onClick = {
-                                    if (isOpen) onNavigateToBetting(gameName)
-                                    else android.widget.Toast.makeText(context, "Betting is closed for $gameName. Opens ${shortTime(sched?.openTimeStr)}.", android.widget.Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = tileModifier
-                            )
-                        }
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Matka99Section(gamesLobby, onNavigateToMatka99)
                     }
-
-                // New games: 99x Matka and Trading (Number / Card / Colour)
-                item {
-                    Spacer(modifier = Modifier.height(30.dp))
-                    NewGamesHomeSections(
-                        onOpenMatka99 = onNavigateToMatka99,
-                        onOpenTrading = onNavigateToTrading,
-                        onOpenChart99 = onNavigateToMatka99Chart
-                    )
                 }
 
                 // Bottom Scroll Padding item

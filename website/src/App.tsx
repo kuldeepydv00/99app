@@ -5,7 +5,7 @@ import {
   CheckCircle, MessageCircle, Clock, Trophy, ChevronRight, X, Bell 
 } from 'lucide-react';
 import { parseCopyPasteText, ParsedBetItem } from './utils/copyPasteParser';
-import HomeGamesBlocks from './games/HomeGamesBlocks';
+import { useLobby, HomeGameBoxes, Matka99Section, SectionHeader } from './games/HomeGamesBlocks';
 import MarketTile, { shortTime } from './games/MarketTile';
 import TradingPage from './games/TradingPage';
 import type { Balances } from './games/TradingPage';
@@ -695,6 +695,15 @@ export default function App() {
   const [matka99Market, setMatka99Market] = useState<string | null>(null);
   const [tradingGame, setTradingGame] = useState<TradingGame | null>(null);
   const [chartMode, setChartMode] = useState<'matka' | 'matka99'>('matka');
+  // Home shows one picture box per game; Matka and 99x Matka open their own market pages.
+  const [homeSection, setHomeSection] = useState<null | 'matka' | 'matka99'>(null);
+  const gamesLobby = useLobby(activeWebTab === 'home');
+  const openHomeSection = (sec: 'matka' | 'matka99') => { setHomeSection(sec); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
+  const closeHomeSection = () => {
+    setHomeSection(null);
+    // land back on the game boxes, not the top of the page
+    setTimeout(() => { try { document.getElementById('all-games')?.scrollIntoView({ block: 'start' }); } catch { /* ignore */ } }, 0);
+  };
   const [betsMode, setBetsMode] = useState<'matka' | 'new'>('matka');
   const applyGameBalances = (b: Balances) => {
     setUser(prev => {
@@ -1957,7 +1966,7 @@ export default function App() {
                   <div className="p-4 space-y-1.5 flex-1">
                     <button
                       onClick={() => {
-                        setActiveWebTab('home');
+                        setActiveWebTab('home'); setHomeSection(null);
                         setIsSideMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
@@ -2062,7 +2071,7 @@ export default function App() {
                         setMobileNumber('');
                         setOtpInput('');
                         setAuthError('');
-                        setActiveWebTab('home');
+                        setActiveWebTab('home'); setHomeSection(null);
                         setSelectedGameForBetting(null);
                         setView('landing');
                         setIsSideMenuOpen(false);
@@ -2126,7 +2135,7 @@ export default function App() {
 
 
             {/* TAB CONTENT: HOME (Hero Banner, Banners, Live Games & Results - Matching Android App!) */}
-            {activeWebTab === 'home' && (
+            {activeWebTab === 'home' && !homeSection && (
               <>
                 {/* Horizontal Market Selector Row */}
                 <div className="px-3.5 py-2">
@@ -2249,7 +2258,7 @@ export default function App() {
                                   if (slideLink) {
                                     window.open(slideLink, '_blank');
                                   } else {
-                                    setActiveWebTab('home');
+                                    setActiveWebTab('home'); setHomeSection(null);
                                   }
                                 }}
                                 className="bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#9C7B4F] hover:from-[#E0C9A0] hover:to-[#8A6D47] text-slate-950 font-black px-4.5 py-2 rounded-full text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
@@ -2347,28 +2356,22 @@ export default function App() {
             )}
 
             {/* TAB CONTENT: HOME (100% Strictly Separated Live Games & Results - Matching Android App!) */}
-            {activeWebTab === 'home' && (() => {
+            {activeWebTab === 'home' && homeSection === 'matka' && (() => {
               const ALL_GAMES = ["Shiv Parwati", "Delhi Bazar", "Dubai Market", "Shree Ganesh", "Faridabad", "Ghaziabad", "Gali", "Desawar"];
               
               const liveGames = ALL_GAMES.filter((gName) => isGameBettingOpen(gName, gameSchedules[gName]));
               const resultGames = ALL_GAMES.filter((gName) => !isGameBettingOpen(gName, gameSchedules[gName]));
 
               return (
-                <div className="px-4 space-y-6">
+                <div className="px-4 pt-3 space-y-6">
                   {/* SECTION 1: LIVE GAMES (Only games currently OPEN for betting!) */}
                   <div className="space-y-3">
-                    <div className="mb-2 flex items-end justify-between">
-                      <div>
-                        <h3 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
-                          Matka
-                          <span className="rounded-full border border-[#C9A87C]/50 bg-[#C9A87C]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#E0C9A0]">8 MARKETS</span>
-                        </h3>
-                        <p className="mt-0.5 text-[11px] text-gray-400 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#3EE08A] animate-pulse"></span>
-                          {liveGames.length} open now
-                        </p>
-                      </div>
-                    </div>
+                    <SectionHeader
+                      title="Matka"
+                      badge="8 MARKETS"
+                      subtitle={`${liveGames.length} open now · tap a market to play`}
+                      onBack={closeHomeSection}
+                    />
 
                     <div className="grid grid-cols-3 gap-2.5">
                       {[...liveGames, ...resultGames].map((gameName, i) => {
@@ -2399,14 +2402,31 @@ export default function App() {
               );
             })()}
 
-            {/* HOME: 99x Matka + Trading (new games) */}
-            {activeWebTab === 'home' && (
-              <div className="mt-8">
-                <HomeGamesBlocks
-                  onOpenMatka99={(key) => setMatka99Market(key)}
+            {/* HOME: one picture box per game (Matka, 99x Matka, Number, Card, Colour) */}
+            {activeWebTab === 'home' && !homeSection && (
+              <div className="mt-6">
+                <HomeGameBoxes
+                  lobby={gamesLobby}
+                  matkaOpen={["Shiv Parwati", "Delhi Bazar", "Dubai Market", "Shree Ganesh", "Faridabad", "Ghaziabad", "Gali", "Desawar"].filter((g) => isGameBettingOpen(g, gameSchedules[g])).length}
+                  matkaTotal={8}
+                  onOpenMatka={() => openHomeSection('matka')}
+                  onOpenMatka99={() => openHomeSection('matka99')}
                   onOpenTrading={(g) => setTradingGame(g)}
-                  onOpenChart99={() => { setChartMode('matka99'); setActiveWebTab('charts'); }}
                 />
+              </div>
+            )}
+
+            {/* HOME > 99x Matka: its markets as tiles */}
+            {activeWebTab === 'home' && homeSection === 'matka99' && (
+              <div className="px-4 pt-3">
+                <SectionHeader
+                  title="99x Matka"
+                  badge="FIXED 99x"
+                  subtitle={`${gamesLobby ? gamesLobby.matka99.markets.filter(m => m.enabled && m.isOpen).length : 0} open now · every winning Jodi pays 99x`}
+                  onBack={closeHomeSection}
+                  right={<button onClick={() => { setChartMode('matka99'); setActiveWebTab('charts'); }} className="shrink-0 text-[12px] font-bold text-[#E0C9A0] hover:text-white">Chart ›</button>}
+                />
+                <Matka99Section lobby={gamesLobby} onOpenMatka99={(key) => setMatka99Market(key)} />
               </div>
             )}
 
@@ -3054,7 +3074,7 @@ export default function App() {
                   <button 
                     onClick={() => {
                       setSelectedGameForBetting(null);
-                      setActiveWebTab('home');
+                      setActiveWebTab('home'); setHomeSection(null);
                     }}
                     className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
                       activeWebTab === 'home' && !selectedGameForBetting 
@@ -3836,7 +3856,7 @@ export default function App() {
                   <button 
                     onClick={() => {
                       setSelectedGameForBetting(null);
-                      setActiveWebTab('home');
+                      setActiveWebTab('home'); setHomeSection(null);
                     }}
                     className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
                   >

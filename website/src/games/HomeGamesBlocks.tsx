@@ -1,135 +1,151 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { gamesGet } from './api';
 import type { TradingGame } from './api';
-import { clock, useServerNow, OptionTag, COLOURS } from './ui';
+import { clock, useServerNow } from './ui';
 import MarketTile, { shortTime } from './MarketTile';
 
-type Lobby = {
+export type Lobby = {
   serverTime: number;
   trading: Record<TradingGame, { label: string; enabled: boolean; payout: number; round: { roundId: string; start: number; lock: number; end: number; status: string }; lastResult: { result: string } | null }>;
   matka99: { payout: number; markets: { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; lastResult: { number: string; date: string } | null; todayResult: string | null }[] };
 };
 
-const TILE: Record<TradingGame, { title: string; blurb: string; accent: string }> = {
-  number: { title: 'Number', blurb: '00–99 · hourly', accent: 'from-[#3EE08A]/25' },
-  card: { title: 'Card', blurb: '52 cards · hourly', accent: 'from-[#F0DDB8]/25' },
-  colour: { title: 'Colour', blurb: '3 colours · 1 min', accent: 'from-[#3D8BFF]/25' }
-};
-
-export default function HomeGamesBlocks({ onOpenMatka99, onOpenTrading, onOpenChart99 }: {
-  onOpenMatka99: (marketKey: string) => void;
-  onOpenTrading: (game: TradingGame) => void;
-  onOpenChart99?: () => void;
-}) {
+/** Polls the games lobby every 5 s while `enabled`. Returns null until the first load. */
+export function useLobby(enabled = true) {
   const [lobby, setLobby] = useState<Lobby | null>(null);
-  const [failed, setFailed] = useState(false);
-
   useEffect(() => {
+    if (!enabled) return;
     let alive = true;
-    const load = () => gamesGet<Lobby>('/api/games/lobby')
-      .then(d => { if (alive) { setLobby(d); setFailed(false); } })
-      .catch(() => { if (alive) setFailed(true); });
+    const load = () => gamesGet<Lobby>('/api/games/lobby').then(d => { if (alive) setLobby(d); }).catch(() => {});
     load();
     const id = setInterval(load, 5000);
     return () => { alive = false; clearInterval(id); };
-  }, []);
+  }, [enabled]);
+  return lobby;
+}
 
+/** Page header for a home section (Matka, 99x Matka): back arrow, title, badge, subtitle. */
+export function SectionHeader({ title, badge, subtitle, onBack, right }: {
+  title: string; badge?: string; subtitle?: string; onBack: () => void; right?: ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <button onClick={onBack} aria-label="Back"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9A87C]/40 bg-[#0C241B] text-lg font-bold text-[#E0C9A0] transition-all hover:border-[#C9A87C] active:scale-95">←</button>
+      <div className="min-w-0 flex-1">
+        <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-wide text-white">
+          {title}
+          {badge && <span className="rounded-full border border-[#C9A87C]/50 bg-[#C9A87C]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#E0C9A0]">{badge}</span>}
+        </h2>
+        {subtitle && <p className="mt-0.5 text-[11px] text-gray-400">{subtitle}</p>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/** 99x Matka markets as square tiles (open first). */
+export function Matka99Section({ lobby, onOpenMatka99 }: { lobby: Lobby | null; onOpenMatka99: (marketKey: string) => void }) {
+  if (!lobby) return <p className="py-10 text-center text-xs font-semibold text-gray-500">Loading 99x Matka…</p>;
+  const markets = lobby.matka99.markets.filter(m => m.enabled);
+  const ordered = [...markets.filter(m => m.isOpen), ...markets.filter(m => !m.isOpen)];
+  return (
+    <div className="grid grid-cols-3 gap-2.5">
+      {ordered.map((m, i) => (
+        <MarketTile
+          key={m.key}
+          accent="rose"
+          delay={i * 50}
+          icon="99x"
+          name={m.name}
+          sub={m.isOpen ? `Pays ${lobby.matka99.payout}x` : `Opens ${shortTime(m.open)}`}
+          state={m.isOpen
+            ? { kind: 'open', note: `Closes ${shortTime(m.close)}` }
+            : { kind: 'closed', result: m.todayResult || null, note: shortTime(m.resultTime || m.close) }}
+          onClick={() => onOpenMatka99(m.key)}
+        />
+      ))}
+    </div>
+  );
+}
+
+type BoxId = 'matka' | 'matka99' | TradingGame;
+const BOXES: { id: BoxId; img: string; title: string }[] = [
+  { id: 'matka', img: '/banners/banner_matka.webp', title: 'Play Matka' },
+  { id: 'matka99', img: '/banners/banner_matka99.webp', title: 'Play 99x Matka' },
+  { id: 'number', img: '/banners/banner_number.webp', title: 'Play Number Trading' },
+  { id: 'card', img: '/banners/banner_card.webp', title: 'Play Card Trading' },
+  { id: 'colour', img: '/banners/banner_colour.webp', title: 'Play Colour Trading' }
+];
+
+/** Home page: one big picture box per game, like a game lobby. */
+export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpenMatka99, onOpenTrading }: {
+  lobby: Lobby | null;
+  matkaOpen: number;
+  matkaTotal: number;
+  onOpenMatka: () => void;
+  onOpenMatka99: () => void;
+  onOpenTrading: (game: TradingGame) => void;
+}) {
   const now = useServerNow(lobby?.serverTime);
 
-  if (!lobby) {
-    return (
-      <div className="px-4 py-6 text-center text-xs font-semibold text-gray-500">
-        {failed ? 'New games are unavailable right now.' : 'Loading 99x Matka and Trading…'}
-      </div>
-    );
-  }
+  const info = (id: BoxId): { status: string; live: boolean; disabled?: boolean; idle?: string } => {
+    if (id === 'matka') return { status: `${matkaOpen} of ${matkaTotal} markets open · results daily`, live: matkaOpen > 0 };
+    if (!lobby) return { status: 'Loading…', live: false };
+    if (id === 'matka99') {
+      const ms = lobby.matka99.markets.filter(m => m.enabled);
+      const open = ms.filter(m => m.isOpen).length;
+      return { status: `${open} of ${ms.length} markets open · pays ${lobby.matka99.payout}x`, live: open > 0 };
+    }
+    const t = lobby.trading[id];
+    if (!t || !t.enabled) return { status: 'Paused for now', live: false, disabled: true };
+    const locked = now >= t.round.lock;
+    const left = locked ? t.round.end - now : t.round.lock - now;
+    return { status: `${locked ? 'Result in' : 'Betting closes in'} ${clock(left)} · pays ${t.payout}x`, live: !locked, idle: 'Result soon' };
+  };
 
-  const markets = lobby.matka99.markets.filter(m => m.enabled);
-  const openMarkets = markets.filter(m => m.isOpen);
-  const closedMarkets = markets.filter(m => !m.isOpen);
+  const open = (id: BoxId) => {
+    if (id === 'matka') onOpenMatka();
+    else if (id === 'matka99') onOpenMatka99();
+    else onOpenTrading(id);
+  };
 
   return (
-    <div className="space-y-7 px-4">
-      {/* ---------------- 99x MATKA ---------------- */}
-      <section className="space-y-3">
-        <div className="flex items-end justify-between">
-          <div>
-            <h3 className="flex items-center gap-2 text-lg font-extrabold tracking-wide">
-              <span className="g-shimmer">99x Matka</span>
-              <span className="rounded-full border border-[#E0B7A0]/60 bg-[#E0B7A0]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#F5EDE2]">FIXED 99x</span>
-            </h3>
-            <p className="mt-0.5 text-[11px] text-gray-400">{openMarkets.length} open now · every winning Jodi pays 99x</p>
-          </div>
-          {onOpenChart99 && (
-            <button onClick={onOpenChart99} className="text-[11px] font-bold text-[#E0C9A0] hover:text-white">Chart ›</button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2.5">
-          {[...openMarkets, ...closedMarkets].map((m, i) => (
-            <MarketTile
-              key={m.key}
-              accent="rose"
-              delay={i * 50}
-              icon="99x"
-              name={m.name}
-              sub={m.isOpen ? `Pays ${lobby.matka99.payout}x` : `Opens ${shortTime(m.open)}`}
-              state={m.isOpen
-                ? { kind: 'open', note: `Closes ${shortTime(m.close)}` }
-                : { kind: 'closed', result: m.todayResult || null, note: shortTime(m.resultTime || m.close) }}
-              onClick={() => onOpenMatka99(m.key)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* ---------------- TRADING ---------------- */}
-      <section className="space-y-3">
-        <div>
-          <h3 className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-white">
-            Trading <span className="rounded-full bg-[#3EE08A]/15 px-2 py-0.5 text-[10px] font-extrabold text-[#3EE08A]">NEW</span>
-          </h3>
-          <p className="mt-0.5 text-[11px] text-gray-400">Quick rounds. Lowest total bet wins each round.</p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2.5">
-          {(['number', 'card', 'colour'] as TradingGame[]).map((g, i) => {
-            const t = lobby.trading[g];
-            const r = t.round;
-            const locked = now >= r.lock;
-            const left = locked ? r.end - now : r.lock - now;
-            const last = t.lastResult?.result || null;
-            return (
-              <button key={g} disabled={!t.enabled} onClick={() => onOpenTrading(g)} style={{ animationDelay: `${i * 70}ms` }}
-                className={`g-rise g-lift relative flex flex-col items-center overflow-hidden rounded-2xl border border-[#C9A87C]/25 bg-gradient-to-b ${TILE[g].accent} to-[#0A0F0D] px-2 pb-3 pt-4 text-center shadow-xl hover:border-[#C9A87C]/70 disabled:opacity-40`}>
-                <div className="flex h-12 items-center justify-center">
-                  {g === 'number' && <span className="font-mono text-3xl font-black tracking-tight text-[#3EE08A]">07</span>}
-                  {g === 'card' && (
-                    <span className="flex -space-x-3">
-                      <span className="flex h-11 w-8 -rotate-12 items-center justify-center rounded-md bg-[#F5EDE2] text-[11px] font-black text-[#0A0F0D] shadow-lg">A♠</span>
-                      <span className="flex h-11 w-8 rotate-6 items-center justify-center rounded-md bg-[#F5EDE2] text-[11px] font-black text-[#E23B52] shadow-lg">K♥</span>
+    <section id="all-games" className="scroll-mt-24 px-4">
+      <div className="mb-3 flex items-end justify-between">
+        <h3 className="text-lg font-extrabold tracking-wide text-white">All games</h3>
+        <span className="text-[11px] font-medium text-gray-500">Tap a game to play</span>
+      </div>
+      <div className="space-y-4">
+        {BOXES.map((b, i) => {
+          const s = info(b.id);
+          return (
+            <button key={b.id} onClick={() => open(b.id)} disabled={s.disabled} style={{ animationDelay: `${i * 70}ms` }}
+              className="g-rise g-lift group block w-full overflow-hidden rounded-2xl border border-[#C9A87C]/25 bg-[#0B1712] text-left shadow-xl hover:border-[#C9A87C]/70 disabled:opacity-50">
+              <div className="relative aspect-[30/17] w-full overflow-hidden bg-[#0A0F0D]">
+                <img src={b.img} alt="" loading={i > 1 ? 'lazy' : 'eager'} draggable={false}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              </div>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-[15px] font-extrabold text-white">{b.title}</p>
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${s.live ? 'bg-[#3EE08A]/15 text-[#3EE08A]' : 'bg-white/10 text-gray-300'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.live ? 'animate-pulse bg-[#3EE08A]' : 'bg-gray-400'}`} />
+                      {s.live ? 'Live' : s.disabled ? 'Paused' : (s.idle || 'Closed')}
                     </span>
-                  )}
-                  {g === 'colour' && (
-                    <span className="flex gap-1.5">
-                      {(['RED', 'BLUE', 'GREEN'] as const).map(c => <span key={c} className={`h-5 w-5 rounded-full ${COLOURS[c].bg} shadow-lg`} />)}
-                    </span>
-                  )}
+                  </div>
+                  <p className="truncate text-[11px] font-medium tabular-nums text-gray-400">{s.status}</p>
                 </div>
-                <p className="mt-2 text-sm font-extrabold text-white">{TILE[g].title}</p>
-                <p className="text-[9px] font-medium text-gray-400">{TILE[g].blurb}</p>
-                <span className={`mt-2 rounded-full px-2 py-0.5 font-mono text-[10px] font-extrabold tabular-nums ${locked ? 'bg-white/10 text-gray-300' : 'bg-[#3EE08A]/15 text-[#3EE08A]'}`}>
-                  {locked ? `Result ${clock(left)}` : `Closes ${clock(left)}`}
+                <span className={`shrink-0 rounded-xl px-3.5 py-2 text-[11px] font-black tracking-wider text-[#0A0F0D] shadow-lg transition-transform group-hover:scale-105 ${b.id === 'matka99' ? 'bg-gradient-to-r from-[#F5EDE2] to-[#E0B7A0]' : 'bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47]'}`}>
+                  PLAY →
                 </span>
-                <span className="mt-1.5 text-[9px] font-bold text-[#E0C9A0]">Pays {t.payout}x</span>
-                {last && (
-                  <span className="mt-1 flex items-center gap-1 text-[9px] text-gray-500">Last <OptionTag game={g} value={last} /></span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
