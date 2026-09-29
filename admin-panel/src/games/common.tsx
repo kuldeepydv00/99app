@@ -157,3 +157,138 @@ export function useServerNow(serverTime: number | undefined) {
   }, []);
   return now + offset;
 }
+
+// ---------- shared admin helpers for the new-game pages ----------
+
+export type OpenUser = (mobile: string) => void;
+
+// Downloads rows as a CSV file (Excel opens it). First row = headers.
+export function downloadCsv(filename: string, rows: (string | number | null | undefined)[][]) {
+  const esc = (v: string | number | null | undefined) => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = '﻿' + rows.map(r => r.map(esc).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function BetStatus({ status }: { status: string }) {
+  if (status === 'won') return <Pill tone="gold">Won</Pill>;
+  if (status === 'lost') return <Pill tone="grey">Lost</Pill>;
+  if (status === 'refunded') return <Pill tone="red">Refunded</Pill>;
+  return <Pill tone="blue">Pending</Pill>;
+}
+
+// Player name + mobile; clicking opens the user's details page when onOpenUser is given.
+export function PlayerCell({ name, mobile, onOpenUser }: { name?: string; mobile: string; onOpenUser?: OpenUser }) {
+  if (!onOpenUser) return <span><span className="font-semibold">{name || 'Player'}</span> <span className="font-mono text-gray-500">{mobile}</span></span>;
+  return (
+    <button onClick={() => onOpenUser(mobile)} title="Open user details" className="text-left hover:underline">
+      <span className="font-semibold text-[#007BFF]">{name || 'Player'}</span> <span className="font-mono text-gray-500">{mobile}</span>
+    </button>
+  );
+}
+
+// Modal used for every money-moving admin action (undo, refund, cancel, pause).
+export function ConfirmDialog({ title, children, confirmLabel, tone = 'blue', askReason = false, onConfirm, onClose }: {
+  title: string;
+  children: ReactNode;
+  confirmLabel: string;
+  tone?: 'blue' | 'red' | 'green';
+  askReason?: boolean;
+  onConfirm: (reason: string) => Promise<ReactNode | void>;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [done, setDone] = useState<ReactNode>(null);
+  const btn = { blue: 'bg-[#007BFF] hover:bg-[#0069D9]', red: 'bg-[#DC3545] hover:bg-[#C82333]', green: 'bg-[#28A745] hover:bg-[#218838]' }[tone];
+  const run = async () => {
+    setBusy(true); setErr('');
+    try {
+      const out = await onConfirm(reason.trim());
+      if (out) setDone(out); else onClose();
+    } catch (e: any) { setErr(e.message || 'Something went wrong'); }
+    setBusy(false);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        {done ? (
+          <>
+            <div className="mt-3 text-sm text-gray-700">{done}</div>
+            <button onClick={onClose} className="mt-4 w-full rounded-lg bg-gray-800 py-2.5 text-xs font-bold text-white hover:bg-gray-900">Close</button>
+          </>
+        ) : (
+          <>
+            <div className="mt-2 space-y-2 text-xs text-gray-600">{children}</div>
+            {askReason && (
+              <label className="mt-3 block text-xs"><span className="mb-1 block font-semibold text-gray-700">Reason (shown in the records)</span>
+                <input value={reason} onChange={e => setReason(e.target.value)} maxLength={120} placeholder="e.g. Server problem during this round"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" /></label>
+            )}
+            {err && <p className="mt-3 text-xs font-semibold text-red-700">⚠️ {err}</p>}
+            <div className="mt-4 flex gap-2">
+              <button onClick={onClose} className="flex-1 rounded-lg border border-gray-300 py-2.5 text-xs font-bold hover:bg-gray-50">Cancel</button>
+              <button onClick={run} disabled={busy} className={`flex-1 rounded-lg py-2.5 text-xs font-bold text-white disabled:opacity-50 ${btn}`}>
+                {busy ? 'Working…' : confirmLabel}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Day-by-day report table used on the 99x and trading pages.
+export function DailyReport({ days, extra }: {
+  days: { date: string; bets: number; players: number; staked: number; paid: number; net: number; refunded: number; [k: string]: any }[];
+  extra?: { label: string; render: (row: any) => ReactNode };
+}) {
+  const tot = days.reduce((a, d) => ({ bets: a.bets + d.bets, staked: a.staked + d.staked, paid: a.paid + d.paid, refunded: a.refunded + d.refunded }), { bets: 0, staked: 0, paid: 0, refunded: 0 });
+  return (
+    <div className="max-h-[360px] overflow-auto">
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-gray-50 text-left text-[11px] uppercase text-gray-500">
+          <tr><th className="px-2 py-2">Date</th><th className="px-2 py-2 text-right">Bets</th><th className="px-2 py-2 text-right">Players</th>
+            <th className="px-2 py-2 text-right">Staked</th><th className="px-2 py-2 text-right">Paid</th><th className="px-2 py-2 text-right">Net</th>
+            <th className="px-2 py-2 text-right">Refunded</th>{extra && <th className="px-2 py-2 text-right">{extra.label}</th>}</tr>
+        </thead>
+        <tbody>
+          {days.map(d => (
+            <tr key={d.date} className="border-t border-gray-100">
+              <td className="px-2 py-1.5 font-semibold">{d.date}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums">{d.bets}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums">{d.players}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums">{inr(d.staked)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums">{inr(d.paid)}</td>
+              <td className={`px-2 py-1.5 text-right font-bold tabular-nums ${d.net >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{inr(d.net)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums text-gray-500">{d.refunded ? inr(d.refunded) : '—'}</td>
+              {extra && <td className="px-2 py-1.5 text-right tabular-nums">{extra.render(d)}</td>}
+            </tr>
+          ))}
+        </tbody>
+        <tfoot className="border-t-2 border-gray-200 bg-gray-50 font-bold">
+          <tr><td className="px-2 py-2">Total</td><td className="px-2 py-2 text-right tabular-nums">{tot.bets}</td><td />
+            <td className="px-2 py-2 text-right tabular-nums">{inr(tot.staked)}</td><td className="px-2 py-2 text-right tabular-nums">{inr(tot.paid)}</td>
+            <td className={`px-2 py-2 text-right tabular-nums ${tot.staked - tot.paid >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{inr(tot.staked - tot.paid)}</td>
+            <td className="px-2 py-2 text-right tabular-nums text-gray-500">{tot.refunded ? inr(tot.refunded) : '—'}</td>{extra && <td />}</tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+export function ExportButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled} title="Download as CSV (opens in Excel)"
+      className="rounded border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold hover:bg-gray-50 disabled:opacity-40">⬇ CSV</button>
+  );
+}

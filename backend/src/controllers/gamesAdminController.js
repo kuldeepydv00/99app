@@ -30,13 +30,27 @@ exports.tradingRounds = (req, res) => {
   send(res, () => engine.getAdminRounds(req.params.game, {
     limit: Math.min(parseInt(req.query.limit, 10) || 50, 500),
     offset: parseInt(req.query.offset, 10) || 0,
-    withBetsOnly: req.query.withBetsOnly === 'true'
+    withBetsOnly: req.query.withBetsOnly === 'true',
+    date: /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || '')) ? req.query.date : null
   }));
 };
 
 exports.tradingBets = (req, res) => {
   if (!validGame(req, res)) return;
-  send(res, () => ({ bets: engine.getAdminBets(req.params.game, { roundId: req.query.roundId, mobile: req.query.mobile }) }));
+  send(res, () => ({ bets: engine.getAdminBets(req.params.game, {
+    roundId: req.query.roundId, mobile: req.query.mobile, status: req.query.status, date: req.query.date,
+    limit: Math.min(parseInt(req.query.limit, 10) || 500, 5000)
+  }) }));
+};
+
+exports.tradingCancelRound = (req, res) => {
+  if (!validGame(req, res)) return;
+  send(res, () => ({ cancelled: engine.cancelRound(req.params.game, String((req.body || {}).roundId || ''), (req.body || {}).reason) }));
+};
+
+exports.tradingReport = (req, res) => {
+  if (!validGame(req, res)) return;
+  send(res, () => ({ days: engine.getDailyReport(req.params.game, Math.min(parseInt(req.query.days, 10) || 14, 60)) }));
 };
 
 exports.tradingConfig = (req, res) => {
@@ -46,9 +60,20 @@ exports.tradingConfig = (req, res) => {
 
 exports.matka99Overview = (req, res) => send(res, () => matka99.getOverview(req.query.date));
 exports.matka99Matrix = (req, res) => send(res, () => matka99.getMatrix(req.query.market, req.query.date));
-exports.matka99Bets = (req, res) => send(res, () => ({ bets: matka99.getAdminBets(req.query) }));
+exports.matka99Bets = (req, res) => send(res, () => ({ bets: matka99.getAdminBets({ ...req.query, limit: Math.min(parseInt(req.query.limit, 10) || 500, 5000) }) }));
 exports.matka99Chart = (req, res) => send(res, () => matka99.getChart(parseInt(req.query.days, 10) || 90));
 exports.matka99Preview = (req, res) => send(res, () => ({ preview: matka99.previewDeclare(req.body.market, req.body.date, req.body.number) }));
 exports.matka99Declare = (req, res) => send(res, () => ({ result: matka99.declare(req.body.market, req.body.date, req.body.number, { bypassWindowCheck: !!req.body.bypassWindowCheck }) }));
 exports.matka99Toggle = (req, res) => send(res, () => ({ market: matka99.setEnabled(req.body.market, req.body.enabled) }));
 exports.matka99Limits = (req, res) => send(res, () => ({ config: matka99.updateLimits(req.body || {}) }));
+exports.matka99Undo = (req, res) => send(res, () => ({ undone: matka99.undoDeclare((req.body || {}).market, (req.body || {}).date) }));
+exports.matka99Refund = (req, res) => send(res, () => ({ refunded: matka99.refundMarket((req.body || {}).market, (req.body || {}).date, (req.body || {}).reason) }));
+exports.matka99Report = (req, res) => send(res, () => ({ days: matka99.getDailyReport(Math.min(parseInt(req.query.days, 10) || 14, 60)) }));
+
+// Cross-game
+const report = require('../games/gamesReport');
+exports.summary = (req, res) => send(res, () => report.summary({ from: req.query.from, to: req.query.to }));
+exports.userBets = (req, res) => send(res, () => report.userBets(req.params.mobile, {
+  game: report.GAME_KEYS.includes(req.query.game) ? req.query.game : undefined,
+  limit: Math.min(parseInt(req.query.limit, 10) || 300, 2000)
+}));

@@ -351,6 +351,14 @@ const getStats = async (req, res) => {
     const totalWinnings = winningBets.reduce((sum, b) => sum + (parseFloat(b.win_amount || (b.amount * 95)) || 0), 0);
     const todayWinnings = winningBets.filter(b => isTargetDate(b)).reduce((sum, b) => sum + (parseFloat(b.win_amount || (b.amount * 95)) || 0), 0);
 
+    // 5b. New games (99x Matka + Number/Card/Colour Trading) — added to the betting and winning totals
+    let newGames = null;
+    try {
+      newGames = require('../games/gamesReport').dashboardTotals(startISO, endISO);
+    } catch (ngErr) {
+      console.error('[getStats newGames]', ngErr.message);
+    }
+
     // 6. Wallet balance metrics
     const totalBalanceWallet = usersList.reduce((sum, u) => sum + (parseFloat(u.balance !== undefined ? u.balance : (u.wallet_balance || 0)) || 0), 0);
     const totalDepositWallet = usersList.reduce((sum, u) => sum + (parseFloat(u.deposit_balance) || 0), 0);
@@ -416,10 +424,12 @@ const getStats = async (req, res) => {
       dailyNewUsers,
       totalDeposite,
       todayDeposite,
-      totalWinnings,
-      todayWinnings,
-      totalBetting,
-      todayBetting,
+      totalWinnings: parseFloat((totalWinnings + (newGames ? newGames.allTime.paid : 0)).toFixed(2)),
+      todayWinnings: parseFloat((todayWinnings + (newGames ? newGames.range.paid : 0)).toFixed(2)),
+      totalBetting: parseFloat((totalBetting + (newGames ? newGames.allTime.staked : 0)).toFixed(2)),
+      todayBetting: parseFloat((todayBetting + (newGames ? newGames.range.staked : 0)).toFixed(2)),
+      matka: { totalBetting, todayBetting, totalWinnings, todayWinnings },
+      newGames,
       totalWithdraws,
       todayWithdraws,
       totalBalanceWallet,
@@ -2963,7 +2973,30 @@ const getAdminAdmins = async (req, res) => {
 
 const getAdminWinnings = async (req, res) => {
   const winningBets = memoryBets.filter(b => b.status === 'won' || b.win_amount > 0 || b.winAmount > 0 || b.status === 'Won');
-  res.json(winningBets.map((b, i) => {
+  // New games' winners (99x Matka + trading), in the same shape
+  let newGameWins = [];
+  try {
+    const ngReport = require('../games/gamesReport');
+    const { state: ngState } = require('../games/gamesStore');
+    newGameWins = ngState.bets.filter(b => b.status === 'won' && ngReport.LABELS[b.game]).map(b => ({
+      id: b.id,
+      category: b.game === 'matka99' ? `99x Matka - ${b.marketName}` : ngReport.LABELS[b.game],
+      user: b.user || 'Player',
+      email: `${b.mobile}@gmail.com`,
+      mobile: b.mobile,
+      userId: b.mobile,
+      amount: b.win_amount,
+      txnId: b.id,
+      txnType: 'Winning amount',
+      status: 'SUCCESS',
+      dateOfWinning: ngReport.betDate(b),
+      dateOfTxn: new Date(b.settled_at || b.created_at).toISOString().replace('T', ' ').substring(0, 19),
+      game: b.game, option: b.option, betAmount: b.amount
+    }));
+  } catch (ngErr) {
+    console.error('[getAdminWinnings newGames]', ngErr.message);
+  }
+  res.json([...newGameWins, ...winningBets.map((b, i) => {
     const rawUser = b.user || b.mobile || '';
     const cleanMobile = rawUser.replace(/[^0-9]/g, '').slice(-10) || '8580642004';
     const winAmt = b.win_amount || b.winAmount || (b.bet_amount * 95);
@@ -2981,7 +3014,7 @@ const getAdminWinnings = async (req, res) => {
       dateOfWinning: b.created_at ? new Date(b.created_at).toISOString().split('T')[0] : '2026-08-29',
       dateOfTxn: b.created_at ? new Date(b.created_at).toISOString().replace('T', ' ').substring(0, 19) : '2026-08-29 05:52:35'
     };
-  }));
+  })]);
 };
 
 function safeParseTime(d, fallback = Date.now(), id = null) {
@@ -3191,6 +3224,37 @@ const getGameLedger = async (req, res) => {
         }
       });
 
+      // New games: 99x Matka and Number/Card/Colour Trading
+      try {
+        const ngReport = require('../games/gamesReport');
+        ngReport.ledgerEventsFor(mob).forEach((b) => {
+          const t = new Date(b.created_at).getTime() || signupTime;
+          const label = ngReport.LABELS[b.game] + (b.marketName ? ` - ${b.marketName}` : (b.roundId ? ` - ${b.roundId}` : ''));
+          rawEvents.push({
+            id: `${b.id}_bet`, timestamp: t, dateStr: safeFormatISO(b.created_at, 'Today', null),
+            type: 'Bid Place', amount: b.amount, amountStr: `-${Number(b.amount).toFixed(2)}`,
+            gameType: `${label} (${b.option})`, kind: 'BET'
+          });
+          const settledT = new Date(b.settled_at || b.refunded_at || b.created_at).getTime() || (t + 50);
+          if (b.status === 'won' && b.win_amount > 0) {
+            rawEvents.push({
+              id: `${b.id}_win`, timestamp: Math.max(settledT, t + 50), dateStr: safeFormatISO(b.settled_at || b.created_at, 'Today', null),
+              type: 'Winning Credit', amount: b.win_amount, amountStr: `+${Number(b.win_amount).toFixed(2)}`,
+              gameType: `${label} - Won 🎉`, kind: 'WIN'
+            });
+          }
+          if (b.status === 'refunded') {
+            rawEvents.push({
+              id: `${b.id}_refund`, timestamp: Math.max(settledT, t + 50), dateStr: safeFormatISO(b.refunded_at || b.created_at, 'Today', null),
+              type: 'Bet Refund', amount: b.amount, amountStr: `+${Number(b.amount).toFixed(2)}`,
+              gameType: `${label} - Refunded`, kind: 'REFUND', bonusPart: b.bonus_used || 0
+            });
+          }
+        });
+      } catch (ngErr) {
+        console.error('[getGameLedger newGames]', ngErr.message);
+      }
+
       // Withdrawals
       allWds.filter(w => matchesMob(w)).forEach((w, idx) => {
         const t = safeParseTime(w.timestamp || w.created_at || w.createdAt || w.date, signupTime + 3000 + idx * 100, w._id || w.id);
@@ -3250,6 +3314,9 @@ const getGameLedger = async (req, res) => {
           }
         } else if (ev.kind === 'WIN') {
           runWinning = parseFloat((runWinning + ev.amount).toFixed(2));
+        } else if (ev.kind === 'REFUND') {
+          runBonus = parseFloat((runBonus + (ev.bonusPart || 0)).toFixed(2));
+          runDeposit = parseFloat((runDeposit + ev.amount - (ev.bonusPart || 0)).toFixed(2));
         } else if (ev.kind === 'WITHDRAW') {
           let rem = ev.amount;
           if (runWinning >= rem) {

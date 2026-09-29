@@ -132,6 +132,7 @@ fun NewGamesBetsList(mobile: String, modifier: Modifier = Modifier) {
                                 Text("Result ", color = Color(0xFF6B7280), fontSize = 10.sp)
                                 OptionTag(tagGame, b.optString("result"))
                             }
+                            "refunded" -> Text("Refunded", color = Color(0xFF7DD3FC), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             else -> Text("Pending", color = GameColors.Amber, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }

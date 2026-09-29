@@ -92,9 +92,10 @@ function ensureRound(game, start) {
   return rounds[id];
 }
 
-function publicRound(r) {
+function publicRound(r, raw = false) {
   if (!r) return null;
-  return { roundId: r.roundId, start: r.start, lock: r.lock, end: r.end, status: r.status };
+  const cancelled = r.status === 'cancelled';
+  return { roundId: r.roundId, start: r.start, lock: r.lock, end: r.end, status: cancelled && !raw ? 'locked' : r.status, cancelled };
 }
 
 function receipt(r) {
@@ -108,7 +109,7 @@ function receipt(r) {
 const settling = new Set();
 function settleRound(game, r) {
   const key = game + ':' + r.roundId;
-  if (r.status === 'settled' || settling.has(key)) return;
+  if (r.status === 'settled' || r.status === 'cancelled' || settling.has(key)) return;
   settling.add(key);
   try {
     const def = GAMES[game];
@@ -170,7 +171,7 @@ function prune(t) {
     const rounds = state.rounds[game];
     for (const id of Object.keys(rounds)) {
       const r = rounds[id];
-      if (r.status === 'settled' && r.end < t - KEEP_MS[game]) delete rounds[id];
+      if ((r.status === 'settled' || r.status === 'cancelled') && r.end < t - KEEP_MS[game]) delete rounds[id];
     }
   }
   const cutoff = t - BET_KEEP_MS;
@@ -192,7 +193,7 @@ function tick() {
       const rounds = state.rounds[game];
       for (const id of Object.keys(rounds)) {
         const r = rounds[id];
-        if (r.status !== 'settled' && r.end <= t) settleRound(game, r);
+        if (r.status !== 'settled' && r.status !== 'cancelled' && r.end <= t) settleRound(game, r);
       }
     } catch (err) {
       console.error(`[Trading ${game}] tick error:`, err.message);
@@ -254,6 +255,7 @@ function placeBets(game, mobile, items) {
 
   const clean = wallet.cleanMobile(mobile);
   const round = ensureRound(game, b.start);
+  if (round.status === 'cancelled') throw new GameError(400, 'This round was cancelled by the admin. Please bet in the next round.');
   const already = {};
   for (const bet of state.bets) {
     if (bet.game === game && bet.roundId === round.roundId && bet.mobile === clean && bet.status !== 'refunded') {
@@ -277,7 +279,6 @@ function placeBets(game, mobile, items) {
   }
 
   const createdAt = new Date(t).toISOString();
-  const bonusRatio = total > 0 ? split.bonus / total : 0;
   const created = [];
   for (const [opt, amt] of Object.entries(merged)) {
     const bet = {
@@ -285,7 +286,7 @@ function placeBets(game, mobile, items) {
       game, roundId: round.roundId, mobile: clean, user: u.name || `User ${clean.slice(-4)}`,
       option: opt, amount: amt, multiplier: cfg.payout,
       potential_win: wallet.round2(amt * cfg.payout),
-      bonus_used: wallet.round2(amt * bonusRatio),
+      ...wallet.shareOf(split, total, amt),
       status: 'pending', win_amount: 0, result: null,
       created_at: createdAt
     };
@@ -375,14 +376,14 @@ function getAdminOverview(game) {
   const pays = lowest.map(o => payByOption[o] || 0);
 
   const dayStart = istDayStart(t);
-  const today = Object.values(state.rounds[game]).filter(r => r.start >= dayStart);
+  const today = Object.values(state.rounds[game]).filter(r => r.start >= dayStart && r.status !== 'cancelled');
   const staked = today.reduce((s, r) => s + (r.totalStaked || 0), 0);
   const paid = today.filter(r => r.status === 'settled').reduce((s, r) => s + (r.totalPaid || 0), 0);
 
   return {
     game, label: def.label, serverTime: t, config: cfg, options: def.options,
     round: live ? {
-      ...publicRound(live), totalStaked: live.totalStaked, betCount: live.betCount,
+      ...publicRound(live, true), totalStaked: live.totalStaked, betCount: live.betCount,
       players: Object.keys(live.players || {}).length
     } : { ...b, roundId: roundIdFor(game, b.start), status: 'open', totalStaked: 0, betCount: 0, players: 0 },
     totals,
@@ -400,26 +401,102 @@ function getAdminOverview(game) {
   };
 }
 
-function getAdminRounds(game, { limit = 50, offset = 0, withBetsOnly = false } = {}) {
-  let list = settledRounds(game);
+function getAdminRounds(game, { limit = 50, offset = 0, withBetsOnly = false, date = null } = {}) {
+  let list = Object.values(state.rounds[game])
+    .filter(r => r.status === 'settled' || r.status === 'cancelled')
+    .sort((a, b) => b.end - a.end);
   if (withBetsOnly) list = list.filter(r => r.betCount > 0);
+  if (date) list = list.filter(r => istDateOf(r.start) === date);
   return {
     total: list.length,
     rounds: list.slice(offset, offset + limit).map(r => ({
-      roundId: r.roundId, start: r.start, end: r.end, totalStaked: r.totalStaked, betCount: r.betCount,
+      roundId: r.roundId, status: r.status, cancelReason: r.cancelReason || null,
+      refundedBets: r.refundedBets || 0, refundedAmount: r.refundedAmount || 0,
+      start: r.start, end: r.end, totalStaked: r.totalStaked, betCount: r.betCount,
       players: Object.keys(r.players || {}).length, result: r.result, winningTotal: r.winningTotal,
       tiedCount: r.tiedCount, winners: r.winners, totalPaid: r.totalPaid,
-      net: wallet.round2((r.totalStaked || 0) - (r.totalPaid || 0))
+      net: r.status === 'cancelled' ? 0 : wallet.round2((r.totalStaked || 0) - (r.totalPaid || 0))
     }))
   };
 }
 
-function getAdminBets(game, { roundId, mobile, limit = 500 } = {}) {
+function getAdminBets(game, { roundId, mobile, status, date, limit = 500 } = {}) {
   const clean = mobile ? wallet.cleanMobile(mobile) : null;
   return state.bets
-    .filter(b => b.game === game && (!roundId || b.roundId === roundId) && (!clean || b.mobile === clean))
+    .filter(b => b.game === game && (!roundId || b.roundId === roundId) && (!clean || b.mobile === clean)
+      && (!status || b.status === status) && (!date || istDateOf(b.created_at) === date))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     .slice(0, limit);
+}
+
+// 'YYYY-MM-DD' in IST for a timestamp (ms) or ISO string
+function istDateOf(t) {
+  const ms = typeof t === 'number' ? t : new Date(t).getTime();
+  if (!Number.isFinite(ms)) return '';
+  const d = new Date(ms + IST_OFFSET_MS);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
+// Cancels a round that has not been settled yet and gives every stake back.
+// Used when something went wrong with a round; a settled round can't be cancelled.
+function cancelRound(game, roundId, reason) {
+  const def = GAMES[game];
+  if (!def) throw new GameError(404, 'Unknown game');
+  const r = state.rounds[game][roundId];
+  if (!r) throw new GameError(404, 'Round not found');
+  if (r.status === 'settled') throw new GameError(400, 'This round is already settled, so it can’t be cancelled.');
+  if (r.status === 'cancelled') throw new GameError(400, 'This round is already cancelled.');
+  if (settling.has(game + ':' + roundId)) throw new GameError(409, 'This round is being settled right now. Try again in a moment.');
+  const why = String(reason || '').trim().slice(0, 120) || 'Cancelled by admin';
+
+  let count = 0, amount = 0;
+  for (const b of state.bets) {
+    if (b.game !== game || b.roundId !== roundId || b.status !== 'pending') continue;
+    const u = wallet.findUser(b.mobile);
+    wallet.refundStake(u, b, `Refund: ${def.label} round ${roundId} cancelled`);
+    b.status = 'refunded';
+    b.refunded_at = new Date(now()).toISOString();
+    b.refund_reason = why;
+    count += 1;
+    amount += b.amount;
+  }
+  r.status = 'cancelled';
+  r.cancelledAt = now();
+  r.cancelReason = why;
+  r.refundedBets = count;
+  r.refundedAmount = wallet.round2(amount);
+  wallet.persistWallets();
+  saveNow();
+  console.log(`[${def.label}] ${roundId} cancelled by admin (${why}): refunded ₹${r.refundedAmount} on ${count} bets`);
+  return { roundId, game, refundedBets: count, refundedAmount: r.refundedAmount, reason: why };
+}
+
+// Day-by-day totals (IST) for the last `days` days, newest first.
+function getDailyReport(game, days = 14) {
+  const out = {};
+  const t = now();
+  for (let i = 0; i < days; i++) {
+    const key = istDateOf(t - i * 24 * HOUR);
+    out[key] = { date: key, bets: 0, players: new Set(), staked: 0, paid: 0, refunded: 0, rounds: 0, cancelledRounds: 0 };
+  }
+  for (const b of state.bets) {
+    if (b.game !== game) continue;
+    const row = out[istDateOf(b.created_at)];
+    if (!row) continue;
+    if (b.status === 'refunded') { row.refunded += b.amount; continue; }
+    row.bets += 1; row.players.add(b.mobile); row.staked += b.amount; row.paid += b.win_amount || 0;
+  }
+  for (const r of Object.values(state.rounds[game])) {
+    const row = out[istDateOf(r.start)];
+    if (!row) continue;
+    if (r.status === 'settled') row.rounds += 1;
+    if (r.status === 'cancelled') row.cancelledRounds += 1;
+  }
+  return Object.values(out).map(r => ({
+    date: r.date, bets: r.bets, players: r.players.size,
+    staked: wallet.round2(r.staked), paid: wallet.round2(r.paid), net: wallet.round2(r.staked - r.paid),
+    refunded: wallet.round2(r.refunded), rounds: r.rounds, cancelledRounds: r.cancelledRounds
+  }));
 }
 
 function updateConfig(game, body) {
@@ -449,5 +526,5 @@ module.exports = {
   GAMES, CARD_OPTIONS, RULE_LINE, GameError,
   setClock, now, roundBounds, roundIdFor, ensureRound, tick, startTicker, stopTicker, settleRound,
   placeBets, getPublicState, getLobby, getMyBets,
-  getAdminOverview, getAdminRounds, getAdminBets, updateConfig
+  getAdminOverview, getAdminRounds, getAdminBets, updateConfig, cancelRound, getDailyReport, istDateOf
 };

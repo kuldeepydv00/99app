@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TradingAdmin from './games/TradingAdmin';
+import GamesOverview from './games/GamesOverview';
+import UserGamesTab from './games/UserGamesTab';
+import DashboardGamesStrip from './games/DashboardGamesStrip';
 import Matka99Admin from './games/Matka99Admin';
 
 // API Base URL
@@ -258,13 +261,20 @@ export default function App() {
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
-    'matka99' | 'numberTrading' | 'cardTrading' | 'colourTrading'
+    'matka99' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'numberTrading', 'cardTrading', 'colourTrading'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
+  // Opens User Details (99x & Trading tab) for a mobile number clicked on a new-game page
+  const openUserByMobile = (mobile: string) => {
+    const clean = String(mobile || '').replace(/[^0-9]/g, '').slice(-10);
+    const found = (users || []).find((x: any) => String(x.mobile || x.phone || '').replace(/[^0-9]/g, '').slice(-10) === clean);
+    if (found) { setSelectedUser(found); setUserDetailsTab('newGames' as any); setActiveTab('userDetails'); }
+    else alert(`No registered user found for ${clean}`);
+  };
   const activeTabRef = useRef(activeTab);
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -307,7 +317,7 @@ export default function App() {
 
   // User View Navigation State
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [userDetailsTab, setUserDetailsTab] = useState<'profile' | 'bankDetails' | 'walletTransaction' | 'gameHistory' | 'referHistory' | 'gameLedger'>('profile');
+  const [userDetailsTab, setUserDetailsTab] = useState<'profile' | 'bankDetails' | 'walletTransaction' | 'gameHistory' | 'referHistory' | 'gameLedger' | 'newGames'>('profile');
 
   // Sidebar Open State
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2201,11 +2211,12 @@ export default function App() {
               { id: 'banners', label: 'Banner', icon: '🖼️' },
               { id: 'referral', label: 'Refer & Earn', icon: '🎁' },
               { id: 'gameLedger', label: 'Game Ledger', icon: '📘' },
+              { id: 'gamesOverview', label: 'Games Overview', icon: '🎮', section: 'NEW GAMES' },
               { id: 'matka99', label: '99x Matka', icon: '💎' },
               { id: 'numberTrading', label: 'Number Trading', icon: '🔢' },
               { id: 'cardTrading', label: 'Card Trading', icon: '🃏' },
               { id: 'colourTrading', label: 'Colour Trading', icon: '🎨' },
-              { id: 'wallets', label: 'Wallet', icon: '👛' },
+              { id: 'wallets', label: 'Wallet', icon: '👛', section: 'WALLET & PAYMENTS' },
               { id: 'walletTransactions', label: 'Wallet Transactions', icon: '🧾' },
               { id: 'deposits', label: 'Deposit Request', icon: '💳' },
               { id: 'withdraws', label: 'Withdraw Request', icon: '🏦' },
@@ -2216,9 +2227,12 @@ export default function App() {
               { id: 'paymentMethods', label: 'Payment Methods', icon: '💳' },
               { id: 'pushNotifications', label: 'Push Notifications', icon: '🔔' },
               { id: 'settings', label: 'Settings', icon: '⚙️' }
-            ].map(item => (
+            ].map((item: { id: string; label: string; icon: string; section?: string }) => (
+              <div key={item.id}>
+              {item.section && (sidebarOpen
+                ? <div className="px-3 pb-1 pt-3 text-[10px] font-bold tracking-widest text-[#8A939B]">{item.section}</div>
+                : <div className="mx-2 my-2 border-t border-[#4B545C]" />)}
               <button
-                key={item.id}
                 onClick={() => setActiveTab(item.id as any)}
                 title={item.label}
                 className={`w-full flex items-center ${sidebarOpen ? 'justify-start px-3' : 'justify-center'} py-2.5 rounded font-semibold transition-all ${
@@ -2230,6 +2244,7 @@ export default function App() {
                 <span className="text-base">{item.icon}</span>
                 {sidebarOpen && <span className="ml-3">{item.label}</span>}
               </button>
+              </div>
             ))}
           </nav>
         </aside>
@@ -3108,6 +3123,8 @@ export default function App() {
                           ))}
                         </div>
 
+                        {isMatchCurrentRange && <DashboardGamesStrip stats={stats} onNavigate={(tab) => setActiveTab(tab as any)} />}
+
                         <div className="bg-white p-4 rounded-lg border border-[#DEE2E6] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
                             <label className="block text-xs font-bold text-[#212529] mb-1">Graph Start Date</label>
@@ -3437,7 +3454,8 @@ export default function App() {
                       { id: 'walletTransaction', label: 'Wallet Transaction' },
                       { id: 'gameHistory', label: 'Game History' },
                       { id: 'referHistory', label: 'Refer History' },
-                      { id: 'gameLedger', label: 'Game Ledger' }
+                      { id: 'gameLedger', label: 'Game Ledger' },
+                      { id: 'newGames', label: '99x & Trading' }
                     ].map(tab => (
                       <button
                         key={tab.id}
@@ -3453,6 +3471,7 @@ export default function App() {
                     ))}
                   </div>
 
+                  {userDetailsTab === 'newGames' && <UserGamesTab mobile={selectedUser.mobile} />}
                   {userDetailsTab === 'profile' && (
                     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                       <div className="flex flex-col items-center justify-center space-y-3 border-r border-[#DEE2E6] pr-6">
@@ -7028,10 +7047,11 @@ export default function App() {
             )}
 
             {/* NEW GAMES */}
-            {activeTab === 'matka99' && <Matka99Admin />}
-            {activeTab === 'numberTrading' && <TradingAdmin key="number" game="number" />}
-            {activeTab === 'cardTrading' && <TradingAdmin key="card" game="card" />}
-            {activeTab === 'colourTrading' && <TradingAdmin key="colour" game="colour" />}
+            {activeTab === 'gamesOverview' && <GamesOverview onNavigate={(tab) => setActiveTab(tab as any)} onOpenUser={openUserByMobile} />}
+            {activeTab === 'matka99' && <Matka99Admin onOpenUser={openUserByMobile} />}
+            {activeTab === 'numberTrading' && <TradingAdmin key="number" game="number" onOpenUser={openUserByMobile} />}
+            {activeTab === 'cardTrading' && <TradingAdmin key="card" game="card" onOpenUser={openUserByMobile} />}
+            {activeTab === 'colourTrading' && <TradingAdmin key="colour" game="colour" onOpenUser={openUserByMobile} />}
 
           </main>
 

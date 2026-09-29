@@ -344,6 +344,7 @@ fun MyBetRow(game: String, b: JSONObject, subtitle: String) {
                 Text("Result ", color = Color(0xFF6B7280), fontSize = 11.sp)
                 OptionTag(game, b.optString("result"))
             }
+            "refunded" -> Text("Refunded", color = Color(0xFF7DD3FC), fontSize = 11.sp, fontWeight = FontWeight.Bold)
             else -> Text("Pending", color = GameColors.Amber, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }

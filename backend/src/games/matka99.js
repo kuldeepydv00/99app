@@ -111,7 +111,6 @@ function placeBets(mobile, marketInput, items) {
 
   const t = Date.now();
   const createdAt = new Date(t).toISOString();
-  const bonusRatio = total > 0 ? split.bonus / total : 0;
   const created = [];
   for (const [num, amt] of Object.entries(merged)) {
     const bet = {
@@ -120,7 +119,7 @@ function placeBets(mobile, marketInput, items) {
       mobile: clean, user: u.name || `User ${clean.slice(-4)}`,
       option: num, amount: amt, multiplier: FIXED_PAYOUT,
       potential_win: wallet.round2(amt * FIXED_PAYOUT),
-      bonus_used: wallet.round2(amt * bonusRatio),
+      ...wallet.shareOf(split, total, amt),
       status: 'pending', win_amount: 0, result: null,
       created_at: createdAt
     };
@@ -132,8 +131,97 @@ function placeBets(mobile, marketInput, items) {
   return { market: m.name, dateKey, bets: created, total, balances: wallet.balances(u) };
 }
 
-function betsFor(key, dateKey) {
-  return state.bets.filter(b => b.game === 'matka99' && b.market === key && b.dateKey === dateKey);
+function betsFor(key, dateKey, { includeRefunded = false } = {}) {
+  return state.bets.filter(b => b.game === 'matka99' && b.market === key && b.dateKey === dateKey
+    && (includeRefunded || b.status !== 'refunded'));
+}
+
+// Most recent declared result left for a market (after an undo)
+function latestDeclared(key) {
+  const dates = Object.keys(state.matka99.results).sort().reverse();
+  for (const d of dates) {
+    const n = (state.matka99.results[d] || {})[key];
+    if (n !== undefined && n !== null) return { number: n, date: d, declaredAt: null };
+  }
+  return null;
+}
+
+// Reverses a declared result: winners' payouts are taken back from their Winning balance
+// (never below 0; any shortfall is reported), every bet goes back to pending, and the
+// market can be declared again.
+function undoDeclare(marketInput, dateInput) {
+  const m = resolveMarket(marketInput);
+  if (!m) throw new GameError(400, 'Unknown 99x market');
+  const date = dateInput ? getISTDateStr(dateInput) : getISTDateStr(new Date());
+  if (!isDeclared(m.key, date)) throw new GameError(400, `${m.name} has no declared result for ${date}.`);
+  const number = state.matka99.results[date][m.key];
+
+  let reversed = 0, clawedBack = 0, shortfall = 0, anyWallet = false;
+  const shortfalls = [];
+  for (const b of betsFor(m.key, date)) {
+    if (b.status === 'won') {
+      const u = wallet.findUser(b.mobile);
+      const r = wallet.clawbackWin(u, b.win_amount || 0, `Result undone: ${m.name} ${date} (${number})`, b.id);
+      clawedBack += r.taken; shortfall += r.shortfall; reversed += 1; anyWallet = true;
+      if (r.shortfall > 0) shortfalls.push({ mobile: b.mobile, user: b.user, amount: r.shortfall });
+    }
+    if (b.status === 'won' || b.status === 'lost') {
+      b.status = 'pending'; b.win_amount = 0; b.result = null; delete b.settled_at;
+    }
+  }
+  delete state.matka99.results[date][m.key];
+  if (Object.keys(state.matka99.results[date]).length === 0) delete state.matka99.results[date];
+  state.matka99.declared[m.key] = latestDeclared(m.key);
+  if (anyWallet) wallet.persistWallets();
+  saveNow();
+  console.log(`[99x Matka] ${m.name} ${date} result ${number} undone: ${reversed} wins reversed, ₹${wallet.round2(clawedBack)} taken back, ₹${wallet.round2(shortfall)} short`);
+  return {
+    market: m.name, key: m.key, date, number, reversedWins: reversed,
+    clawedBack: wallet.round2(clawedBack), shortfall: wallet.round2(shortfall), shortfalls
+  };
+}
+
+// Cancels all pending bets on a market for a date and refunds the stakes.
+// Only before a result is declared (undo the result first otherwise).
+function refundMarket(marketInput, dateInput, reason) {
+  const m = resolveMarket(marketInput);
+  if (!m) throw new GameError(400, 'Unknown 99x market');
+  const date = dateInput ? getISTDateStr(dateInput) : getISTDateStr(new Date());
+  if (isDeclared(m.key, date)) throw new GameError(400, `${m.name} is already declared for ${date}. Undo the result first.`);
+  const why = String(reason || '').trim().slice(0, 120) || 'Cancelled by admin';
+  let count = 0, amount = 0;
+  for (const b of betsFor(m.key, date)) {
+    if (b.status !== 'pending') continue;
+    wallet.refundStake(wallet.findUser(b.mobile), b, `Refund: ${m.name} ${date} cancelled`);
+    b.status = 'refunded'; b.refunded_at = new Date().toISOString(); b.refund_reason = why;
+    count += 1; amount += b.amount;
+  }
+  if (count > 0) wallet.persistWallets();
+  saveNow();
+  console.log(`[99x Matka] ${m.name} ${date} refunded by admin (${why}): ₹${wallet.round2(amount)} on ${count} bets`);
+  return { market: m.name, key: m.key, date, refundedBets: count, refundedAmount: wallet.round2(amount), reason: why };
+}
+
+// Day-by-day totals (by market date) for the last `days` days, newest first.
+function getDailyReport(days = 14) {
+  const out = {};
+  const base = Date.now();
+  for (let i = 0; i < days; i++) {
+    const key = getISTDateStr(new Date(base - i * 86400000));
+    out[key] = { date: key, bets: 0, players: new Set(), staked: 0, paid: 0, refunded: 0, declared: 0 };
+  }
+  for (const b of state.bets) {
+    if (b.game !== 'matka99') continue;
+    const row = out[b.dateKey];
+    if (!row) continue;
+    if (b.status === 'refunded') { row.refunded += b.amount; continue; }
+    row.bets += 1; row.players.add(b.mobile); row.staked += b.amount; row.paid += b.win_amount || 0;
+  }
+  for (const [d, res] of Object.entries(state.matka99.results)) if (out[d]) out[d].declared = Object.keys(res || {}).length;
+  return Object.values(out).map(r => ({
+    date: r.date, bets: r.bets, players: r.players.size, staked: wallet.round2(r.staked),
+    paid: wallet.round2(r.paid), net: wallet.round2(r.staked - r.paid), refunded: wallet.round2(r.refunded), declared: r.declared
+  }));
 }
 
 function previewDeclare(marketInput, dateKey, numberInput) {
@@ -213,7 +301,12 @@ function getOverview(dateInput) {
     date, payout: FIXED_PAYOUT, config: state.matka99.config,
     markets: base.markets.map(mk => {
       const bets = betsFor(mk.key, date);
+      const refundedAmt = wallet.round2(betsFor(mk.key, date, { includeRefunded: true })
+        .filter(b => b.status === 'refunded').reduce((s, b) => s + b.amount, 0));
       const liveBets = mk.cycleDate !== date ? betsFor(mk.key, mk.cycleDate) : [];
+      const declaredNum = (state.matka99.results[date] || {})[mk.key] || null;
+      // Betting for this date is over (not open for it any more) but no result yet
+      const bettingOverForDate = !(mk.isOpen && mk.cycleDate === date) && date <= mk.cycleDate;
       const sum = arr => wallet.round2(arr.reduce((s, b) => s + b.amount, 0));
       return {
         ...mk,
@@ -221,7 +314,10 @@ function getOverview(dateInput) {
         staked: sum(bets), betCount: bets.length,
         players: new Set(bets.map(b => b.mobile)).size,
         paid: wallet.round2(bets.reduce((s, b) => s + (b.win_amount || 0), 0)),
-        result: (state.matka99.results[date] || {})[mk.key] || null,
+        result: declaredNum,
+        refunded: refundedAmt,
+        pendingBets: bets.filter(b => b.status === 'pending').length,
+        awaitingResult: !declaredNum && bettingOverForDate && bets.some(b => b.status === 'pending'),
         liveCycleDate: mk.cycleDate, liveCycleStaked: mk.cycleDate !== date ? sum(liveBets) : sum(bets)
       };
     })
@@ -242,7 +338,7 @@ function getMatrix(marketInput, dateInput) {
   return { market: m.name, key: m.key, date, totals, counts, result: (state.matka99.results[date] || {})[m.key] || null };
 }
 
-function getAdminBets({ market, date, mobile, number, limit = 500 } = {}) {
+function getAdminBets({ market, date, mobile, number, status, limit = 500 } = {}) {
   const m = market ? resolveMarket(market) : null;
   const d = date ? getISTDateStr(date) : null;
   const clean = mobile ? wallet.cleanMobile(mobile) : null;
@@ -250,7 +346,7 @@ function getAdminBets({ market, date, mobile, number, limit = 500 } = {}) {
   return state.bets
     .filter(b => b.game === 'matka99'
       && (!m || b.market === m.key) && (!d || b.dateKey === d)
-      && (!clean || b.mobile === clean) && (!num || b.option === num))
+      && (!clean || b.mobile === clean) && (!num || b.option === num) && (!status || b.status === status))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     .slice(0, limit);
 }
@@ -282,5 +378,6 @@ function updateLimits({ minBet, maxBet }) {
 
 module.exports = {
   FIXED_PAYOUT, resolveMarket, getMarkets, placeBets, previewDeclare, declare, getChart, getMyBets,
-  getOverview, getMatrix, getAdminBets, setEnabled, updateLimits
+  getOverview, getMatrix, getAdminBets, setEnabled, updateLimits, undoDeclare, refundMarket, getDailyReport,
+  scheduleFor, isDeclared
 };

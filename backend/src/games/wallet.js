@@ -101,8 +101,62 @@ function creditWin(u, amount, description, dateKey) {
   } catch (e) {}
 }
 
+function logTxn(u, type, amount, description, reference) {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) return;
+    const Transaction = require('../models/Transaction');
+    Transaction.create({
+      mobile: cleanMobile(u.mobile), type, amount: round2(amount), status: 'success',
+      description, reference_id: reference, created_at: new Date()
+    }).catch(e => console.error('[Games Txn]', e.message));
+  } catch (e) {}
+}
+
+// Per-bet share of a slip's funding split, so a refund can put money back where it came from.
+function shareOf(split, total, amount) {
+  const r = total > 0 ? amount / total : 0;
+  return {
+    bonus_used: round2(split.bonus * r),
+    deposit_used: round2(split.deposit * r),
+    winning_used: round2(split.winning * r)
+  };
+}
+
+// Gives a refunded stake back: bonus to Bonus, deposit to Deposit, winning to Winning.
+// Older bets that only recorded bonus_used get the rest back into Deposit.
+function refundStake(u, bet, description) {
+  if (!u || !bet) return 0;
+  normalize(u);
+  const bonus = round2(bet.bonus_used || 0);
+  const hasSplit = bet.deposit_used !== undefined || bet.winning_used !== undefined;
+  const dep = hasSplit ? round2(bet.deposit_used || 0) : round2((bet.amount || 0) - bonus);
+  const win = hasSplit ? round2(bet.winning_used || 0) : 0;
+  u.bonus_balance = round2(u.bonus_balance + bonus);
+  u.deposit_balance = round2(u.deposit_balance + dep);
+  u.winning_balance = round2(u.winning_balance + win);
+  u.balance = round2(u.deposit_balance + u.winning_balance);
+  syncToMongo(u);
+  logTxn(u, 'REFUND', bet.amount, description, bet.id);
+  return round2(bonus + dep + win);
+}
+
+// Takes back a win that was paid by mistake (result undone). Never pushes Winning below 0;
+// whatever could not be taken back is returned as `shortfall` so the admin can see it.
+function clawbackWin(u, amount, description, reference) {
+  amount = round2(amount);
+  if (!u || !(amount > 0)) return { taken: 0, shortfall: amount > 0 ? amount : 0 };
+  normalize(u);
+  const taken = round2(Math.min(amount, u.winning_balance || 0));
+  u.winning_balance = round2(u.winning_balance - taken);
+  u.balance = round2(u.deposit_balance + u.winning_balance);
+  syncToMongo(u);
+  if (taken > 0) logTxn(u, 'WIN_REVERSED', -taken, description, reference);
+  return { taken, shortfall: round2(amount - taken) };
+}
+
 function persistWallets() {
   try { saveDiskStore(); } catch (e) { console.error('[Games Wallet] saveDiskStore failed:', e.message); }
 }
 
-module.exports = { round2, cleanMobile, findUser, checkCanBet, balances, deductStake, creditWin, persistWallets };
+module.exports = { round2, cleanMobile, findUser, checkCanBet, balances, deductStake, creditWin, refundStake, clawbackWin, shareOf, persistWallets };

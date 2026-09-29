@@ -310,7 +310,9 @@ export default function TradingPage({ game, mobile, balance, onBack, onBalances 
                   ? <span className="text-xs font-extrabold text-[#3EE08A]">+{inr(b.win_amount)}</span>
                   : b.status === 'lost'
                     ? <span className="flex items-center gap-1 text-[11px] text-gray-500">Result <OptionTag game={game} value={b.result} /></span>
-                    : <span className="text-[11px] font-bold text-amber-400">Pending</span>}
+                    : b.status === 'refunded'
+                      ? <span className="text-[11px] font-bold text-sky-300">Refunded</span>
+                      : <span className="text-[11px] font-bold text-amber-400">Pending</span>}
               </div>
             ))}
           </div>
