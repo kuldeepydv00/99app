@@ -31,7 +31,9 @@ function defaultState() {
       config: { payout: 99, minBet: 10, maxBet: 10000 },
       enabled,
       results: {},   // dateKey -> { marketKey: 'NN' }  (also the 99x chart)
-      declared: {}   // marketKey -> { number: 'NN', date, declaredAt }
+      declared: {},  // marketKey -> { number: 'NN', date, declaredAt }
+      auto: {},      // dateKey -> { marketKey: { winningTotal, tiedCount, at } } how each automatic result was picked
+      autoSince: null // first IST date automatic results ran (older dates are only settled if they have bets)
     }
   };
 }
@@ -58,6 +60,8 @@ function load() {
       if (raw.matka99.enabled) Object.assign(state.matka99.enabled, raw.matka99.enabled);
       if (raw.matka99.results) state.matka99.results = raw.matka99.results;
       if (raw.matka99.declared) state.matka99.declared = raw.matka99.declared;
+      if (raw.matka99.auto) state.matka99.auto = raw.matka99.auto;
+      if (raw.matka99.autoSince) state.matka99.autoSince = raw.matka99.autoSince;
     }
     // 99x payout is fixed by design
     state.matka99.config.payout = 99;

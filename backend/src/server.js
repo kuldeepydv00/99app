@@ -148,6 +148,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Number / Card / Colour Trading: opens, locks and settles rounds every second
 require('./games/tradingEngine').startTicker();
+require('./games/matka99').startAutoResults();
 app.use('/api/payment', require('./routes/paymentRoutes'));
 
 // EKQR Webhook direct alias routes for all possible callback paths

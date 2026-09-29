@@ -482,7 +482,7 @@ fun HomeScreen(
                         SectionHeader(
                             title = "99x Matka",
                             badge = "FIXED 99x",
-                            subtitle = "${matka99OpenCount(gamesLobby)} open now · every winning Jodi pays 99x",
+                            subtitle = "${matka99OpenCount(gamesLobby)} open now · lowest total bet wins · pays 99x",
                             onBack = { onHomeSectionChange("") },
                             right = {
                                 Text(

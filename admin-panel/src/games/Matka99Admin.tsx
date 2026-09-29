@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   apiGet, apiPost, inr, istToday, istTime, istDateTime, heat, usePolling, Card, Kpi, Pill,
   BetStatus, PlayerCell, ConfirmDialog, DailyReport, ExportButton, downloadCsv
 } from './common';
 import type { OpenUser } from './common';
 
-type Dialog = null
-  | { kind: 'undo'; market: string; name: string; date: string; number: string; staked: number }
-  | { kind: 'refund'; market: string; name: string; date: string; bets: number; staked: number };
+type Dialog = null | { kind: 'refund'; market: string; name: string; date: string; bets: number; staked: number };
 
 export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) {
   // Opens on the date the Games Overview asked for (e.g. a market still waiting for its result), else today
@@ -32,9 +30,6 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
   const [report, setReport] = useState<any[]>([]);
   const [limits, setLimits] = useState<any>(null);
 
-  const [declare, setDeclare] = useState<{ market: string; date: string; number: string } | null>(null);
-  const [preview, setPreview] = useState<any>(null);
-  const [declaring, setDeclaring] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
 
   const refreshOverview = usePolling(async () => {
@@ -65,37 +60,12 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
 
   const refreshAll = () => { refreshOverview(); refreshMatrix(); refreshBets(); refreshChart(); refreshReport(); };
 
-  // Live payout preview while typing the result
-  useEffect(() => {
-    setPreview(null);
-    if (!declare || !/^\d{1,2}$/.test(declare.number)) return;
-    let alive = true;
-    apiPost('/api/admin/games/matka99/preview', declare)
-      .then(d => { if (alive) setPreview(d.preview); })
-      .catch(e => { if (alive) setPreview({ error: e.message }); });
-    return () => { alive = false; };
-  }, [declare?.market, declare?.date, declare?.number]);
-
   const toggleMarket = async (market: string, enabled: boolean) => {
     try {
       await apiPost('/api/admin/games/matka99/toggle', { market, enabled });
       setNotice(`${enabled ? 'Enabled' : 'Disabled'} ${market}`);
       refreshOverview();
     } catch (e: any) { setError(e.message); }
-  };
-
-  const confirmDeclare = async () => {
-    if (!declare) return;
-    setDeclaring(true);
-    try {
-      const d = await apiPost('/api/admin/games/matka99/declare', declare);
-      setNotice(`✅ ${d.result.market} ${d.result.date}: declared ${d.result.number} · ${d.result.winners} winners · ${inr(d.result.totalPaid)} paid`);
-      setDeclare(null);
-      refreshAll();
-    } catch (e: any) {
-      setPreview((p: any) => ({ ...(p || {}), error: e.message }));
-    }
-    setDeclaring(false);
   };
 
   const saveLimits = async () => {
@@ -115,6 +85,8 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
   const totalRefunded = markets.reduce((s, m) => s + (m.refunded || 0), 0);
   const awaiting = markets.filter(m => m.awaitingResult);
   const matrixMax = matrix ? Math.max(0, ...Object.values(matrix.totals as Record<string, number>)) : 0;
+  const matrixMk = markets.find(m => m.key === matrixMarket);
+  const lowestSet = new Set<string>(matrixMk && !matrixMk.result && matrixMk.projection && matrixMk.projection.lowestCount <= 12 ? matrixMk.projection.lowest : []);
   const top5 = matrix ? Object.entries(matrix.totals as Record<string, number>).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5) : [];
 
   const exportBets = () => downloadCsv(`99x-bets_${date}${betFilter.market ? '_' + betFilter.market : ''}.csv`, [
@@ -127,7 +99,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DEE2E6] bg-white p-4 shadow-sm">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-[#212529]"><span>💎</span>99x Matka</h1>
-          <p className="mt-1 text-xs text-gray-500">Same 8 markets and timings as Matka, renamed · Jodi only · fixed 99x payout (ignores rate settings) · timings follow the Matka schedule</p>
+          <p className="mt-1 text-xs text-gray-500">Same 8 markets and timings as Matka, renamed · Jodi only · fixed 99x payout · <b>results are automatic</b> at each market’s result time: the number with the lowest total bet wins, ties random</p>
         </div>
         <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
           Market date (IST)
@@ -141,7 +113,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
       {notice && <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700"><span>{notice}</span><button onClick={() => setNotice('')}>✕</button></div>}
       {awaiting.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800">
-          ⏳ Waiting for a result: {awaiting.map(m => `${m.name} (${m.pendingBets} bets, ${inr(m.staked)})`).join(' · ')} — use Declare in the table below.
+          ⏳ Result overdue: {awaiting.map(m => `${m.name} (${m.pendingBets} bets, ${inr(m.staked)})`).join(' · ')} — the server was probably off at result time. It is declared automatically within a minute of the backend running.
         </div>
       )}
 
@@ -170,26 +142,28 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
                   <td className="px-2 py-2.5 text-gray-500">{m.key}</td>
                   <td className="px-2 py-2.5 text-gray-600">{m.open} → {m.close}<div className="text-[10px] text-gray-400">result {m.resultTime || '—'}</div></td>
                   <td className="px-2 py-2.5">
-                    {m.result ? <Pill tone="gold">Declared</Pill> : m.awaitingResult ? <Pill tone="red">Awaiting result</Pill> : (m.isOpen && m.cycleDate === date) ? <Pill tone="green">Open</Pill> : <Pill tone="grey">Closed</Pill>}
+                    {m.result ? <Pill tone="gold">Declared</Pill> : m.awaitingResult ? <Pill tone="red">Result overdue</Pill> : (m.isOpen && m.cycleDate === date) ? <Pill tone="green">Open</Pill> : <Pill tone="grey">Closed</Pill>}
                     {!m.enabled && <div className="mt-1"><Pill tone="grey">Off today</Pill></div>}
                   </td>
                   <td className="px-2 py-2.5 text-right font-semibold tabular-nums">{inr(m.staked)}{m.refunded ? <div className="text-[10px] font-normal text-red-500">{inr(m.refunded)} refunded</div> : null}</td>
                   <td className="px-2 py-2.5 text-right tabular-nums">{m.betCount}</td>
                   <td className="px-2 py-2.5 text-right tabular-nums">{m.players}</td>
                   <td className="px-2 py-2.5 text-right tabular-nums">{m.paid ? inr(m.paid) : '—'}</td>
-                  <td className="px-2 py-2.5 font-mono text-base font-extrabold">{m.result ?? '—'}</td>
+                  <td className="px-2 py-2.5">
+                    <span className="font-mono text-base font-extrabold">{m.result ?? '—'}</span>
+                    {m.result && m.autoRecord && <div className="text-[10px] text-gray-500">auto · {inr(m.autoRecord.winningTotal)} on it{m.autoRecord.tiedCount > 1 ? ` · ${m.autoRecord.tiedCount} tied` : ''}</div>}
+                    {!m.result && m.projection && m.betCount > 0 && (
+                      <div className="text-[10px] text-gray-500">lowest now: {m.projection.lowestCount > 3 ? `${m.projection.lowestCount} numbers at ${inr(m.projection.lowestTotal)}` : m.projection.lowest.join(', ')}</div>
+                    )}
+                  </td>
                   <td className="px-2 py-2.5">
                     <input type="checkbox" checked={m.enabled} onChange={e => toggleMarket(m.key, e.target.checked)} title="Accept bets on this 99x market" />
                   </td>
                   <td className="whitespace-nowrap px-2 py-2.5 text-right">
                     <button onClick={() => setMatrixMarket(m.key)} className="mr-1 rounded border border-gray-300 px-2 py-1 text-[11px] font-semibold hover:bg-gray-50">Matrix</button>
-                    {m.result ? (
-                      <button onClick={() => setDialog({ kind: 'undo', market: m.key, name: m.name, date, number: m.result, staked: m.staked })}
-                        className="rounded border border-red-300 px-2.5 py-1 text-[11px] font-bold text-red-600 hover:bg-red-50">Undo</button>
-                    ) : (
+                    {!m.result && (
                       <>
-                        <button onClick={() => setDeclare({ market: m.key, date, number: '' })}
-                          className="rounded bg-[#007BFF] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#0069D9]">Declare</button>
+                        <span className="rounded bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-600" title="Declared automatically: lowest total bet wins">Auto {m.resultTime ? `at ${m.resultTime.replace(' IST', '')}` : ''}</span>
                         {m.pendingBets > 0 && (
                           <button onClick={() => setDialog({ kind: 'refund', market: m.key, name: m.name, date, bets: m.pendingBets, staked: m.staked })}
                             className="ml-1 rounded border border-gray-300 px-2 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50" title="Cancel this market's bets for this date and refund them">Refund</button>
@@ -215,7 +189,7 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
               <div className="grid grid-cols-10 gap-1">
                 {Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0')).map(n => (
                   <div key={n} style={heat(matrix.totals[n], matrixMax)} title={`${n}: ${inr(matrix.totals[n])} on ${matrix.counts[n]} bets · would pay ${inr(matrix.totals[n] * 99)}`}
-                    className={`rounded-md border px-1 py-1.5 text-center ${matrix.result === n ? 'border-amber-500 ring-2 ring-amber-400' : 'border-gray-200'}`}>
+                    className={`rounded-md border px-1 py-1.5 text-center ${matrix.result === n ? 'border-amber-500 ring-2 ring-amber-400' : lowestSet.has(n) ? 'border-emerald-500 ring-1 ring-emerald-400' : 'border-gray-200'}`}>
                     <div className="font-mono text-xs font-bold">{n}</div>
                     <div className="text-[10px] tabular-nums">{matrix.totals[n] ? inr(matrix.totals[n]) : '—'}</div>
                   </div>
@@ -225,6 +199,22 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
           </Card>
         </div>
         <div className="space-y-4">
+          <Card title="Automatic result">
+            {!matrixMk ? null : matrixMk.result ? (
+              <div className="text-xs text-gray-700">
+                <p><b>{matrixMk.name}</b> {date}: <span className="font-mono text-lg font-extrabold">{matrixMk.result}</span></p>
+                {matrixMk.autoRecord && <p className="mt-1 text-gray-500">Declared automatically · {inr(matrixMk.autoRecord.winningTotal)} was bet on it{matrixMk.autoRecord.tiedCount > 1 ? ` · picked at random from ${matrixMk.autoRecord.tiedCount} numbers tied for lowest` : ' · lowest of all 100'}</p>}
+              </div>
+            ) : matrixMk.projection ? (
+              <div className="space-y-1 text-xs text-gray-700">
+                <p>Due at <b>{matrixMk.resultTime || '—'}</b> for {matrixMk.name} · {date}</p>
+                <p>If it were declared now: {matrixMk.projection.lowestCount > 12
+                  ? <b>{matrixMk.projection.lowestCount} numbers tied at {inr(matrixMk.projection.lowestTotal)}</b>
+                  : <b className="font-mono">{matrixMk.projection.lowest.join(', ')}</b>} {matrixMk.projection.lowestCount <= 12 && <>at {inr(matrixMk.projection.lowestTotal)}</>}</p>
+                <p className="text-gray-500">Would pay {matrixMk.projection.payoutMin === matrixMk.projection.payoutMax ? inr(matrixMk.projection.payoutMin) : `${inr(matrixMk.projection.payoutMin)}–${inr(matrixMk.projection.payoutMax)}`} · green outline in the matrix = currently lowest</p>
+              </div>
+            ) : null}
+          </Card>
           <Card title="Most-bet numbers">
             {top5.length === 0 ? <p className="text-xs text-gray-400">No bets for this market and date</p> : (
               <ol className="space-y-2 text-xs">
@@ -319,67 +309,6 @@ export default function Matka99Admin({ onOpenUser }: { onOpenUser?: OpenUser }) 
         </Card>
       </div>
 
-      {/* Declare dialog */}
-      {declare && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDeclare(null)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900">Declare 99x result</h3>
-            <p className="mt-0.5 text-xs text-gray-500">Winners are paid 99x immediately. If you make a mistake, use Undo in the Markets table.</p>
-            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <label className="block"><span className="mb-1 block font-semibold text-gray-700">Market</span>
-                <select value={declare.market} onChange={e => setDeclare({ ...declare, market: e.target.value })} className="w-full rounded-lg border border-gray-300 px-2 py-2 font-semibold">
-                  {markets.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
-                </select></label>
-              <label className="block"><span className="mb-1 block font-semibold text-gray-700">Date</span>
-                <input type="date" value={declare.date} onChange={e => setDeclare({ ...declare, date: e.target.value })} className="w-full rounded-lg border border-gray-300 px-2 py-2 font-semibold" /></label>
-            </div>
-            <label className="mt-3 block text-xs"><span className="mb-1 block font-semibold text-gray-700">Winning number (00–99)</span>
-              <input autoFocus inputMode="numeric" maxLength={2} value={declare.number}
-                onChange={e => setDeclare({ ...declare, number: e.target.value.replace(/[^0-9]/g, '') })}
-                className="w-full rounded-xl border-2 border-gray-300 px-3 py-3 text-center font-mono text-3xl font-extrabold tracking-widest focus:border-blue-500 focus:outline-none" /></label>
-            {preview && !preview.error && (
-              <div className="mt-3 rounded-xl bg-gray-50 p-3 text-xs">
-                <div className="flex justify-between"><span>Bets on this market/date</span><b className="tabular-nums">{preview.betCount} · {inr(preview.totalStaked)}</b></div>
-                <div className="mt-1 flex justify-between"><span>Winning bets on {preview.number}</span><b className="tabular-nums">{preview.winningBets}</b></div>
-                <div className="mt-1 flex justify-between text-sm"><span className="font-semibold">To pay out</span><b className="tabular-nums text-red-600">{inr(preview.totalPayout)}</b></div>
-                {preview.marketOpen && <p className="mt-2 font-semibold text-amber-700">⚠️ This market is still open for betting.</p>}
-                {preview.alreadyDeclared && <p className="mt-2 font-semibold text-red-700">Already declared for this date.</p>}
-              </div>
-            )}
-            {preview?.error && <p className="mt-3 text-xs font-semibold text-red-700">⚠️ {preview.error}</p>}
-            <div className="mt-4 flex gap-2">
-              <button onClick={() => setDeclare(null)} className="flex-1 rounded-lg border border-gray-300 py-2.5 text-xs font-bold hover:bg-gray-50">Cancel</button>
-              <button onClick={confirmDeclare} disabled={declaring || !/^\d{1,2}$/.test(declare.number) || !!preview?.alreadyDeclared}
-                className="flex-1 rounded-lg bg-[#28A745] py-2.5 text-xs font-bold text-white hover:bg-[#218838] disabled:opacity-40">
-                {declaring ? 'Declaring…' : `Declare ${declare.number ? declare.number.padStart(2, '0') : ''}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {dialog?.kind === 'undo' && (
-        <ConfirmDialog title={`Undo ${dialog.name} result ${dialog.number}?`} tone="red" confirmLabel="Undo result"
-          onClose={() => { setDialog(null); refreshAll(); }}
-          onConfirm={async () => {
-            const d = await apiPost('/api/admin/games/matka99/undo', { market: dialog.market, date: dialog.date });
-            const u = d.undone;
-            return (
-              <div className="space-y-2">
-                <p>✅ {u.market} {u.date}: result <b>{u.number}</b> removed. <b>{u.reversedWins}</b> winning bets reversed, <b>{inr(u.clawedBack)}</b> taken back. All bets are pending again — you can declare the right number now.</p>
-                {u.shortfall > 0 && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-                    <b>{inr(u.shortfall)}</b> could not be taken back because these players had already used their winnings:
-                    <ul className="mt-1 list-disc pl-4">{u.shortfalls.map((s: any) => <li key={s.mobile}>{s.user} ({s.mobile}): {inr(s.amount)}</li>)}</ul>
-                  </div>
-                )}
-              </div>
-            );
-          }}>
-          <p>This removes the declared number for <b>{dialog.name}</b> on <b>{dialog.date}</b> and puts every bet back to pending.</p>
-          <p>Money already paid to winners is taken back from their <b>Winning balance</b>. If a player has already spent or withdrawn it, their balance stops at ₹0 and the rest is shown to you as a shortfall.</p>
-        </ConfirmDialog>
-      )}
       {dialog?.kind === 'refund' && (
         <ConfirmDialog title={`Refund ${dialog.name} bets for ${dialog.date}?`} tone="red" askReason confirmLabel="Refund bets"
           onClose={() => { setDialog(null); refreshAll(); }}

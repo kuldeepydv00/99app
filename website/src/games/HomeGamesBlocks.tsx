@@ -96,7 +96,7 @@ export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpe
     if (id === 'matka99') {
       const ms = lobby.matka99.markets.filter(m => m.enabled);
       const open = ms.filter(m => m.isOpen).length;
-      return { status: `${open} of ${ms.length} markets open · pays ${lobby.matka99.payout}x`, live: open > 0 };
+      return { status: `${open} of ${ms.length} open · lowest-bet number wins · pays ${lobby.matka99.payout}x`, live: open > 0 };
     }
     const t = lobby.trading[id];
     if (!t || !t.enabled) return { status: 'Paused for now', live: false, disabled: true };

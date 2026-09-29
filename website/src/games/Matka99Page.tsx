@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { gamesGet, gamesPost } from './api';
-import { inr, OptionTag, GlassCard, AmountPicker, StatusPill } from './ui';
+import { inr, OptionTag, GlassCard, AmountPicker, StatusPill, Sheet } from './ui';
 import type { Balances } from './TradingPage';
 
-type Market = { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; cycleDate: string; lastResult: { number: string; date: string } | null };
-type MarketsResp = { payout: number; minBet: number; maxBet: number; markets: Market[] };
+type Market = { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; cycleDate: string; lastResult: { number: string; date: string; winningTotal?: number; tiedCount?: number } | null };
+type MarketsResp = { payout: number; minBet: number; maxBet: number; markets: Market[]; ruleLine?: string; rules?: string[] };
 type Bet = { id: string; market: string; marketName: string; dateKey: string; option: string; amount: number; status: string; win_amount: number; result: string | null; created_at: string };
 
 const ALL = Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
@@ -15,6 +15,7 @@ export default function Matka99Page({ marketKey, mobile, balance, onBack, onBala
 }) {
   const [data, setData] = useState<MarketsResp | null>(null);
   const [mode, setMode] = useState<'jodi' | 'crossing'>('jodi');
+  const [showRules, setShowRules] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [digits, setDigits] = useState('');
   const [withJoda, setWithJoda] = useState(true);
@@ -91,7 +92,7 @@ export default function Matka99Page({ marketKey, mobile, balance, onBack, onBala
           <div className="flex items-center justify-between">
             <div>
               <h3 className="g-shimmer text-2xl font-black">{market?.name || '…'}</h3>
-              <p className="mt-1 text-[11px] text-gray-400">{market ? `Open ${market.open} · Close ${market.close}` : 'Loading…'}</p>
+              <p className="mt-1 text-[11px] text-gray-400">{market ? `Open ${market.open} · Close ${market.close} · Result ${market.resultTime || market.close}` : 'Loading…'}</p>
             </div>
             <div className="text-right">
               <p className="text-3xl font-black text-[#F5EDE2]">99x</p>
@@ -102,6 +103,16 @@ export default function Matka99Page({ marketKey, mobile, balance, onBack, onBala
             {market && <StatusPill status={market.isOpen ? 'open' : 'locked'} />}
             {market?.lastResult && <span className="flex items-center gap-1.5 text-[11px] text-gray-400">Last result <OptionTag game="number" value={market.lastResult.number} /></span>}
           </div>
+          {market?.lastResult?.tiedCount !== undefined && (
+            <p className="mt-1.5 text-[10px] text-gray-500">
+              {market.lastResult.date}: {inr(market.lastResult.winningTotal || 0)} was bet on {market.lastResult.number}
+              {market.lastResult.tiedCount > 1 ? ` · picked at random from ${market.lastResult.tiedCount} numbers tied for lowest` : ' · lowest of all 100 numbers'}
+            </p>
+          )}
+          <p className="mt-3 text-xs font-semibold leading-snug text-gray-200">{data?.ruleLine || 'Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.'}</p>
+          <button onClick={() => setShowRules(true)} className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-[#E0C9A0] hover:text-white">
+            <Info className="h-3.5 w-3.5" /> How it works
+          </button>
         </GlassCard>
 
         {closed && (
@@ -186,6 +197,13 @@ export default function Matka99Page({ marketKey, mobile, balance, onBack, onBala
           </button>
         </div>
       </div>
+      <Sheet open={showRules} onClose={() => setShowRules(false)} title="How 99x Matka works">
+        <ul className="space-y-2.5 text-xs leading-relaxed text-gray-300">
+          {(data?.rules || []).map((line, i) => (
+            <li key={i} className="flex gap-2"><span className="text-[#E0B7A0]">•</span><span>{line}</span></li>
+          ))}
+        </ul>
+      </Sheet>
     </div>
   );
 }

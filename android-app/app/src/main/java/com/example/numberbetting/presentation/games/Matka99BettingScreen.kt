@@ -20,10 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,6 +75,7 @@ fun Matka99BettingScreen(
     var placing by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var messageOk by remember { mutableStateOf(false) }
+    var showRules by remember { mutableStateOf(false) }
 
     suspend fun loadBets() {
         if (mobile.length < 10) return
@@ -158,7 +161,7 @@ fun Matka99BettingScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(market?.optString("name") ?: "…", color = GameColors.Ivory, fontSize = 24.sp, fontWeight = FontWeight.Black)
                             Text(
-                                if (market != null) "Open ${market.optString("open")} · Close ${market.optString("close")}" else "Loading…",
+                                if (market != null) "Open ${market.optString("open")} · Close ${market.optString("close")} · Result ${market.optString("resultTime").ifEmpty { market.optString("close") }}" else "Loading…",
                                 color = GameColors.Muted, fontSize = 11.sp
                             )
                         }
@@ -169,6 +172,26 @@ fun Matka99BettingScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     if (market != null) StatusPill(open = isOpen)
+                    // How the last automatic result was picked
+                    val last = market?.optJSONObject("lastResult")
+                    if (last != null && last.has("tiedCount")) {
+                        val tied = last.optInt("tiedCount", 1)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Last result ${last.optString("number")} (${last.optString("date")}): ${inr(last.optDouble("winningTotal", 0.0))} was bet on it" +
+                                if (tied > 1) " · picked at random from $tied numbers tied for lowest" else " · lowest of all 100 numbers",
+                            color = Color(0xFF6B7280), fontSize = 10.sp, lineHeight = 14.sp
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        data?.optString("ruleLine")?.ifEmpty { null } ?: "Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.",
+                        color = Color(0xFFE5E7EB), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, lineHeight = 16.sp
+                    )
+                    Text(
+                        "ⓘ How it works", color = GameColors.GoldLight, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 4.dp).clickable { showRules = true }
+                    )
                 }
 
                 if (closed) {
@@ -325,6 +348,32 @@ fun Matka99BettingScreen(
                 }
             }
         }
+    }
+
+    if (showRules) {
+        val rulesArr = data?.optJSONArray("rules")
+        AlertDialog(
+            onDismissRequest = { showRules = false },
+            confirmButton = {
+                TextButton(onClick = { showRules = false }) {
+                    Text("Got it", color = GameColors.GoldLight, fontWeight = FontWeight.Bold)
+                }
+            },
+            title = { Text("How 99x Matka works", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (rulesArr != null) {
+                        for (i in 0 until rulesArr.length()) {
+                            Row {
+                                Text("•  ", color = GameColors.Rose, fontSize = 12.sp)
+                                Text(rulesArr.optString(i), color = Color(0xFFD1D5DB), fontSize = 12.sp, lineHeight = 17.sp)
+                            }
+                        }
+                    }
+                }
+            },
+            containerColor = Color(0xFF0C1712)
+        )
     }
 }
 

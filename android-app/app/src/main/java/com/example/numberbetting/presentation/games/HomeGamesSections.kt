@@ -194,7 +194,7 @@ fun GameBoxes(
         GameBox(
             image = R.drawable.banner_matka99, title = "Play 99x Matka",
             info = if (lobby == null) BoxInfo("Loading…", "Live", false)
-                   else BoxInfo("$m99Open of $m99Total markets open · pays ${m99Pays}x", if (m99Open > 0) "Live" else "Closed", m99Open > 0),
+                   else BoxInfo("$m99Open of $m99Total open · lowest-bet number wins · pays ${m99Pays}x", if (m99Open > 0) "Live" else "Closed", m99Open > 0),
             rose = true, onClick = onOpenMatka99
         )
         GameBox(image = R.drawable.banner_number, title = "Play Number Trading", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })

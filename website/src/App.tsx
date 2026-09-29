@@ -2422,7 +2422,7 @@ export default function App() {
                 <SectionHeader
                   title="99x Matka"
                   badge="FIXED 99x"
-                  subtitle={`${gamesLobby ? gamesLobby.matka99.markets.filter(m => m.enabled && m.isOpen).length : 0} open now · every winning Jodi pays 99x`}
+                  subtitle={`${gamesLobby ? gamesLobby.matka99.markets.filter(m => m.enabled && m.isOpen).length : 0} open now · lowest total bet wins · pays 99x`}
                   onBack={closeHomeSection}
                   right={<button onClick={() => { setChartMode('matka99'); setActiveWebTab('charts'); }} className="shrink-0 text-[12px] font-bold text-[#E0C9A0] hover:text-white">Chart ›</button>}
                 />

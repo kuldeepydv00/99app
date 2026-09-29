@@ -63,10 +63,12 @@ exports.matka99Matrix = (req, res) => send(res, () => matka99.getMatrix(req.quer
 exports.matka99Bets = (req, res) => send(res, () => ({ bets: matka99.getAdminBets({ ...req.query, limit: Math.min(parseInt(req.query.limit, 10) || 500, 5000) }) }));
 exports.matka99Chart = (req, res) => send(res, () => matka99.getChart(parseInt(req.query.days, 10) || 90));
 exports.matka99Preview = (req, res) => send(res, () => ({ preview: matka99.previewDeclare(req.body.market, req.body.date, req.body.number) }));
-exports.matka99Declare = (req, res) => send(res, () => ({ result: matka99.declare(req.body.market, req.body.date, req.body.number, { bypassWindowCheck: !!req.body.bypassWindowCheck }) }));
+// 99x results are declared automatically (lowest total bet wins), so they can't be picked or undone by hand.
+const AUTO_ONLY = 'Results for 99x Matka are declared automatically at each market’s result time (lowest total bet wins).';
+exports.matka99Declare = (req, res) => res.status(400).json({ success: false, message: AUTO_ONLY });
 exports.matka99Toggle = (req, res) => send(res, () => ({ market: matka99.setEnabled(req.body.market, req.body.enabled) }));
 exports.matka99Limits = (req, res) => send(res, () => ({ config: matka99.updateLimits(req.body || {}) }));
-exports.matka99Undo = (req, res) => send(res, () => ({ undone: matka99.undoDeclare((req.body || {}).market, (req.body || {}).date) }));
+exports.matka99Undo = (req, res) => res.status(400).json({ success: false, message: `${AUTO_ONLY} They can’t be undone.` });
 exports.matka99Refund = (req, res) => send(res, () => ({ refunded: matka99.refundMarket((req.body || {}).market, (req.body || {}).date, (req.body || {}).reason) }));
 exports.matka99Report = (req, res) => send(res, () => ({ days: matka99.getDailyReport(Math.min(parseInt(req.query.days, 10) || 14, 60)) }));
 

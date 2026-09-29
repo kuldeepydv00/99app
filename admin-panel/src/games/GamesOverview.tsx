@@ -86,8 +86,8 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
           <div className="space-y-2 text-xs">
             {data.awaitingResults.map((a: any) => (
               <div key={a.key + a.date} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                <span><b>99x {a.name}</b> · {a.date}{a.isToday ? ' (today)' : ''} — closed with <b>{a.bets}</b> pending bets ({inr(a.staked)}), result not declared{a.resultTime ? ` · due ${a.resultTime}` : ''}</span>
-                <button onClick={() => { try { localStorage.setItem('m99AdminDate', a.date); } catch { /* ignore */ } onNavigate('matka99'); }} className="rounded bg-[#007BFF] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#0069D9]">Declare in 99x Matka →</button>
+                <span><b>99x {a.name}</b> · {a.date}{a.isToday ? ' (today)' : ''} — <b>{a.bets}</b> pending bets ({inr(a.staked)}), automatic result overdue{a.resultTime ? ` (due ${a.resultTime})` : ''} · it is declared within a minute of the backend running</span>
+                <button onClick={() => { try { localStorage.setItem('m99AdminDate', a.date); } catch { /* ignore */ } onNavigate('matka99'); }} className="rounded bg-[#007BFF] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#0069D9]">Open 99x Matka →</button>
               </div>
             ))}
             {GAMES.filter(g => data.games[g.key].enabled === false).map(g => (

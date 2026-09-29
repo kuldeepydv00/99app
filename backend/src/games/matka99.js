@@ -4,11 +4,27 @@ const crypto = require('crypto');
 const { state, saveNow, MATKA99_MARKETS } = require('./gamesStore');
 const wallet = require('./wallet');
 const { gameSchedulesStore } = require('../store');
-const { getMarketCycleDate, isGameInOpenWindow, getISTDateStr } = require('../utils/dateCycle');
+const { getMarketCycleDate, isGameInOpenWindow, getISTDateStr, parseMins } = require('../utils/dateCycle');
 const { GameError } = require('./tradingEngine');
 
 const FIXED_PAYOUT = 99;
 const pad = n => String(n).padStart(2, '0');
+const NUMBERS = Array.from({ length: 100 }, (_, i) => pad(i));
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+// How 99x results work (shown to players on every 99x screen)
+const RULE_LINE = 'Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.';
+function rulesText() {
+  const cfg = state.matka99.config;
+  return [
+    'Each 99x market is declared automatically at its result time. 99x results are separate from the regular Matka results.',
+    'The number (00–99) with the lowest total amount bet on it in that market wins.',
+    'A number nobody picked has ₹0 on it, so it counts as the lowest. With 100 numbers, some number usually has ₹0, so most results land on a number nobody picked and no one wins.',
+    'If several numbers tie for the lowest total, one of them is picked at random.',
+    `Winning bets pay ${FIXED_PAYOUT}x the amount bet, into your Winning balance.`,
+    `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per number per market.`
+  ];
+}
 
 function resolveMarket(input) {
   const s = String(input || '').trim().toLowerCase();
@@ -33,6 +49,31 @@ function isDeclared(key, dateKey) {
   return !!(day && day[key] !== undefined && day[key] !== null);
 }
 
+// The moment (ms) a market's result is due for a market date: that IST date at the schedule's result time
+// (close time if no result time is set). Null if the market has no schedule.
+function resultAtFor(key, dateKey) {
+  const sched = scheduleFor(key);
+  if (!sched || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey))) return null;
+  const mins = parseMins(sched.result || sched.close);
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return Date.UTC(y, m - 1, d) - IST_OFFSET_MS + mins * 60000;
+}
+
+// Totals per number for a market date and the currently-lowest numbers.
+function lowestFor(key, dateKey) {
+  const totals = {};
+  NUMBERS.forEach(n => { totals[n] = 0; });
+  for (const b of state.bets) {
+    if (b.game === 'matka99' && b.market === key && b.dateKey === dateKey && b.status === 'pending') {
+      totals[b.option] = wallet.round2((totals[b.option] || 0) + b.amount);
+    }
+  }
+  let min = Infinity;
+  NUMBERS.forEach(n => { if (totals[n] < min) min = totals[n]; });
+  const lowest = NUMBERS.filter(n => totals[n] === min);
+  return { totals, min: wallet.round2(min), lowest };
+}
+
 function getMarkets() {
   const today = getISTDateStr(new Date());
   return {
@@ -40,6 +81,9 @@ function getMarkets() {
     payout: FIXED_PAYOUT,
     minBet: state.matka99.config.minBet,
     maxBet: state.matka99.config.maxBet,
+    autoResults: true,
+    ruleLine: RULE_LINE,
+    rules: rulesText(),
     markets: MATKA99_MARKETS.map(m => {
       const sched = scheduleFor(m.key) || {};
       const cycleDate = getMarketCycleDate(m.key, sched);
@@ -49,7 +93,10 @@ function getMarkets() {
         open: sched.open || null, close: sched.close || null, resultTime: sched.result || null,
         enabled: state.matka99.enabled[m.key] !== false,
         isOpen: open, cycleDate,
-        lastResult: state.matka99.declared[m.key] || null,
+        resultAt: resultAtFor(m.key, cycleDate),
+        lastResult: state.matka99.declared[m.key]
+          ? { ...state.matka99.declared[m.key], ...((state.matka99.auto[state.matka99.declared[m.key].date] || {})[m.key] || {}) }
+          : null,
         todayResult: (state.matka99.results[today] || {})[m.key] || null
       };
     })
@@ -171,6 +218,7 @@ function undoDeclare(marketInput, dateInput) {
   }
   delete state.matka99.results[date][m.key];
   if (Object.keys(state.matka99.results[date]).length === 0) delete state.matka99.results[date];
+  if (state.matka99.auto[date]) delete state.matka99.auto[date][m.key];
   state.matka99.declared[m.key] = latestDeclared(m.key);
   if (anyWallet) wallet.persistWallets();
   saveNow();
@@ -243,7 +291,7 @@ function previewDeclare(marketInput, dateKey, numberInput) {
   };
 }
 
-function declare(marketInput, dateKey, numberInput, { bypassWindowCheck = false } = {}) {
+function declare(marketInput, dateKey, numberInput, { bypassWindowCheck = false, auto = null } = {}) {
   const p = previewDeclare(marketInput, dateKey, numberInput);
   const m = resolveMarket(p.key);
   if (p.alreadyDeclared) throw new GameError(400, `${m.name} result is already declared for ${p.date}.`);
@@ -269,19 +317,66 @@ function declare(marketInput, dateKey, numberInput, { bypassWindowCheck = false 
 
   if (!state.matka99.results[p.date]) state.matka99.results[p.date] = {};
   state.matka99.results[p.date][m.key] = p.number;
-  state.matka99.declared[m.key] = { number: p.number, date: p.date, declaredAt: Date.now() };
+  state.matka99.declared[m.key] = { number: p.number, date: p.date, declaredAt: Date.now(), auto: !!auto };
+  if (auto) {
+    if (!state.matka99.auto[p.date]) state.matka99.auto[p.date] = {};
+    state.matka99.auto[p.date][m.key] = { winningTotal: auto.winningTotal, tiedCount: auto.tiedCount, at: Date.now() };
+  }
 
   if (anyCredit) wallet.persistWallets();
   saveNow();
-  console.log(`[99x Matka] ${m.name} ${p.date} declared ${p.number}: ${winners} winners, ₹${wallet.round2(totalPaid)} paid`);
+  console.log(`[99x Matka] ${m.name} ${p.date} ${auto ? 'auto-' : ''}declared ${p.number}${auto ? ` (₹${auto.winningTotal} on it, ${auto.tiedCount} tied)` : ''}: ${winners} winners, ₹${wallet.round2(totalPaid)} paid`);
   return { ...p, winners, totalPaid: wallet.round2(totalPaid), alreadyDeclared: true };
+}
+
+// ---------- automatic results ----------
+// Declares every market whose result time has passed: the number with the lowest total
+// pending bet wins, ties broken with crypto.randomInt. Also catches up after a restart
+// (checks the last 3 market dates). Dates before automatic results started are only
+// settled when they have pending bets, so the chart isn't back-filled with empty days.
+function autoDeclareDue(now = Date.now()) {
+  const today = getISTDateStr(new Date(now));
+  if (!state.matka99.autoSince) { state.matka99.autoSince = today; saveNow(); }
+  const done = [];
+  for (const m of MATKA99_MARKETS) {
+    const sched = scheduleFor(m.key);
+    if (!sched) continue;
+    for (let i = -3; i <= 0; i++) {
+      const dateKey = getISTDateStr(new Date(now + i * 86400000));
+      if (isDeclared(m.key, dateKey)) continue;
+      const at = resultAtFor(m.key, dateKey);
+      if (at === null || now < at) continue;
+      // Never while betting for this date is still open (a mis-set schedule)
+      if (isGameInOpenWindow(m.key, sched, new Date(now)) && getMarketCycleDate(m.key, sched, new Date(now)) === dateKey) continue;
+      const pending = betsFor(m.key, dateKey).filter(b => b.status === 'pending').length;
+      if (!pending && (dateKey < state.matka99.autoSince || state.matka99.enabled[m.key] === false)) continue;
+      try {
+        const low = lowestFor(m.key, dateKey);
+        const number = low.lowest[crypto.randomInt(low.lowest.length)];
+        const r = declare(m.key, dateKey, number, { bypassWindowCheck: true, auto: { winningTotal: low.min, tiedCount: low.lowest.length } });
+        done.push({ key: m.key, date: dateKey, number, winners: r.winners, totalPaid: r.totalPaid });
+      } catch (err) {
+        console.error(`[99x Matka] auto result ${m.key} ${dateKey} failed:`, err.message);
+      }
+    }
+  }
+  return done;
+}
+
+let autoTimer = null;
+function startAutoResults() {
+  if (autoTimer) return;
+  const run = () => { try { autoDeclareDue(); } catch (e) { console.error('[99x Matka] auto results:', e.message); } };
+  run();
+  autoTimer = setInterval(run, 15000);
+  if (autoTimer.unref) autoTimer.unref();
 }
 
 function getChart(limitDays = 60) {
   const dates = Object.keys(state.matka99.results).sort().reverse().slice(0, limitDays);
   return {
     markets: MATKA99_MARKETS.map(m => ({ key: m.key, name: m.name })),
-    rows: dates.map(d => ({ date: d, results: state.matka99.results[d] }))
+    rows: dates.map(d => ({ date: d, results: state.matka99.results[d], auto: state.matka99.auto[d] || {} }))
   };
 }
 
@@ -305,8 +400,9 @@ function getOverview(dateInput) {
         .filter(b => b.status === 'refunded').reduce((s, b) => s + b.amount, 0));
       const liveBets = mk.cycleDate !== date ? betsFor(mk.key, mk.cycleDate) : [];
       const declaredNum = (state.matka99.results[date] || {})[mk.key] || null;
-      // Betting for this date is over (not open for it any more) but no result yet
-      const bettingOverForDate = !(mk.isOpen && mk.cycleDate === date) && date <= mk.cycleDate;
+      const resultAt = resultAtFor(mk.key, date);
+      const low = declaredNum ? null : lowestFor(mk.key, date);
+      const payNow = low ? low.lowest.map(n => bets.filter(b => b.status === 'pending' && b.option === n).reduce((s2, b) => s2 + b.amount * b.multiplier, 0)) : [];
       const sum = arr => wallet.round2(arr.reduce((s, b) => s + b.amount, 0));
       return {
         ...mk,
@@ -317,7 +413,16 @@ function getOverview(dateInput) {
         result: declaredNum,
         refunded: refundedAmt,
         pendingBets: bets.filter(b => b.status === 'pending').length,
-        awaitingResult: !declaredNum && bettingOverForDate && bets.some(b => b.status === 'pending'),
+        resultAt,
+        autoRecord: (state.matka99.auto[date] || {})[mk.key] || null,
+        projection: low ? {
+          lowestCount: low.lowest.length, lowestTotal: low.min,
+          lowest: low.lowest.length > 12 ? low.lowest.slice(0, 12) : low.lowest,
+          payoutMin: payNow.length ? wallet.round2(Math.min(...payNow)) : 0,
+          payoutMax: payNow.length ? wallet.round2(Math.max(...payNow)) : 0
+        } : null,
+        // Automatic result is late by more than 2 minutes (e.g. the server was off at result time)
+        awaitingResult: !declaredNum && resultAt !== null && Date.now() > resultAt + 120000 && bets.some(b => b.status === 'pending'),
         liveCycleDate: mk.cycleDate, liveCycleStaked: mk.cycleDate !== date ? sum(liveBets) : sum(bets)
       };
     })
@@ -379,5 +484,5 @@ function updateLimits({ minBet, maxBet }) {
 module.exports = {
   FIXED_PAYOUT, resolveMarket, getMarkets, placeBets, previewDeclare, declare, getChart, getMyBets,
   getOverview, getMatrix, getAdminBets, setEnabled, updateLimits, undoDeclare, refundMarket, getDailyReport,
-  scheduleFor, isDeclared
+  scheduleFor, isDeclared, autoDeclareDue, startAutoResults, resultAtFor, lowestFor, RULE_LINE, rulesText
 };
