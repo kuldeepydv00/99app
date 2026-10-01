@@ -154,7 +154,8 @@ fun GameBoxes(
     matkaTotal: Int,
     onOpenMatka: () -> Unit,
     onOpenMatka99: () -> Unit,
-    onOpenTrading: (String) -> Unit
+    onOpenTrading: (String) -> Unit,
+    onOpenJet: () -> Unit = {}
 ) {
     val now = rememberServerNow(1000L)
 
@@ -196,6 +197,12 @@ fun GameBoxes(
             info = if (lobby == null) BoxInfo("Loading…", "Live", false)
                    else BoxInfo("$m99Open of $m99Total open · lowest-bet number wins · pays ${m99Pays}x", if (m99Open > 0) "Live" else "Closed", m99Open > 0),
             rose = true, onClick = onOpenMatka99
+        )
+        val jet = jetLobbyStatus(lobby, now)
+        GameBox(
+            image = R.drawable.banner_jet, title = "Play 99x Jet",
+            info = BoxInfo(jet.first, if (jet.second) "Live" else if (lobby == null) "Live" else "Paused", jet.second, jet.third),
+            rose = false, onClick = onOpenJet
         )
         GameBox(image = R.drawable.banner_number, title = "Play Number Trading", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })
         GameBox(image = R.drawable.banner_card, title = "Play Card Trading", info = tradingInfo("card"), rose = false, onClick = { onOpenTrading("card") })

@@ -79,3 +79,20 @@ exports.userBets = (req, res) => send(res, () => report.userBets(req.params.mobi
   game: report.GAME_KEYS.includes(req.query.game) ? req.query.game : undefined,
   limit: Math.min(parseInt(req.query.limit, 10) || 300, 2000)
 }));
+
+// ---------- 99x Jet ----------
+const jet = require('../games/jetEngine');
+const dateParam = q => (/^\d{4}-\d{2}-\d{2}$/.test(String(q || '')) ? q : null);
+exports.jetOverview = (req, res) => send(res, () => jet.getAdminOverview(req.query.date));
+exports.jetRounds = (req, res) => send(res, () => jet.getAdminRounds({
+  date: dateParam(req.query.date),
+  limit: Math.min(parseInt(req.query.limit, 10) || 100, 2000),
+  offset: parseInt(req.query.offset, 10) || 0,
+  withBetsOnly: req.query.withBetsOnly === 'true'
+}));
+exports.jetBets = (req, res) => send(res, () => ({ bets: jet.getAdminBets({
+  roundId: req.query.roundId, mobile: req.query.mobile, status: req.query.status, date: dateParam(req.query.date),
+  limit: Math.min(parseInt(req.query.limit, 10) || 500, 5000)
+}) }));
+exports.jetReport = (req, res) => send(res, () => ({ days: jet.getDailyReport(Math.min(parseInt(req.query.days, 10) || 14, 60)) }));
+exports.jetConfig = (req, res) => send(res, () => jet.updateConfig(req.body || {}, 'admin'));

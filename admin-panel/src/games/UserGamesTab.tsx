@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { apiGet, inr, istDateTime, usePolling, Pill, OptionLabel, BetStatus, ExportButton, downloadCsv, matkaPick } from './common';
 
 const GAMES = [
-  { key: 'matka99', icon: '💎' }, { key: 'number', icon: '🔢' }, { key: 'card', icon: '🃏' }, { key: 'colour', icon: '🎨' }
+  { key: 'matka99', icon: '💎' }, { key: 'jet', icon: '✈️' }, { key: 'number', icon: '🔢' }, { key: 'card', icon: '🃏' }, { key: 'colour', icon: '🎨' }
 ];
 
 // User Details → "99x & Trading": every new-game bet this player placed, with totals.
@@ -26,7 +26,7 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-[#212529]">99x Matka & Trading bets</h3>
+        <h3 className="text-sm font-bold text-[#212529]">99x Matka, 99x Jet & Trading bets</h3>
         <div className="flex items-center gap-2">
           <select value={game} onChange={e => setGame(e.target.value)} className="rounded border border-gray-300 px-2 py-1 text-[11px]">
             <option value="">All new games</option>
@@ -39,7 +39,7 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-6">
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
           <div className="text-[10px] font-bold uppercase text-blue-700">All new games</div>
           <div className="mt-1 text-sm font-extrabold tabular-nums">{inr(t.staked)} <span className="text-[10px] font-semibold text-gray-500">staked</span></div>
@@ -67,7 +67,7 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
               <th className="px-2 py-2 text-right">Amount</th><th className="px-2 py-2">Status</th><th className="px-2 py-2 text-right">Win</th></tr>
           </thead>
           <tbody>
-            {data.bets.length === 0 && <tr><td colSpan={7} className="px-2 py-8 text-center text-gray-400">This player has no 99x Matka or Trading bets yet</td></tr>}
+            {data.bets.length === 0 && <tr><td colSpan={7} className="px-2 py-8 text-center text-gray-400">This player has no 99x Matka, 99x Jet or Trading bets yet</td></tr>}
             {data.bets.map((b: any) => (
               <tr key={b.id} className="border-t border-gray-100">
                 <td className="px-2 py-2 text-gray-500">{istDateTime(b.created_at)}</td>
@@ -75,7 +75,7 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
                 <td className="px-2 py-2">{b.game === 'matka99' ? <>{b.marketName} <span className="text-gray-400">· {b.dateKey}</span></> : <span className="font-mono text-[11px]">{b.roundId}</span>}</td>
                 <td className="px-2 py-2">{b.game === 'matka99' ? <span className="font-mono font-bold">{matkaPick(b.option)}</span> : <OptionLabel game={b.game} value={b.option} />}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{inr(b.amount)}</td>
-                <td className="px-2 py-2"><BetStatus status={b.status} />{b.status === 'lost' && b.result && <span className="ml-1 text-[10px] text-gray-400">result <OptionLabel game={b.game === 'matka99' ? 'number' : b.game} value={b.result} /></span>}</td>
+                <td className="px-2 py-2"><BetStatus status={b.status} />{b.status === 'lost' && b.result && <span className="ml-1 text-[10px] text-gray-400">{b.game === 'jet' ? `blasted ${Number(b.result).toFixed(2)}x` : <>result <OptionLabel game={b.game === 'matka99' ? 'number' : b.game} value={b.result} /></>}</span>}</td>
                 <td className="px-2 py-2 text-right font-bold tabular-nums">{b.win_amount ? inr(b.win_amount) : '—'}</td>
               </tr>
             ))}

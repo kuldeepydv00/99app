@@ -24,6 +24,12 @@ router.post('/matka99/undo', c.matka99Undo);
 router.post('/matka99/refund', c.matka99Refund);
 router.get('/matka99/report', c.matka99Report);
 
+router.get('/jet/overview', c.jetOverview);
+router.get('/jet/rounds', c.jetRounds);
+router.get('/jet/bets', c.jetBets);
+router.get('/jet/report', c.jetReport);
+router.post('/jet/config', c.jetConfig);
+
 router.get('/summary', c.summary);
 router.get('/user/:mobile/bets', c.userBets);
 

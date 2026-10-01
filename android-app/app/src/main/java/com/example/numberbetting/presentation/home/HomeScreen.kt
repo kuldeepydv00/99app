@@ -470,7 +470,8 @@ fun HomeScreen(
                             matkaTotal = liveGames.size + resultGames.size,
                             onOpenMatka = { onHomeSectionChange("matka") },
                             onOpenMatka99 = { onHomeSectionChange("matka99") },
-                            onOpenTrading = onNavigateToTrading
+                            onOpenTrading = onNavigateToTrading,
+                            onOpenJet = { onNavigateToTrading("jet") }
                         )
                     }
                 }

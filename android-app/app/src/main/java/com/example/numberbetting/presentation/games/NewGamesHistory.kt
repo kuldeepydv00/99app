@@ -84,7 +84,7 @@ fun NewGamesBetsList(mobile: String, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("all" to "All", "matka99" to "99x Matka", "number" to "Number", "card" to "Card", "colour" to "Colour").forEach { (key, label) ->
+            listOf("all" to "All", "matka99" to "99x Matka", "jet" to "99x Jet", "number" to "Number", "card" to "Card", "colour" to "Colour").forEach { (key, label) ->
                 val sel = filter == key
                 Box(
                     modifier = Modifier
@@ -114,13 +114,19 @@ fun NewGamesBetsList(mobile: String, modifier: Modifier = Modifier) {
                     val tagGame = if (game == "matka99") "number" else game
                     val title = when (game) {
                         "matka99" -> b.optString("marketName")
+                        "jet" -> "99x Jet"
                         "number" -> "Number"
                         "card" -> "Card"
                         else -> "Colour"
                     }
                     val sub = if (game == "matka99") b.optString("dateKey") else b.optString("roundId")
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OptionTag(tagGame, b.optString("option"))
+                        if (game == "jet") {
+                            val cx = if (b.has("cashout") && !b.isNull("cashout")) b.optDouble("cashout") else 0.0
+                            OptionTag("number", if (b.optString("status") == "won" && cx > 0) String.format(java.util.Locale.US, "%.2fx", cx) else "JET")
+                        } else {
+                            OptionTag(tagGame, b.optString("option"))
+                        }
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("$title · ${inr(b.optDouble("amount", 0.0))}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -129,8 +135,12 @@ fun NewGamesBetsList(mobile: String, modifier: Modifier = Modifier) {
                         when (b.optString("status")) {
                             "won" -> Text("+" + inr(b.optDouble("win_amount", 0.0)), color = GameColors.Emerald, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                             "lost" -> Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Result ", color = Color(0xFF6B7280), fontSize = 10.sp)
-                                OptionTag(tagGame, b.optString("result"))
+                                if (game == "jet") {
+                                    Text("Blasted " + String.format(java.util.Locale.US, "%.2fx", b.optDouble("result", 0.0)), color = Color(0xFF6B7280), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                } else {
+                                    Text("Result ", color = Color(0xFF6B7280), fontSize = 10.sp)
+                                    OptionTag(tagGame, b.optString("result"))
+                                }
                             }
                             "refunded" -> Text("Refunded", color = Color(0xFF7DD3FC), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             else -> Text("Pending", color = GameColors.Amber, fontSize = 11.sp, fontWeight = FontWeight.Bold)

@@ -9,6 +9,8 @@ export type Lobby = {
   serverTime: number;
   trading: Record<TradingGame, { label: string; enabled: boolean; payout: number; round: { roundId: string; start: number; lock: number; end: number; status: string }; lastResult: { result: string } | null }>;
   matka99: { payout: number; haroofPayout?: number; ruleLine?: string; rules?: string[]; markets: { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; lastResult: { number: string; date: string } | null; todayResult: string | null }[] };
+  jet?: { label: string; enabled: boolean; serverTime: number; growth: number; lastPoint: number | null; recent: number[];
+    round: { id?: string; phase: string; bettingEndsAt?: number; flyAt?: number | null; point?: number | null } };
 };
 
 /** Polls the games lobby every 5 s while `enabled`. Returns null until the first load. */
@@ -70,23 +72,25 @@ export function Matka99Section({ lobby, onOpenMatka99 }: { lobby: Lobby | null; 
   );
 }
 
-type BoxId = 'matka' | 'matka99' | TradingGame;
+type BoxId = 'matka' | 'matka99' | 'jet' | TradingGame;
 const BOXES: { id: BoxId; img: string; title: string }[] = [
   { id: 'matka', img: '/banners/banner_matka.webp', title: 'Play Matka' },
   { id: 'matka99', img: '/banners/banner_matka99.webp', title: 'Play 99x Matka' },
+  { id: 'jet', img: '/banners/banner_jet.webp', title: 'Play 99x Jet' },
   { id: 'number', img: '/banners/banner_number.webp', title: 'Play Number Trading' },
   { id: 'card', img: '/banners/banner_card.webp', title: 'Play Card Trading' },
   { id: 'colour', img: '/banners/banner_colour.webp', title: 'Play Colour Trading' }
 ];
 
 /** Home page: one big picture box per game, like a game lobby. */
-export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpenMatka99, onOpenTrading }: {
+export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpenMatka99, onOpenTrading, onOpenJet }: {
   lobby: Lobby | null;
   matkaOpen: number;
   matkaTotal: number;
   onOpenMatka: () => void;
   onOpenMatka99: () => void;
   onOpenTrading: (game: TradingGame) => void;
+  onOpenJet: () => void;
 }) {
   const now = useServerNow(lobby?.serverTime);
 
@@ -98,6 +102,16 @@ export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpe
       const open = ms.filter(m => m.isOpen).length;
       return { status: `${open} of ${ms.length} open · lowest-bet number wins · pays ${lobby.matka99.payout}x`, live: open > 0 };
     }
+    if (id === 'jet') {
+      const j = lobby.jet;
+      if (!j || !j.enabled) return { status: 'Paused for now', live: false, disabled: !j };
+      const last = j.lastPoint != null ? ` · last ${j.lastPoint.toFixed(2)}x` : '';
+      if (j.round.phase === 'flying') return { status: `Flying now${last} · up to 2000x`, live: true };
+      if (j.round.phase === 'betting' && j.round.bettingEndsAt) {
+        return { status: `Next take-off in ${Math.max(0, Math.ceil((j.round.bettingEndsAt - now) / 1000))}s${last}`, live: true };
+      }
+      return { status: `Rounds every few seconds${last} · up to 2000x`, live: true };
+    }
     const t = lobby.trading[id];
     if (!t || !t.enabled) return { status: 'Paused for now', live: false, disabled: true };
     const locked = now >= t.round.lock;
@@ -108,6 +122,7 @@ export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpe
   const open = (id: BoxId) => {
     if (id === 'matka') onOpenMatka();
     else if (id === 'matka99') onOpenMatka99();
+    else if (id === 'jet') onOpenJet();
     else onOpenTrading(id);
   };
 

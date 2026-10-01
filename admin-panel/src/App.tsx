@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TradingAdmin from './games/TradingAdmin';
+import JetAdmin from './games/JetAdmin';
 import GamesOverview from './games/GamesOverview';
 import UserGamesTab from './games/UserGamesTab';
 import DashboardGamesStrip from './games/DashboardGamesStrip';
@@ -284,10 +285,10 @@ export default function App() {
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
-    'matka99' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
+    'matka99' | 'jetGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -2251,6 +2252,7 @@ export default function App() {
               { id: 'gameLedger', label: 'Game Ledger', icon: '📘' },
               { id: 'gamesOverview', label: 'Games Overview', icon: '🎮', section: 'NEW GAMES' },
               { id: 'matka99', label: '99x Matka', icon: '💎' },
+              { id: 'jetGame', label: '99x Jet', icon: '✈️' },
               { id: 'numberTrading', label: 'Number Trading', icon: '🔢' },
               { id: 'cardTrading', label: 'Card Trading', icon: '🃏' },
               { id: 'colourTrading', label: 'Colour Trading', icon: '🎨' },
@@ -7087,6 +7089,7 @@ export default function App() {
             {/* NEW GAMES */}
             {activeTab === 'gamesOverview' && <GamesOverview onNavigate={(tab) => setActiveTab(tab as any)} onOpenUser={openUserByMobile} />}
             {activeTab === 'matka99' && <Matka99Admin onOpenUser={openUserByMobile} />}
+            {activeTab === 'jetGame' && <JetAdmin onOpenUser={openUserByMobile} />}
             {activeTab === 'numberTrading' && <TradingAdmin key="number" game="number" onOpenUser={openUserByMobile} />}
             {activeTab === 'cardTrading' && <TradingAdmin key="card" game="card" onOpenUser={openUserByMobile} />}
             {activeTab === 'colourTrading' && <TradingAdmin key="colour" game="colour" onOpenUser={openUserByMobile} />}

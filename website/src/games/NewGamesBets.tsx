@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { gamesGet } from './api';
 import { inr, OptionTag } from './ui';
 
-type Bet = { id: string; game: string; option: string; amount: number; status: string; win_amount: number; result: string | null; created_at: string; roundId?: string; marketName?: string; dateKey?: string };
-type Filter = 'all' | 'matka99' | 'number' | 'card' | 'colour';
+type Bet = { id: string; game: string; option: string; amount: number; status: string; win_amount: number; result: string | number | null; created_at: string; roundId?: string; marketName?: string; dateKey?: string; cashout?: number | null };
+type Filter = 'all' | 'matka99' | 'jet' | 'number' | 'card' | 'colour';
 
-const LABEL: Record<string, string> = { matka99: '99x Matka', number: 'Number', card: 'Card', colour: 'Colour' };
+const LABEL: Record<string, string> = { matka99: '99x Matka', jet: '99x Jet', number: 'Number', card: 'Card', colour: 'Colour' };
 
 export default function NewGamesBets({ mobile }: { mobile: string }) {
   const [bets, setBets] = useState<Bet[] | null>(null);
@@ -23,7 +23,7 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
   return (
     <div className="space-y-3">
       <div className="g-noscroll flex gap-2 overflow-x-auto">
-        {(['all', 'matka99', 'number', 'card', 'colour'] as Filter[]).map(f => (
+        {(['all', 'matka99', 'jet', 'number', 'card', 'colour'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${filter === f ? 'bg-[#C9A87C] text-slate-950' : 'border border-gray-800 bg-[#123A2C] text-gray-300'}`}>
             {f === 'all' ? 'All' : LABEL[f]}
@@ -37,7 +37,9 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
           {list.map(b => (
             <div key={b.id} className="flex items-center justify-between border-b border-gray-900 px-3 py-2.5 last:border-0">
               <div className="flex items-center gap-2.5">
-                {/^[AB]\d$/.test(b.option)
+                {b.game === 'jet'
+                  ? <span className="rounded-md border border-[#BFE0F5]/40 bg-[#0A0F0D] px-1.5 py-0.5 text-[11px] font-extrabold text-[#DCEFFB]">{b.status === 'won' && b.cashout ? `${b.cashout.toFixed(2)}x` : 'JET'}</span>
+                  : /^[AB]\d$/.test(b.option)
                   ? <span className="rounded-md border border-[#E0B7A0]/50 bg-[#0A0F0D] px-1.5 py-0.5 text-[11px] font-extrabold text-[#F5EDE2]">{b.option[0] === 'A' ? 'Andar' : 'Bahar'} {b.option[1]}</span>
                   : <OptionTag game={b.game === 'matka99' ? 'number' : b.game} value={b.option} />}
                 <div>
@@ -47,8 +49,10 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
               </div>
               {b.status === 'won'
                 ? <span className="text-xs font-extrabold text-[#3EE08A]">+{inr(b.win_amount)}</span>
+                : b.status === 'lost' && b.game === 'jet'
+                  ? <span className="text-[10px] font-bold text-gray-500">Blasted {Number(b.result || 0).toFixed(2)}x</span>
                 : b.status === 'lost'
-                  ? <span className="flex items-center gap-1 text-[10px] text-gray-500">Result <OptionTag game={b.game === 'matka99' ? 'number' : b.game} value={b.result} /></span>
+                  ? <span className="flex items-center gap-1 text-[10px] text-gray-500">Result <OptionTag game={b.game === 'matka99' ? 'number' : b.game} value={b.result == null ? null : String(b.result)} /></span>
                   : b.status === 'refunded'
                       ? <span className="text-[11px] font-bold text-sky-300">Refunded</span>
                       : <span className="text-[11px] font-bold text-amber-400">Pending</span>}

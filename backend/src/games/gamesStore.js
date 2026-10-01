@@ -34,6 +34,18 @@ function defaultState() {
       declared: {},  // marketKey -> { number: 'NN', date, declaredAt }
       auto: {},      // dateKey -> { marketKey: { winningTotal, tiedCount, at } } how each automatic result was picked
       autoSince: null // first IST date automatic results ran (older dates are only settled if they have bets)
+    },
+    // 99x Jet (crash game). See jetEngine.js for how rounds and blast points work.
+    jet: {
+      config: { enabled: true, edge: 0.04, minBet: 10, maxBet: 10000, maxWin: 100000, bettingSec: 8, roundCap: 0 },
+      chain: null,     // seed hash chain: { id, length, terminatingHash, salt, checkpoints, startNo, createdAt }
+      oldChains: [],   // finished chains: { id, terminatingHash, salt, startNo, endNo }
+      seq: 0,          // last round number used
+      nextIndex: 1,    // next seed index in the chain
+      round: null,     // the current round (blast point kept server-side until the blast)
+      history: [],     // ended rounds, newest first (seed revealed)
+      daily: {},       // IST date -> { rounds, voided }
+      configLog: []    // setting changes, newest first
     }
   };
 }
@@ -62,6 +74,12 @@ function load() {
       if (raw.matka99.declared) state.matka99.declared = raw.matka99.declared;
       if (raw.matka99.auto) state.matka99.auto = raw.matka99.auto;
       if (raw.matka99.autoSince) state.matka99.autoSince = raw.matka99.autoSince;
+    }
+    if (raw.jet) {
+      if (raw.jet.config) Object.assign(state.jet.config, raw.jet.config);
+      for (const k of ['chain', 'oldChains', 'seq', 'nextIndex', 'round', 'history', 'daily', 'configLog']) {
+        if (raw.jet[k] !== undefined) state.jet[k] = raw.jet[k];
+      }
     }
     // 99x payout is fixed by design
     state.matka99.config.payout = 99;

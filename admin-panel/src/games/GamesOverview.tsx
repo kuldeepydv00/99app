@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { apiGet, inr, istToday, istDateTime, usePolling, Card, Kpi, Pill, OptionLabel, PlayerCell, downloadCsv, ExportButton, matkaPick } from './common';
 import type { OpenUser } from './common';
 
-type GameKey = 'matka99' | 'number' | 'card' | 'colour';
+type GameKey = 'matka99' | 'jet' | 'number' | 'card' | 'colour';
 const GAMES: { key: GameKey; tab: string; icon: string }[] = [
   { key: 'matka99', tab: 'matka99', icon: '💎' },
+  { key: 'jet', tab: 'jetGame', icon: '✈️' },
   { key: 'number', tab: 'numberTrading', icon: '🔢' },
   { key: 'card', tab: 'cardTrading', icon: '🃏' },
   { key: 'colour', tab: 'colourTrading', icon: '🎨' }
 ];
-const BAR: Record<GameKey, string> = { matka99: '#E0B7A0', number: '#10B981', card: '#F59E0B', colour: '#3B82F6' };
+const BAR: Record<GameKey, string> = { matka99: '#E0B7A0', jet: '#8B5CF6', number: '#10B981', card: '#F59E0B', colour: '#3B82F6' };
 
 const shift = (iso: string, days: number) => {
   const d = new Date(iso + 'T12:00:00Z');

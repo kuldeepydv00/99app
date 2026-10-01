@@ -693,6 +693,15 @@ fun AppNavigation() {
                     onNavigateToWallet = { currentScreen = "wallet" },
                     onBack = { currentScreen = "game" }
                 )
+                "trading_jet" -> com.example.numberbetting.presentation.games.JetScreen(
+                    mobile = currentUserPhone,
+                    balance = userBalance,
+                    onBack = { currentScreen = "game" },
+                    onBalances = { bal, bonus ->
+                        userBalance = bal
+                        userBonus = bonus
+                    }
+                )
                 "trading_number", "trading_card", "trading_colour" -> com.example.numberbetting.presentation.games.TradingScreen(
                     game = targetScreen.removePrefix("trading_"),
                     mobile = currentUserPhone,

@@ -30,6 +30,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   throw lastErr instanceof Error ? lastErr : new Error('Network error. Check your connection.');
 }
 
+/** Base URL for long-lived connections (live round stream); same first choice as requests. */
+export const API_BASE = BASES[0];
+
 export const gamesGet = <T = any>(path: string) => request<T>(path);
 export const gamesPost = <T = any>(path: string, body: unknown) =>
   request<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

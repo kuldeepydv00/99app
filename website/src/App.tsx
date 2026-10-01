@@ -8,6 +8,7 @@ import { parseCopyPasteText, ParsedBetItem } from './utils/copyPasteParser';
 import { useLobby, HomeGameBoxes, Matka99Section, SectionHeader } from './games/HomeGamesBlocks';
 import MarketTile, { shortTime } from './games/MarketTile';
 import TradingPage from './games/TradingPage';
+import JetPage from './games/JetPage';
 import type { Balances } from './games/TradingPage';
 import Matka99Page from './games/Matka99Page';
 import Matka99Chart from './games/Matka99Chart';
@@ -695,6 +696,7 @@ export default function App() {
   // New games: 99x Matka + Number / Card / Colour Trading
   const [matka99Market, setMatka99Market] = useState<string | null>(null);
   const [tradingGame, setTradingGame] = useState<TradingGame | null>(null);
+  const [jetOpen, setJetOpen] = useState(false);
   const [chartMode, setChartMode] = useState<'matka' | 'matka99'>('matka');
   // Home shows one picture box per game; Matka and 99x Matka open their own market pages.
   const [homeSection, setHomeSection] = useState<null | 'matka' | 'matka99'>(null);
@@ -2439,7 +2441,7 @@ export default function App() {
               );
             })()}
 
-            {/* HOME: one picture box per game (Matka, 99x Matka, Number, Card, Colour) */}
+            {/* HOME: one picture box per game (Matka, 99x Matka, 99x Jet, Number, Card, Colour) */}
             {activeWebTab === 'home' && !homeSection && (
               <div className="mt-6">
                 <HomeGameBoxes
@@ -2449,6 +2451,7 @@ export default function App() {
                   onOpenMatka={() => openHomeSection('matka')}
                   onOpenMatka99={() => openHomeSection('matka99')}
                   onOpenTrading={(g) => setTradingGame(g)}
+                  onOpenJet={() => setJetOpen(true)}
                 />
               </div>
             )}
@@ -3203,6 +3206,14 @@ export default function App() {
             mobile={user?.mobile || ''}
             balance={user?.balance || 0}
             onBack={() => setMatka99Market(null)}
+            onBalances={applyGameBalances}
+          />
+        )}
+        {jetOpen && (
+          <JetPage
+            mobile={user?.mobile || ''}
+            balance={user?.balance || 0}
+            onBack={() => setJetOpen(false)}
             onBalances={applyGameBalances}
           />
         )}

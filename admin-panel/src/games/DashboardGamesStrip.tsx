@@ -2,6 +2,7 @@ import { inr } from './common';
 
 const GAMES = [
   { key: 'matka99', icon: '💎', tab: 'matka99' },
+  { key: 'jet', icon: '✈️', tab: 'jetGame' },
   { key: 'number', icon: '🔢', tab: 'numberTrading' },
   { key: 'card', icon: '🃏', tab: 'cardTrading' },
   { key: 'colour', icon: '🎨', tab: 'colourTrading' }
@@ -17,11 +18,11 @@ export default function DashboardGamesStrip({ stats, onNavigate }: { stats: any;
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold text-[#212529]">🎮 New games in this period</h2>
-          <p className="text-[11px] text-gray-500">99x Matka and Trading — already included in Total Betting and Winnings above ({inr(r.staked)} staked, {inr(r.paid)} paid).</p>
+          <p className="text-[11px] text-gray-500">99x Matka, 99x Jet and Trading — already included in Total Betting and Winnings above ({inr(r.staked)} staked, {inr(r.paid)} paid).</p>
         </div>
         <button onClick={() => onNavigate('gamesOverview')} className="rounded bg-[#007BFF] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0069D9]">Open Games Overview →</button>
       </div>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
           <div className="text-[10px] font-bold uppercase text-blue-700">All new games</div>
           <div className="mt-1 text-lg font-extrabold tabular-nums">{inr(r.staked)}</div>

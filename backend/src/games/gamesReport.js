@@ -6,8 +6,8 @@ const engine = require('./tradingEngine');
 const matka99 = require('./matka99');
 const { getISTDateStr } = require('../utils/dateCycle');
 
-const GAME_KEYS = ['matka99', 'number', 'card', 'colour'];
-const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading' };
+const GAME_KEYS = ['matka99', 'number', 'card', 'colour', 'jet'];
+const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', jet: '99x Jet' };
 
 // The business date of a bet: 99x Matka uses its market date, trading uses the IST day it was placed.
 const betDate = b => (b.game === 'matka99' ? b.dateKey : engine.istDateOf(b.created_at));
@@ -73,7 +73,11 @@ function summary({ from, to } = {}) {
   const games = {};
   GAME_KEYS.forEach(g => {
     games[g] = { key: g, label: LABELS[g], ...finish(per[g]) };
-    if (g !== 'matka99') {
+    if (g === 'jet') {
+      const jc = (state.jet && state.jet.config) || {};
+      games[g].enabled = jc.enabled !== false; games[g].payout = null;
+      games[g].edgePct = Math.round((jc.edge || 0) * 10000) / 100;
+    } else if (g !== 'matka99') {
       const cfg = state.config[g] || {};
       games[g].enabled = cfg.enabled !== false; games[g].payout = cfg.payout;
     } else {
