@@ -21,6 +21,8 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
 
   if (!data) return <div className="p-4 text-xs text-gray-500">{error ? `⚠️ ${error}` : 'Loading 99x & Trading bets…'}</div>;
   const t = data.total;
+  // only games the backend reports (an older backend has no 99x Jet yet)
+  const shown = GAMES.filter(g => data.games && data.games[g.key]);
   const playerNet = t.paid - t.staked;
 
   return (
@@ -30,7 +32,7 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
         <div className="flex items-center gap-2">
           <select value={game} onChange={e => setGame(e.target.value)} className="rounded border border-gray-300 px-2 py-1 text-[11px]">
             <option value="">All new games</option>
-            {GAMES.map(g => <option key={g.key} value={g.key}>{data.games[g.key].label}</option>)}
+            {shown.map(g => <option key={g.key} value={g.key}>{data.games[g.key].label}</option>)}
           </select>
           <ExportButton disabled={data.bets.length === 0} onClick={() => downloadCsv(`new-game-bets_${clean}.csv`, [
             ['Time (IST)', 'Game', 'Market / Round', 'Date', 'Pick', 'Amount', 'Multiplier', 'Status', 'Win'],
@@ -46,7 +48,7 @@ export default function UserGamesTab({ mobile }: { mobile: string }) {
           <div className="text-[11px] tabular-nums text-gray-600">{t.bets} bets · won {inr(t.paid)}</div>
           <div className={`text-[11px] font-bold tabular-nums ${playerNet >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>Player {playerNet >= 0 ? 'up' : 'down'} {inr(Math.abs(playerNet))}</div>
         </div>
-        {GAMES.map(g => {
+        {shown.map(g => {
           const x = data.games[g.key];
           return (
             <div key={g.key} className="rounded-lg border border-gray-200 bg-white p-3">

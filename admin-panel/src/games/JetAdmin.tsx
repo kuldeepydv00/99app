@@ -76,7 +76,13 @@ export default function JetAdmin({ onOpenUser }: { onOpenUser?: OpenUser }) {
 
   const now = useFastNow(ov?.serverTime);
 
-  if (!ov) return <div className="p-6 text-sm text-gray-500">{error ? `⚠️ ${error}` : 'Loading 99x Jet…'}</div>;
+  if (!ov) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        {error ? <>⚠️ {error}<br /><span className="text-xs">If you just updated the code, restart the backend so 99x Jet starts.</span></> : 'Loading 99x Jet…'}
+      </div>
+    );
+  }
 
   const r = ov.round || {};
   const L = ov.limits;

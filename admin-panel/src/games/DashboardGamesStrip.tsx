@@ -13,6 +13,8 @@ export default function DashboardGamesStrip({ stats, onNavigate }: { stats: any;
   const ng = stats?.newGames;
   if (!ng) return null;
   const r = ng.range;
+  // only games the backend reports (an older backend has no 99x Jet yet)
+  const shown = GAMES.filter(g => ng.byGame && ng.byGame[g.key]);
   return (
     <div className="rounded-lg border border-[#DEE2E6] bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -29,7 +31,7 @@ export default function DashboardGamesStrip({ stats, onNavigate }: { stats: any;
           <div className="text-[11px] text-gray-600">{r.bets} bets · {r.players} players</div>
           <div className={`text-[11px] font-bold ${r.net >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>Net {inr(r.net)}</div>
         </div>
-        {GAMES.map(g => {
+        {shown.map(g => {
           const x = ng.byGame[g.key];
           return (
             <button key={g.key} onClick={() => onNavigate(g.tab)} className="rounded-lg border border-gray-200 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50/40">

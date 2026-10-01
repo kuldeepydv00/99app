@@ -45,11 +45,13 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
   if (!data) return <div className="p-6 text-sm text-gray-500">{error ? `⚠️ ${error}` : 'Loading new games overview…'}</div>;
 
   const t = data.total;
+  // only games the backend reports (an older backend has no 99x Jet yet)
+  const shown = GAMES.filter(g => data.games && data.games[g.key] && (!data.daily.length || data.daily[0][g.key]));
   const maxDay = Math.max(1, ...data.daily.map((d: any) => Math.max(d.staked, d.paid)));
 
   const exportGames = () => downloadCsv(`new-games_${data.from}_to_${data.to}.csv`, [
     ['Game', 'Bets', 'Players', 'Staked', 'Paid', 'Net', 'Refunded', 'Pending bets'],
-    ...GAMES.map(g => { const x = data.games[g.key]; return [x.label, x.bets, x.players, x.staked, x.paid, x.net, x.refunded, x.pending]; }),
+    ...shown.map(g => { const x = data.games[g.key]; return [x.label, x.bets, x.players, x.staked, x.paid, x.net, x.refunded, x.pending]; }),
     ['Total', t.bets, t.players, t.staked, t.paid, t.net, t.refunded, t.pending]
   ]);
 
@@ -82,7 +84,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
       </div>
 
       {/* Needs attention */}
-      {(data.awaitingResults.length > 0 || GAMES.some(g => data.games[g.key].enabled === false)) && (
+      {(data.awaitingResults.length > 0 || shown.some(g => data.games[g.key].enabled === false)) && (
         <Card title={<span className="flex items-center gap-2">⚠️ Needs attention</span>}>
           <div className="space-y-2 text-xs">
             {data.awaitingResults.map((a: any) => (
@@ -91,7 +93,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
                 <button onClick={() => { try { localStorage.setItem('m99AdminDate', a.date); } catch { /* ignore */ } onNavigate('matka99'); }} className="rounded bg-[#007BFF] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#0069D9]">Open 99x Matka →</button>
               </div>
             ))}
-            {GAMES.filter(g => data.games[g.key].enabled === false).map(g => (
+            {shown.filter(g => data.games[g.key].enabled === false).map(g => (
               <div key={g.key} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
                 <span><b>{data.games[g.key].label}</b> is switched off — players can’t bet on it.</span>
                 <button onClick={() => onNavigate(g.tab)} className="rounded border border-gray-300 bg-white px-2.5 py-1 text-[11px] font-bold hover:bg-gray-100">Open →</button>
@@ -112,7 +114,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
                 <th className="px-2 py-2 text-right">Pending</th><th className="px-2 py-2" /></tr>
             </thead>
             <tbody>
-              {GAMES.map(g => {
+              {shown.map(g => {
                 const x = data.games[g.key];
                 return (
                   <tr key={g.key} className="border-t border-gray-100 hover:bg-blue-50/40">
@@ -151,9 +153,9 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
             </span>}>
             {data.daily.length === 1 ? (
               <div className="space-y-2">
-                {GAMES.map(g => {
+                {shown.map(g => {
                   const x = data.daily[0][g.key];
-                  const m = Math.max(1, ...GAMES.map(k => Math.max(data.daily[0][k.key].staked, data.daily[0][k.key].paid)));
+                  const m = Math.max(1, ...shown.map(k => Math.max(data.daily[0][k.key].staked, data.daily[0][k.key].paid)));
                   return (
                     <div key={g.key} className="flex items-center gap-3 text-xs">
                       <div className="w-32 font-semibold text-gray-700">{g.icon} {data.games[g.key].label}</div>
@@ -182,7 +184,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
               </div>
             )}
             <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-gray-500">
-              {GAMES.map(g => <span key={g.key} className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: BAR[g.key] }} />{data.games[g.key].label}: {inr(data.games[g.key].staked)}</span>)}
+              {shown.map(g => <span key={g.key} className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: BAR[g.key] }} />{data.games[g.key].label}: {inr(data.games[g.key].staked)}</span>)}
             </div>
           </Card>
         </div>
