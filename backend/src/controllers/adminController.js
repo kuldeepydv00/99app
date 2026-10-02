@@ -3,6 +3,8 @@ const { chartRecords, formatDateKey } = require('../historicalChartStore');
 const { getMarketCycleDate } = require('../utils/dateCycle');
 
 // Helper to get consistent IST Date Key (YYYY-MM-DD)
+const dataSafety = require('../utils/dataSafety');
+
 function getISTDateStr(d) {
   if (!d) d = new Date();
   if (typeof d === 'string') {
@@ -490,18 +492,8 @@ const getUsers = async (req, res) => {
             };
             registeredUsers.push(memUser);
           } else if (memUser) {
-            if (dbu.name && dbu.name !== 'User') memUser.name = dbu.name;
-            if (dbu.deposit_balance !== undefined) memUser.deposit_balance = dbu.deposit_balance;
-            if (dbu.winning_balance !== undefined) memUser.winning_balance = dbu.winning_balance;
-            if (dbu.bonus_balance !== undefined) memUser.bonus_balance = dbu.bonus_balance;
-            if (dbu.commission_balance !== undefined) memUser.commission_balance = dbu.commission_balance;
-            if (dbu.wallet_balance !== undefined) memUser.balance = dbu.wallet_balance;
-            if (dbu.custom_referral_commission !== undefined) memUser.custom_referral_commission = dbu.custom_referral_commission;
-            if (dbu.referral_enabled !== undefined) memUser.referral_enabled = dbu.referral_enabled;
-            if (dbu.custom_jodi_rate !== undefined) memUser.custom_jodi_rate = dbu.custom_jodi_rate;
-            if (dbu.custom_haroof_rate !== undefined) memUser.custom_haroof_rate = dbu.custom_haroof_rate;
-            if (dbu.custom_crossing_rate !== undefined) memUser.custom_crossing_rate = dbu.custom_crossing_rate;
-            if (dbu.self_bet_commission !== undefined) memUser.self_bet_commission = dbu.self_bet_commission;
+            // Memory (dataStore.json) is the source of truth for balances and settings;
+            // MongoDB copies can be older, so they only fill in what memory doesn't have.
             if (dbu.referred_by && !memUser.referred_by) {
               memUser.referred_by = String(dbu.referred_by).replace(/[^0-9]/g, '').slice(-10);
             }
@@ -1636,63 +1628,29 @@ const getDeposits = async (req, res) => {
     if (mongoose.connection.readyState === 1) {
       const DepositRequest = require('../models/DepositRequest');
       const dbDeps = await DepositRequest.find().sort({ createdAt: -1 }).lean();
-      if (dbDeps && dbDeps.length > 0) {
-        dbDeps.forEach(d => {
-          const utrKey = d.utr_number || d.utr;
-          const cleanMob = String(d.user_id || d.mobile || '').replace(/[^0-9]/g, '').slice(-10);
-          const dbAmt = parseFloat(d.amount) || 0;
-          const dbTime = d.createdAt ? new Date(d.createdAt).getTime() : 0;
-
-          const exists = memoryDeposits.find(m => {
-            if (m._id && String(m._id) === String(d._id)) return true;
-            if (utrKey && (String(m.client_txn_id) === String(utrKey) || String(m.utr) === String(utrKey) || String(m.utr_number) === String(utrKey) || String(m.order_id) === String(utrKey))) return true;
-            const mMob = String(m.mobile || '').replace(/[^0-9]/g, '').slice(-10);
-            const mAmt = parseFloat(m.amount) || 0;
-            const mTime = m.timestamp || (m.created_at ? new Date(m.created_at).getTime() : 0);
-            if (cleanMob && mMob === cleanMob && Math.abs(mAmt - dbAmt) < 0.01 && Math.abs(mTime - dbTime) < 300000) {
-              return true;
-            }
-            return false;
-          });
-
-          const rawU = d.username || d.user || 'User';
-          const cleanUsername = rawU.startsWith('null') ? `User (${cleanMob || 'Player'})` : rawU;
-
-          if (exists) {
-            if (d.status) {
-              const formattedStatus = d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase();
-              if (exists.status !== 'Approved' || formattedStatus === 'Approved') {
-                exists.status = formattedStatus;
-              }
-            }
-            if (utrKey && utrKey !== 'N/A' && (!exists.utr || exists.utr === 'N/A')) {
-              exists.utr = utrKey;
-              exists.utr_number = utrKey;
-            }
-            if (!exists.username || exists.username.startsWith('null')) exists.username = cleanUsername;
-            if (!exists.user || exists.user.startsWith('null')) exists.user = cleanUsername;
-          } else {
-            memoryDeposits.unshift({
-              _id: d._id,
-              client_txn_id: utrKey && utrKey.startsWith('TXN_') ? utrKey : undefined,
-              user: cleanUsername,
-              username: cleanUsername,
-              mobile: cleanMob || 'N/A',
-              email: d.email || (cleanMob ? `${cleanMob}@gmail.com` : 'user@newmatkadomain.com'),
-              amount: dbAmt,
-              method: 'EKQR Automatic UPI',
-              utr: utrKey || 'N/A',
-              utr_number: utrKey || 'N/A',
-              status: d.status ? (d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase()) : 'Pending',
-              createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString(),
-              created_at: d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString(),
-              rawDate: d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString(),
-              date: d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString(),
-              timestamp: dbTime || Date.now()
-            });
-          }
-        });
-      }
+      const added = dataSafety.mergeDbDeposits(memoryDeposits, dbDeps, (d, cleanMob) => {
+        const utrKey = d.utr_number || d.utr;
+        const rawU = d.username || d.user || 'User';
+        const cleanUsername = rawU.startsWith('null') ? `User (${cleanMob || 'Player'})` : rawU;
+        const when = d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString();
+        return {
+          _id: String(d._id),
+          mongo_id: String(d._id),
+          client_txn_id: utrKey && String(utrKey).startsWith('TXN_') ? utrKey : undefined,
+          user: cleanUsername,
+          username: cleanUsername,
+          mobile: cleanMob || 'N/A',
+          email: d.email || (cleanMob ? `${cleanMob}@gmail.com` : 'user@newmatkadomain.com'),
+          amount: parseFloat(d.amount) || 0,
+          method: d.payment_method || 'UPI',
+          utr: utrKey || 'N/A',
+          utr_number: utrKey || 'N/A',
+          status: dataSafety.statusOf(d.status),
+          createdAt: when, created_at: when, rawDate: when, date: when,
+          timestamp: dataSafety.timeOf(d) || Date.now()
+        };
+      });
+      if (added) saveDiskStore();
     }
   } catch (e) {
     console.error('[Admin Deposits Error]', e);
@@ -1745,60 +1703,34 @@ const getWithdrawals = async (req, res) => {
       const User = require('../models/User');
       const dbWths = await WithdrawalRequest.find().sort({ createdAt: -1 }).lean();
       const allUsers = await User.find({}).lean();
-
-      if (dbWths && dbWths.length > 0) {
-        dbWths.forEach(w => {
-          const rawMobile = (w.mobile || w.phone || w.user_id || w.username || '').replace(/[^0-9]/g, '');
-          const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
-          const uMatch = allUsers.find(u => u.mobile === cleanMobile) || registeredUsers.find(u => u.mobile === cleanMobile);
-
-          const existsIndex = memoryWithdrawals.findIndex(m => 
-            (m.id && String(m.id) === String(w._id)) || 
-            (m._id && String(m._id) === String(w._id))
-          );
-
-          const accNum = w.account_number || w.accountNumber || w.account_details || (uMatch ? uMatch.account_number : null) || 'N/A';
-          const ifscVal = w.ifsc_code || w.ifscCode || w.ifsc || (uMatch ? uMatch.ifsc_code : null) || 'N/A';
-          const bName = w.bank_name || w.bankName || (uMatch ? uMatch.bank_name : null) || 'Bank Transfer';
-          const accName = w.account_name || w.accountName || w.holder_name || (uMatch ? uMatch.name : null) || 'User';
-          const upiVal = w.upi_id || w.upiId || w.upi || (uMatch ? uMatch.upi_id : null) || 'N/A';
-
-          const wObj = {
-            id: String(w._id),
-            _id: String(w._id),
-            user: w.username || w.user_name || w.name || (uMatch ? uMatch.name : 'User'),
-            mobile: cleanMobile || (uMatch ? uMatch.mobile : 'N/A'),
-            phone: cleanMobile || (uMatch ? uMatch.mobile : 'N/A'),
-            email: w.email || (uMatch && uMatch.email ? uMatch.email : (cleanMobile ? `${cleanMobile}@gmail.com` : 'user@newmatkadomain.com')),
-            name: w.username || w.name || (uMatch ? uMatch.name : 'User'),
-            amount: parseFloat(w.amount) || 0,
-            status: w.status ? (w.status.charAt(0).toUpperCase() + w.status.slice(1).toLowerCase()) : 'Pending',
-            payment_method: w.payment_method || w.method || 'Bank Transfer',
-            payment_details: w.payment_details || accNum || upiVal || 'N/A',
-            account_number: accNum,
-            accountNumber: accNum,
-            ifsc_code: ifscVal,
-            ifscCode: ifscVal,
-            ifsc: ifscVal,
-            upi_id: upiVal,
-            bank_name: bName,
-            bankName: bName,
-            account_name: accName,
-            accountName: accName,
-            created_at: w.createdAt ? new Date(w.createdAt).toISOString() : new Date().toISOString(),
-            createdAt: w.createdAt ? new Date(w.createdAt).toISOString() : new Date().toISOString(),
-            rawDate: w.createdAt ? new Date(w.createdAt).toISOString() : new Date().toISOString(),
-            date: w.createdAt ? new Date(w.createdAt).toISOString() : new Date().toISOString(),
-            timestamp: w.createdAt ? new Date(w.createdAt).getTime() : Date.now()
-          };
-
-          if (existsIndex >= 0) {
-            memoryWithdrawals[existsIndex] = { ...memoryWithdrawals[existsIndex], ...wObj };
-          } else {
-            memoryWithdrawals.unshift(wObj);
-          }
-        });
-      }
+      const added = dataSafety.mergeDbWithdrawals(memoryWithdrawals, dbWths, allUsers, (w, cleanMobile) => {
+        const uMatch = registeredUsers.find(u => u.mobile === cleanMobile) || allUsers.find(u => u.mobile === cleanMobile);
+        const accNum = w.account_number || w.accountNumber || w.account_details || (uMatch ? uMatch.account_number : null) || 'N/A';
+        const ifscVal = w.ifsc_code || w.ifscCode || w.ifsc || (uMatch ? uMatch.ifsc_code : null) || 'N/A';
+        const bName = w.bank_name || w.bankName || (uMatch ? uMatch.bank_name : null) || 'Bank Transfer';
+        const accName = w.account_name || w.accountName || w.holder_name || (uMatch ? uMatch.name : null) || 'User';
+        const upiVal = w.upi_id || w.upiId || w.upi || (uMatch ? uMatch.upi_id : null) || 'N/A';
+        const when = w.createdAt ? new Date(w.createdAt).toISOString() : new Date().toISOString();
+        return {
+          id: String(w._id), _id: String(w._id), mongo_id: String(w._id),
+          user: w.username || w.user_name || w.name || (uMatch ? uMatch.name : 'User'),
+          mobile: cleanMobile || 'N/A', phone: cleanMobile || 'N/A',
+          email: w.email || (cleanMobile ? `${cleanMobile}@gmail.com` : 'user@newmatkadomain.com'),
+          name: w.username || w.name || (uMatch ? uMatch.name : 'User'),
+          amount: parseFloat(w.amount) || 0,
+          status: dataSafety.statusOf(w.status),
+          // A request that came only from MongoDB: its stake was already taken when it was made
+          balanceDeducted: true,
+          payment_method: w.payment_method || w.method || 'Bank Transfer',
+          payment_details: w.payment_details || accNum || upiVal || 'N/A',
+          account_number: accNum, accountNumber: accNum, ifsc_code: ifscVal, ifscCode: ifscVal, ifsc: ifscVal,
+          upi_id: upiVal, bank_name: bName, bankName: bName, account_name: accName, accountName: accName,
+          created_at: when, createdAt: when, rawDate: when, date: when,
+          timestamp: dataSafety.timeOf(w) || Date.now()
+        };
+      });
+      const collapsed = dataSafety.collapseDuplicateWithdrawals(memoryWithdrawals);
+      if (added || collapsed) saveDiskStore();
     }
 
     // Enrich in-memory withdrawals
@@ -1856,6 +1788,15 @@ const createDepositRequest = async (req, res) => {
   res.status(201).json(newDeposit);
 };
 
+// Updates a deposit/withdrawal request's status in MongoDB, by whichever id or UTR it is known there.
+async function updateRequestStatusInMongo(Model, rec, status, extra = {}) {
+  const or = [];
+  for (const v of [rec._id, rec.id, rec.mongo_id]) if (dataSafety.isObjectId(v)) or.push({ _id: String(v) });
+  for (const v of [rec.utr, rec.utr_number, rec.client_txn_id]) if (v && v !== 'N/A') or.push({ utr_number: String(v) });
+  if (!or.length) return;
+  await Model.updateMany({ $or: or }, { $set: { status, ...extra } }).catch(e => console.error('[MongoDB status update]', e.message));
+}
+
 // @desc    Approve deposit request & update user balance in memory + MongoDB Atlas
 const approveDeposit = async (req, res) => {
   const { id } = req.params;
@@ -1886,8 +1827,13 @@ const approveDeposit = async (req, res) => {
   if (!dep) {
     return res.status(404).json({ success: false, message: 'Deposit request not found' });
   }
+  // Only a pending deposit can be approved: approving twice would credit the money twice
+  if (!dataSafety.isPending(dep.status)) {
+    return res.status(409).json({ success: false, message: `This deposit is already ${dataSafety.statusOf(dep.status).toLowerCase()}.`, deposit: dep });
+  }
 
   dep.status = 'Approved';
+  dep.approved_at = new Date().toISOString();
   const numAmt = parseFloat(dep.amount) || 0;
   userWalletStore.balance += numAmt;
   
@@ -1895,10 +1841,7 @@ const approveDeposit = async (req, res) => {
   const rawMobile = String(dep.mobile || dep.user || '').replace(/[^0-9]/g, '');
   const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
 
-  let userObj = registeredUsers.find(u => 
-    (cleanMobile && String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) ||
-    (dep.user && String(dep.user).includes(String(u.mobile || '')))
-  );
+  let userObj = cleanMobile ? registeredUsers.find(u => String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) : null;
 
   const totalCredit = numAmt;
 
@@ -1929,33 +1872,11 @@ const approveDeposit = async (req, res) => {
       const User = require('../models/User');
       const Transaction = require('../models/Transaction');
 
-      if (mongoose.Types.ObjectId.isValid(dep._id)) {
-        await DepositRequest.updateOne(
-          { _id: dep._id },
-          { $set: { status: 'approved' } }
-        ).catch(() => {});
-      } else if (dep.utr) {
-        await DepositRequest.updateOne(
-          { utr_number: dep.utr },
-          { $set: { status: 'approved' } }
-        ).catch(() => {});
-      }
+      await updateRequestStatusInMongo(DepositRequest, dep, 'approved');
 
       if (cleanMobile) {
-        const updateOps = { $inc: { deposit_balance: totalCredit, wallet_balance: totalCredit } };
-        
-        const updatedUser = await User.findOneAndUpdate(
-          { mobile: cleanMobile },
-          updateOps,
-          { returnDocument: 'after' }
-        );
-        if (updatedUser) {
-          updatedNewBalance = updatedUser.wallet_balance;
-          if (userObj) {
-            userObj.balance = updatedUser.wallet_balance;
-            userObj.deposit_balance = updatedUser.deposit_balance || userObj.deposit_balance;
-          }
-        }
+        // MongoDB gets the balances from memory (never the other way round)
+        if (userObj) dataSafety.mirrorUserToMongo(userObj);
 
         // Write to Transaction collection in MongoDB Atlas
         await Transaction.create({
@@ -2001,21 +1922,25 @@ const approveDeposit = async (req, res) => {
 // @desc    Reject deposit request
 const rejectDeposit = async (req, res) => {
   const { id } = req.params;
-  let dep = memoryDeposits.find(d => String(d._id) === String(id) || String(d.id) === String(id) || String(d.utr) === String(id));
-
-  if (dep) {
-    dep.status = 'Rejected';
+  const dep = memoryDeposits.find(d => String(d._id) === String(id) || String(d.id) === String(id) || String(d.utr) === String(id) || String(d.mongo_id || '') === String(id));
+  if (!dep) {
+    return res.status(404).json({ success: false, message: 'Deposit request not found' });
   }
+  if (!dataSafety.isPending(dep.status)) {
+    return res.status(409).json({ success: false, message: `This deposit is already ${dataSafety.statusOf(dep.status).toLowerCase()}.`, deposit: dep });
+  }
+  dep.status = 'Rejected';
+  dep.rejected_at = new Date().toISOString();
+  saveDiskStore();
 
+  // Mark it rejected in MongoDB too (by whichever id/UTR it has there), so it can't show up as pending again
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
+    if (dataSafety.mongoReady()) {
       const DepositRequest = require('../models/DepositRequest');
-      await DepositRequest.updateOne({ _id: id }, { $set: { status: 'rejected' } });
+      await updateRequestStatusInMongo(DepositRequest, dep, 'rejected');
     }
   } catch (e) {}
 
-  saveDiskStore();
   res.json({ success: true, message: 'Deposit request rejected', deposit: dep });
 };
 
@@ -2115,7 +2040,8 @@ const approveWithdrawal = async (req, res) => {
             id: String(dbWth._id),
             user: dbWth.username || 'User',
             amount: parseFloat(dbWth.amount) || 0,
-            status: 'Approved'
+            status: dataSafety.statusOf(dbWth.status),
+            mongo_id: String(dbWth._id)
           };
           memoryWithdrawals.unshift(wth);
         }
@@ -2126,24 +2052,25 @@ const approveWithdrawal = async (req, res) => {
   if (!wth) {
     return res.status(404).json({ success: false, message: 'Withdrawal request not found' });
   }
+  // Only a pending request can be approved (a refunded one must not be paid out as well)
+  if (!dataSafety.isPending(wth.status)) {
+    return res.status(409).json({ success: false, message: `This withdrawal is already ${dataSafety.statusOf(wth.status).toLowerCase()}.`, withdrawal: wth });
+  }
 
   wth.status = 'Approved';
+  wth.approved_at = new Date().toISOString();
 
   const rawMobile = String(wth.mobile || wth.phone || wth.user || '').replace(/[^0-9]/g, '');
   const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
 
-  let targetUser = registeredUsers.find(u => 
-    (cleanMobile && String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) ||
-    (wth.user && String(wth.user).includes(String(u.mobile || '')))
-  );
+  let targetUser = cleanMobile ? registeredUsers.find(u => String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) : null;
 
+  saveDiskStore();
   // Sync to MongoDB
   try {
     if (mongoose.connection.readyState === 1) {
       const WithdrawalRequest = require('../models/WithdrawalRequest');
-      if (mongoose.Types.ObjectId.isValid(wth._id)) {
-        await WithdrawalRequest.updateOne({ _id: wth._id }, { $set: { status: 'approved' } });
-      }
+      await updateRequestStatusInMongo(WithdrawalRequest, wth, 'approved');
     }
   } catch (e) {
     console.error('[MongoDB Approve Withdrawal Sync Error]', e);
@@ -2172,7 +2099,8 @@ const rejectWithdrawal = async (req, res) => {
             id: String(dbWth._id),
             user: dbWth.username || 'User',
             amount: parseFloat(dbWth.amount) || 0,
-            status: 'Pending'
+            status: dataSafety.statusOf(dbWth.status),
+            mongo_id: String(dbWth._id)
           };
           memoryWithdrawals.unshift(wth);
         }
@@ -2183,16 +2111,19 @@ const rejectWithdrawal = async (req, res) => {
   if (!wth) {
     return res.status(404).json({ success: false, message: 'Withdrawal request not found' });
   }
+  // Only a pending request can be rejected: rejecting an approved (paid) or already refunded one
+  // would give the money back a second time
+  if (!dataSafety.isPending(wth.status)) {
+    return res.status(409).json({ success: false, message: `This withdrawal is already ${dataSafety.statusOf(wth.status).toLowerCase()}.`, withdrawal: wth });
+  }
 
   wth.status = 'Refunded';
+  wth.refunded_at = new Date().toISOString();
 
   const rawMobile = String(wth.mobile || wth.phone || wth.user || '').replace(/[^0-9]/g, '');
   const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
 
-  let userObj = registeredUsers.find(u => 
-    (cleanMobile && String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) ||
-    (wth.user && String(wth.user).includes(String(u.mobile || '')))
-  );
+  let userObj = cleanMobile ? registeredUsers.find(u => String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) : null;
 
   const numAmt = parseFloat(wth.amount) || 0;
   let oldBalVal = userObj ? (userObj.balance || 0) : 0;
@@ -2215,9 +2146,7 @@ const rejectWithdrawal = async (req, res) => {
       const User = require('../models/User');
       const Transaction = require('../models/Transaction');
 
-      if (mongoose.Types.ObjectId.isValid(wth._id)) {
-        await WithdrawalRequest.updateOne({ _id: wth._id }, { $set: { status: 'Refunded', note: 'Withdrawal Rejected & Refunded' } }).catch(() => {});
-      }
+      await updateRequestStatusInMongo(WithdrawalRequest, wth, 'refunded', { note: 'Withdrawal Rejected & Refunded' });
 
       if (userObj && cleanMobile) {
         await User.updateOne(
@@ -3692,8 +3621,11 @@ const deleteUser = async (req, res) => {
     
     let deletedCount = 0;
     const deletedMobiles = [];
-    const deletedUserNames = [];
-    const idClean = String(id || '').replace(/[^0-9]/g, '').slice(-10);
+    const deletedIds = [];
+    // Match only by the user's id or exact mobile number. (Matching by name used to delete
+    // every account with the same name, and every record whose name merely contained it.)
+    const idIsMobile = /^\+?\d{10,13}$/.test(String(id || '').trim());
+    const idClean = idIsMobile ? String(id).replace(/[^0-9]/g, '').slice(-10) : '';
 
     for (let i = registeredUsers.length - 1; i >= 0; i--) {
       const u = registeredUsers[i];
@@ -3701,25 +3633,26 @@ const deleteUser = async (req, res) => {
       if (
         String(u._id) === String(id) || 
         String(u.id) === String(id) || 
-        String(u.mobile) === String(id) || 
-        (mobileClean && idClean && mobileClean === idClean) ||
-        (u.name && String(u.name).toLowerCase() === String(id).toLowerCase())
+        (mobileClean && idClean && mobileClean === idClean)
       ) {
         if (mobileClean) deletedMobiles.push(mobileClean);
-        if (u.name) deletedUserNames.push(u.name);
+        for (const v of [u._id, u.id]) if (v) deletedIds.push(String(v));
         registeredUsers.splice(i, 1);
         deletedCount++;
       }
     }
-    if (idClean && idClean.length >= 10 && !deletedMobiles.includes(idClean)) {
+    if (idClean && idClean.length === 10 && !deletedMobiles.includes(idClean)) {
       deletedMobiles.push(idClean);
+    }
+    if (deletedCount === 0 && deletedMobiles.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     // Clean up memoryBets for this user
     for (let i = memoryBets.length - 1; i >= 0; i--) {
       const b = memoryBets[i];
       const bm = String(b.mobile || b.phone || b.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(bm) || deletedUserNames.some(un => b.user && b.user.includes(un))) {
+      if (deletedMobiles.includes(bm)) {
         memoryBets.splice(i, 1);
       }
     }
@@ -3728,7 +3661,7 @@ const deleteUser = async (req, res) => {
     for (let i = memoryDeposits.length - 1; i >= 0; i--) {
       const d = memoryDeposits[i];
       const dm = String(d.mobile || d.phone || d.userPhone || d.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(dm) || deletedUserNames.some(un => d.user && d.user.includes(un))) {
+      if (deletedMobiles.includes(dm)) {
         memoryDeposits.splice(i, 1);
       }
     }
@@ -3737,7 +3670,7 @@ const deleteUser = async (req, res) => {
     for (let i = memoryWithdrawals.length - 1; i >= 0; i--) {
       const w = memoryWithdrawals[i];
       const wm = String(w.mobile || w.phone || w.userPhone || w.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(wm) || deletedUserNames.some(un => w.user && w.user.includes(un))) {
+      if (deletedMobiles.includes(wm)) {
         memoryWithdrawals.splice(i, 1);
       }
     }
@@ -3746,7 +3679,7 @@ const deleteUser = async (req, res) => {
     for (let i = memoryGameLedger.length - 1; i >= 0; i--) {
       const l = memoryGameLedger[i];
       const lm = String(l.phone || l.mobile || l.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(lm) || deletedUserNames.some(un => l.user && l.user.includes(un))) {
+      if (deletedMobiles.includes(lm)) {
         memoryGameLedger.splice(i, 1);
       }
     }
@@ -3771,19 +3704,16 @@ const deleteUser = async (req, res) => {
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
       const orConditions = [];
-      if (mongoose.Types.ObjectId.isValid(id)) {
-        orConditions.push({ _id: new mongoose.Types.ObjectId(id) });
-      }
+      deletedIds.filter(v => mongoose.Types.ObjectId.isValid(v) && /^[0-9a-f]{24}$/i.test(v)).forEach(v => {
+        orConditions.push({ _id: new mongoose.Types.ObjectId(v) });
+      });
       deletedMobiles.forEach(m => {
         orConditions.push({ mobile: new RegExp(m + "$") });
         orConditions.push({ phone: new RegExp(m + "$") });
         orConditions.push({ user: new RegExp(m + "$") });
+        orConditions.push({ user_id: new RegExp(m + "$") });
       });
-      deletedUserNames.forEach(un => {
-        orConditions.push({ name: un });
-        orConditions.push({ username: un });
-        orConditions.push({ user: un });
-      });
+      deletedIds.forEach(v => orConditions.push({ user_id: v }));
 
       if (orConditions.length > 0) {
         await mongoose.connection.db.collection('users').deleteMany({ $or: orConditions }).catch(()=>{});

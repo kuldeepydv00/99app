@@ -1,7 +1,18 @@
 const { userWalletStore, registeredUsers, memoryDeposits, memoryWithdrawals, memoryBets, saveDiskStore } = require('../store');
 const { formatDateKey } = require('../historicalChartStore');
 const msg91 = require('../utils/msg91');
-const { signUserToken } = require('../utils/tokens');
+const { signUserToken, verifyToken } = require('../utils/tokens');
+const dataSafety = require('../utils/dataSafety');
+
+// The mobile number of a valid login token on this request, or '' (for public endpoints).
+function tokenMobile(req) {
+  try {
+    const h = req.headers && req.headers.authorization;
+    if (!h || !h.startsWith('Bearer ')) return '';
+    const d = verifyToken(h.split(' ')[1]);
+    return d && d.mobile ? String(d.mobile).replace(/[^0-9]/g, '').slice(-10) : '';
+  } catch (e) { return ''; }
+}
 
 function getISTDateStr(d) {
   if (!d) d = new Date();
@@ -30,11 +41,19 @@ const registerUser = async (req, res) => {
     return res.status(403).json({ success: false, message: 'This mobile number has been permanently blocked. Contact support.' });
   }
 
-  if (cleanMobile && deletedMobiles) {
-    const dIdx = deletedMobiles.indexOf(cleanMobile);
-    if (dIdx !== -1) deletedMobiles.splice(dIdx, 1);
+  // A deleted account stays deleted. (The Android app calls /register on every launch; this used
+  // to take the number off the deleted list and create the account again with a fresh bonus.)
+  // Signing up again needs a new OTP login, which is handled in verifySmsOtp.
+  if (cleanMobile && deletedMobiles && deletedMobiles.includes(cleanMobile)) {
+    return res.status(403).json({ success: false, is_deleted: true, isDeleted: true, message: 'This account was deleted. Log in again with OTP to create a new account.' });
   }
   let user = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
+  // Only the account's owner (valid login token) may change an existing account. An account the
+  // OTP step created in the last 30 minutes may still get its name/referral from the sign-up form.
+  const justCreated = user && user.created_ms && Date.now() - user.created_ms < 30 * 60 * 1000;
+  if (user && !justCreated && tokenMobile(req) !== cleanMobile) {
+    return res.json({ success: true, message: 'User already registered', user: { name: user.name, mobile: user.mobile, referral_code: user.referral_code } });
+  }
   const finalName = (name && name.trim().length > 0 && name !== 'User') ? name.trim() : (user ? user.name : `User ${cleanMobile.slice(-4)}`);
 
   const ownReferralCode = cleanMobile;
@@ -65,7 +84,8 @@ const registerUser = async (req, res) => {
       referred_by: null,
       referralsCount: 0,
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      createdDateKey: formatDateKey(new Date())
+      createdDateKey: formatDateKey(new Date()),
+      created_ms: Date.now()
     };
     registeredUsers.push(user);
   }
@@ -90,7 +110,7 @@ const registerUser = async (req, res) => {
         referrerName = referrer.name;
         referrer.referralsCount = (referrer.referralsCount || 0) + 1;
       }
-    } else {
+    } else if (dataSafety.mongoReady()) {
       // Search MongoDB Atlas for referrer
       try {
         const User = require('../models/User');
@@ -121,7 +141,7 @@ const registerUser = async (req, res) => {
       // Increment referrer count in MongoDB Atlas
       try {
         const User = require('../models/User');
-        await User.updateOne(
+        if (dataSafety.mongoReady()) await User.updateOne(
           { mobile: { $regex: new RegExp(referrerMobile + '$') } },
           { $inc: { referrals_count: 1 } }
         );
@@ -129,8 +149,9 @@ const registerUser = async (req, res) => {
     }
   }
 
-  // Sync to MongoDB Atlas User collection
+  // Sync to MongoDB Atlas User collection (skipped when MongoDB isn't connected: it used to wait 10 s)
   try {
+    if (!dataSafety.mongoReady()) throw new Error('skip');
     const User = require('../models/User');
     const existing = await User.findOne({ mobile: cleanMobile });
     if (!existing) {
@@ -162,13 +183,13 @@ const registerUser = async (req, res) => {
       );
     }
   } catch (e) {
-    console.error('[MongoDB Register Error]', e);
+    if (e.message !== 'skip') console.error('[MongoDB Register Error]', e);
   }
 
   const { saveDiskStore } = require('../store');
   saveDiskStore();
   console.log(`[Register] User ${user.name} (+91 ${user.mobile}) saved to Admin Directory.`);
-  res.status(201).json({ success: true, message: 'User registered successfully', user });
+  res.status(201).json({ success: true, message: 'User registered successfully', user: dataSafety.publicUser(user) });
 };
 
 // @desc    User Login (Auto-creates user if not registered yet)
@@ -196,7 +217,7 @@ const loginUser = async (req, res) => {
     user.referral_code = cleanMobile;
   }
 
-  res.json({ success: true, message: 'Login successful', user });
+  res.json({ success: true, message: 'Login successful', user: dataSafety.publicUser(user) });
 };
 
 // @desc    Get user profile
@@ -226,7 +247,7 @@ const getUserProfile = async (req, res) => {
 
     try {
       const mongoose = require('mongoose');
-      if (mongoose.connection.readyState === 1) {
+      if (!targetUser && mongoose.connection.readyState === 1) {
         const User = require('../models/User');
         const dbUser = await User.findOne({ mobile: { $regex: new RegExp(cleanMobile + '$') } }).lean();
         if (dbUser) {
@@ -246,17 +267,8 @@ const getUserProfile = async (req, res) => {
               status: 'Active'
             };
             registeredUsers.push(targetUser);
-          } else {
-            if (dbUser.name && dbUser.name !== 'User') targetUser.name = dbUser.name;
-            if (dbUser.wallet_balance !== undefined) targetUser.balance = dbUser.wallet_balance;
-            if (dbUser.deposit_balance !== undefined) targetUser.deposit_balance = dbUser.deposit_balance;
-            if (dbUser.winning_balance !== undefined) targetUser.winning_balance = dbUser.winning_balance;
-            if (dbUser.bonus_balance !== undefined) targetUser.bonus_balance = dbUser.bonus_balance;
-            if (dbUser.commission_balance !== undefined) targetUser.commission_balance = dbUser.commission_balance;
-            targetUser.is_khaiwal = dbUser.is_khaiwal === true || dbUser.referral_enabled === false || dbUser.referral_status === 'OFF';
-            targetUser.referral_enabled = dbUser.referral_enabled !== undefined ? dbUser.referral_enabled : true;
-            targetUser.referral_code = cleanMobile;
           }
+          // (An existing account keeps its balances from memory: MongoDB's copy can be older.)
         }
       }
     } catch (e) { }
@@ -324,7 +336,7 @@ const getWalletBalance = async (req, res) => {
 
     try {
       const User = require('../models/User');
-      const dbUser = await User.findOne({ mobile: { $regex: new RegExp(cleanMobile + '$') } }).lean();
+      const dbUser = (!targetUser && dataSafety.mongoReady()) ? await User.findOne({ mobile: { $regex: new RegExp(cleanMobile + '$') } }).lean() : null;
       if (dbUser) {
         if (!targetUser) {
           targetUser = {
@@ -342,17 +354,8 @@ const getWalletBalance = async (req, res) => {
             status: dbUser.is_blocked ? 'Blocked' : 'Active'
           };
           registeredUsers.push(targetUser);
-        } else {
-          if (dbUser.name && dbUser.name !== 'User') targetUser.name = dbUser.name;
-          if (dbUser.wallet_balance !== undefined) targetUser.balance = dbUser.wallet_balance;
-          if (dbUser.deposit_balance !== undefined) targetUser.deposit_balance = dbUser.deposit_balance;
-          if (dbUser.winning_balance !== undefined) targetUser.winning_balance = dbUser.winning_balance;
-          if (dbUser.bonus_balance !== undefined) targetUser.bonus_balance = dbUser.bonus_balance;
-          if (dbUser.commission_balance !== undefined) targetUser.commission_balance = dbUser.commission_balance;
-          if (dbUser.is_blocked !== undefined) targetUser.is_blocked = dbUser.is_blocked;
-          targetUser.is_khaiwal = dbUser.is_khaiwal === true || dbUser.referral_enabled === false || dbUser.referral_status === 'OFF';
-          targetUser.referral_enabled = dbUser.referral_enabled !== undefined ? dbUser.referral_enabled : true;
         }
+        // (An existing account keeps its balances from memory: MongoDB's copy can be older.)
       }
     } catch (e) { }
   }
@@ -440,46 +443,18 @@ const getWalletBalance = async (req, res) => {
 // @desc    Update wallet balance
 // @route   POST /api/user/wallet/balance
 const updateWalletBalance = async (req, res) => {
-  const { amount, mobile } = req.body;
+  // The apps used to send their own (often stale) balance here, which overwrote the real one.
+  // Balances only change through bets, deposits, withdrawals and admin adjustments, so this
+  // endpoint now just answers with the balance the server has.
+  const { mobile } = req.body;
   const cleanMobileCheck = (mobile || '').replace(/[^0-9]/g, '').slice(-10);
   if (!req.authMobile || req.authMobile !== cleanMobileCheck) {
     return res.status(403).json({ success: false, message: 'You can only update your own wallet balance' });
   }
-  const val = parseFloat(amount);
-  if (!isNaN(val)) {
-    let targetUser = null;
-    let cleanMobile = '';
-    if (mobile) {
-      cleanMobile = mobile.replace(/[^0-9]/g, '').slice(-10);
-      targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
-    }
-
-    if (targetUser) {
-      targetUser.balance = val;
-      cleanMobile = targetUser.mobile.replace(/[^0-9]/g, '').slice(-10);
-    }
-    userWalletStore.balance = val;
-
-    const { saveDiskStore } = require('../store');
-    saveDiskStore();
-
-    // Sync wallet balance to MongoDB Atlas
-    try {
-      const mongoose = require('mongoose');
-      if (mongoose.connection.readyState === 1 && cleanMobile) {
-        const User = require('../models/User');
-        User.findOneAndUpdate(
-          { mobile: { $regex: new RegExp(cleanMobile + '$') } },
-          { wallet_balance: val, name: targetUser ? targetUser.name : 'User' },
-          { upsert: true, new: true }
-        ).then(() => console.log(`[MongoDB] Updated wallet balance for ${cleanMobile}: ₹${val}`))
-         .catch(e => console.error('[MongoDB Wallet Sync Error]', e));
-      }
-    } catch (e) { }
-
-    return res.json({ success: true, balance: val });
-  }
-  res.status(400).json({ message: 'Invalid balance amount' });
+  const u = dataSafety.findUserByMobile(cleanMobileCheck);
+  if (!u) return res.status(404).json({ success: false, message: 'User not found' });
+  const balance = parseFloat(((u.deposit_balance || 0) + (u.winning_balance || 0)).toFixed(2));
+  return res.json({ success: true, balance, deposit_balance: u.deposit_balance || 0, winning_balance: u.winning_balance || 0, bonus_balance: u.bonus_balance || 0 });
 };
 
 function formatISTDateTime(d, fallbackTs) {
@@ -726,9 +701,19 @@ const submitDeposit = async (req, res) => {
     return res.status(403).json({ success: false, message: 'You can only submit a deposit for your own account' });
   }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
+  if (!targetUser || dataSafety.isDeletedMobile(cleanMobile)) {
+    return res.status(404).json({ success: false, is_deleted: true, message: 'Account not found. Please log in again.' });
+  }
 
   const numAmount = parseFloat(amount) || 500;
   const utrStr = utr || `UTR${Date.now()}`;
+  // The same UTR submitted twice (double tap, app retry) is one deposit, not two
+  if (utr) {
+    const same = memoryDeposits.find(d => String(d.utr || d.utr_number || '') === String(utr) && String(d.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
+    if (same) {
+      return res.status(200).json({ success: true, duplicate: true, message: 'This deposit request was already submitted.', deposit: same });
+    }
+  }
   const userNameStr = targetUser ? targetUser.name : (user || `User (${cleanMobile || 'Mobile'})`);
   const userMobileStr = targetUser ? targetUser.mobile : cleanMobile;
 
@@ -752,13 +737,16 @@ const submitDeposit = async (req, res) => {
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
       const DepositRequest = require('../models/DepositRequest');
-      await DepositRequest.create({
+      const doc = await DepositRequest.create({
         user_id: userMobileStr || newDeposit._id,
+        mobile: userMobileStr,
         username: newDeposit.user,
         amount: numAmount,
         utr_number: utrStr,
         status: 'pending'
       });
+      // Remember its MongoDB id so the admin list never shows it twice
+      if (doc && doc._id) newDeposit.mongo_id = String(doc._id);
     }
   } catch (e) {
     console.error('[MongoDB Deposit Error]', e);
@@ -800,6 +788,26 @@ const requestWithdrawal = async (req, res) => {
     return res.status(403).json({ success: false, message: 'You can only request a withdrawal for your own account' });
   }
   let targetUser = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
+  if (!targetUser || dataSafety.isDeletedMobile(cleanMobile)) {
+    return res.status(404).json({ success: false, is_deleted: true, message: 'Account not found. Please log in again.' });
+  }
+
+  // A second identical request within a minute (double tap, app retry) returns the first one
+  // instead of taking the money twice
+  const recentSame = memoryWithdrawals.find(w =>
+    String(w.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile &&
+    Math.abs((parseFloat(w.amount) || 0) - numAmt) < 0.01 &&
+    dataSafety.isPending(w.status) &&
+    Date.now() - dataSafety.timeOf(w) < 60 * 1000
+  );
+  if (recentSame) {
+    return res.json({
+      success: true, duplicate: true,
+      message: `Withdrawal request of ₹${numAmt} is already submitted.`,
+      newBalance: parseFloat(((targetUser.deposit_balance || 0) + (targetUser.winning_balance || 0)).toFixed(2)),
+      withdrawal: recentSame
+    });
+  }
 
   const withdrawable = targetUser ? parseFloat(((targetUser.deposit_balance || 0) + (targetUser.winning_balance || 0)).toFixed(2)) : 0.00;
 
@@ -824,14 +832,9 @@ const requestWithdrawal = async (req, res) => {
     targetUser.balance = parseFloat(((targetUser.deposit_balance || 0) + targetUser.winning_balance).toFixed(2));
     userWalletStore.balance = targetUser.balance;
 
-    // Sync to MongoDB Atlas
-    try {
-      const User = require('../models/User');
-      User.updateOne(
-        { mobile: targetUser.mobile }, 
-        { $set: { winning_balance: targetUser.winning_balance, wallet_balance: targetUser.balance } }
-      ).catch(e => console.error('[MongoDB Withdraw Sync Error]', e));
-    } catch (e) {}
+    // Sync to MongoDB (all balances: deposit_balance used to be left out, so the money taken
+    // from it could come back from MongoDB later)
+    dataSafety.mirrorUserToMongo(targetUser);
   }
 
   const finalIfsc = ifsc_code || ifsc || ifscCode || (targetUser ? targetUser.ifsc_code : null) || 'N/A';
@@ -866,7 +869,8 @@ const requestWithdrawal = async (req, res) => {
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
       const WithdrawalRequest = require('../models/WithdrawalRequest');
-      await WithdrawalRequest.create({
+      const doc = await WithdrawalRequest.create({
+        mobile: newWithdrawal.mobile,
         user_id: targetUser ? targetUser.id : newWithdrawal.id,
         username: newWithdrawal.name,
         amount: numAmt,
@@ -877,6 +881,8 @@ const requestWithdrawal = async (req, res) => {
         upi_id: finalUpi,
         status: 'pending'
       });
+      // Remember its MongoDB id so the admin list never shows the request twice
+      if (doc && doc._id) newWithdrawal.mongo_id = String(doc._id);
     }
   } catch (e) {
     console.error('[MongoDB WithdrawalRequest Create Error]', e);
@@ -1130,7 +1136,8 @@ const verifySmsOtp = async (req, res) => {
         referral_status: 'ON',
         referral_code: cleanMobile,
         status: 'Active',
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        created_ms: Date.now()
       };
       registeredUsers.push(user);
       console.log(`[OTP Verified] Registered new user to Admin Directory: ${user.name} (+91 ${user.mobile})`);
@@ -1237,12 +1244,13 @@ const getReferralDetails = async (req, res) => {
   let dbCommissionTxns = [];
 
   try {
+    if (!dataSafety.mongoReady()) throw new Error('skip');
     const User = require('../models/User');
     const dbUser = await User.findOne({ mobile: { $regex: cleanMobile } }).lean();
     if (dbUser) {
       if (!user) user = dbUser;
       else {
-        user.commission_balance = dbUser.commission_balance !== undefined ? dbUser.commission_balance : user.commission_balance;
+        // (commission_balance stays as in memory: it is money and MongoDB's copy can be older)
         user.total_commission = dbUser.total_commission !== undefined ? dbUser.total_commission : user.total_commission;
       }
     }
@@ -1421,6 +1429,7 @@ const applyReferralCode = async (req, res) => {
   let user = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
 
   try {
+    if (!dataSafety.mongoReady()) throw new Error('skip');
     const User = require('../models/User');
     const dbUser = await User.findOne({ mobile: { $regex: cleanMobile } });
     if (dbUser && dbUser.referred_by) {
@@ -1507,15 +1516,8 @@ const transferCommissionToWallet = async (req, res) => {
 
   if (!targetUser) return res.status(404).json({ success: false, message: 'User not found' });
 
-  // Sync from DB if available
-  try {
-    const User = require('../models/User');
-    const dbUser = await User.findOne({ mobile: { $regex: cleanMobile + '$' } });
-    if (dbUser) {
-      if (dbUser.commission_balance !== undefined) targetUser.commission_balance = dbUser.commission_balance;
-      if (dbUser.deposit_balance !== undefined) targetUser.deposit_balance = dbUser.deposit_balance;
-    }
-  } catch (e) {}
+  // (Balances come from memory only: reading an older MongoDB copy here let commission be
+  // transferred twice.)
 
   const commissionAmt = parseFloat((targetUser.commission_balance || 0).toFixed(2));
   if (commissionAmt <= 0) {

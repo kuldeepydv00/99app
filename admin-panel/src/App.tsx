@@ -1982,45 +1982,38 @@ export default function App() {
     }
   };
 
-  const handleApproveDeposit = async (depId: string) => {
+  // Approve / reject a deposit or withdrawal. One at a time (a double click used to send it twice),
+  // and the server's reason is shown when it refuses (it used to fail silently).
+  const [busyRequest, setBusyRequest] = useState<string | null>(null);
+  const runRequestAction = async (key: string, path: string, okMessage: string) => {
+    if (busyRequest) return;
+    setBusyRequest(key);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/deposits/${depId}/approve`, { method: 'POST' });
-      if (res.ok) {
-        setStatusMessage(`💳 Deposit #${depId} Approved & Credited!`);
-        fetchLiveData();
+      const res = await fetch(`${API_BASE}${path}`, { method: 'POST' });
+      const data = await res.json().catch(() => ({} as any));
+      if (res.ok && data.success !== false) {
+        setStatusMessage(okMessage);
+      } else {
+        alert(data.message || `Request failed (${res.status}). Please try again.`);
       }
-    } catch (err) {}
+    } catch (err) {
+      alert('Could not reach the server. Please check the backend and try again.');
+    }
+    setBusyRequest(null);
+    fetchLiveData();
   };
 
-  const handleRejectDeposit = async (depId: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/deposits/${depId}/reject`, { method: 'POST' });
-      if (res.ok) {
-        setStatusMessage(`❌ Deposit #${depId} Rejected.`);
-        fetchLiveData();
-      }
-    } catch (err) {}
-  };
+  const handleApproveDeposit = (depId: string) =>
+    runRequestAction(`dep-${depId}`, `/api/admin/deposits/${encodeURIComponent(depId)}/approve`, `💳 Deposit #${depId} Approved & Credited!`);
 
-  const handleApproveWithdrawal = async (wdId: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/withdrawals/${wdId}/approve`, { method: 'POST' });
-      if (res.ok) {
-        setStatusMessage(`🏦 Withdrawal #${wdId} Approved & Paid!`);
-        fetchLiveData();
-      }
-    } catch (err) {}
-  };
+  const handleRejectDeposit = (depId: string) =>
+    runRequestAction(`dep-${depId}`, `/api/admin/deposits/${encodeURIComponent(depId)}/reject`, `❌ Deposit #${depId} Rejected.`);
 
-  const handleRejectWithdrawal = async (wdId: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/withdrawals/${wdId}/reject`, { method: 'POST' });
-      if (res.ok) {
-        setStatusMessage(`❌ Withdrawal #${wdId} Rejected.`);
-        fetchLiveData();
-      }
-    } catch (err) {}
-  };
+  const handleApproveWithdrawal = (wdId: string) =>
+    runRequestAction(`wd-${wdId}`, `/api/admin/withdrawals/${encodeURIComponent(wdId)}/approve`, `🏦 Withdrawal #${wdId} Approved & Paid!`);
+
+  const handleRejectWithdrawal = (wdId: string) =>
+    runRequestAction(`wd-${wdId}`, `/api/admin/withdrawals/${encodeURIComponent(wdId)}/reject`, `❌ Withdrawal #${wdId} Rejected.`);
 
   const handleWalletAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -5329,8 +5322,8 @@ export default function App() {
                                 </button>
                                 {isPending ? (
                                   <>
-                                    <button onClick={() => handleApproveDeposit(depId)} className="bg-[#28A745] hover:bg-[#218838] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm">Approve</button>
-                                    <button onClick={() => handleRejectDeposit(depId)} className="bg-[#DC3545] hover:bg-[#C82333] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm">Reject</button>
+                                    <button disabled={!!busyRequest} onClick={() => handleApproveDeposit(depId)} className="bg-[#28A745] hover:bg-[#218838] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm disabled:opacity-50">{busyRequest === `dep-${depId}` ? '…' : 'Approve'}</button>
+                                    <button disabled={!!busyRequest} onClick={() => handleRejectDeposit(depId)} className="bg-[#DC3545] hover:bg-[#C82333] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm disabled:opacity-50">Reject</button>
                                   </>
                                 ) : (
                                   <span className="text-gray-400 text-[10px] italic">Completed</span>
@@ -5644,8 +5637,8 @@ export default function App() {
                                 </button>
                                 {(w.status === 'Pending' || w.status === 'pending') && (
                                   <>
-                                    <button onClick={() => handleApproveWithdrawal(w.id || w._id)} className="bg-[#28A745] hover:bg-[#218838] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm">Approve</button>
-                                    <button onClick={() => handleRejectWithdrawal(w.id || w._id)} className="bg-[#DC3545] hover:bg-[#C82333] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm">Reject</button>
+                                    <button disabled={!!busyRequest} onClick={() => handleApproveWithdrawal(w.id || w._id)} className="bg-[#28A745] hover:bg-[#218838] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm disabled:opacity-50">{busyRequest === `wd-${w.id || w._id}` ? '…' : 'Approve'}</button>
+                                    <button disabled={!!busyRequest} onClick={() => handleRejectWithdrawal(w.id || w._id)} className="bg-[#DC3545] hover:bg-[#C82333] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm disabled:opacity-50">Reject</button>
                                   </>
                                 )}
                               </td>

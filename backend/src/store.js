@@ -349,6 +349,29 @@ function stopLivePlayerTicker() {
   }
 }
 
+let storeLoadFailed = false;
+let lastBackupAt = 0;
+
+// Reads and parses the store file; on a corrupt file, falls back to the backup copy.
+function readStoreFile(targetFile) {
+  const raw = fs.readFileSync(targetFile, 'utf-8');
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const aside = `${targetFile}.corrupt-${stamp}`;
+    try { fs.copyFileSync(targetFile, aside); } catch (e) {}
+    console.error(`[Disk Store] ${targetFile} is not valid JSON (${err.message}). A copy was kept at ${aside}.`);
+    const bak = targetFile + '.bak';
+    if (fs.existsSync(bak)) {
+      const data = JSON.parse(fs.readFileSync(bak, 'utf-8'));
+      console.error(`[Disk Store] Loaded the backup ${bak} instead.`);
+      return data;
+    }
+    throw err;
+  }
+}
+
 function saveDiskStore() {
   try {
     const data = {
@@ -372,12 +395,28 @@ function saveDiskStore() {
       livePlayersMap,
       autoPlayerConfig
     };
-    fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    if (storeLoadFailed) {
+      // The file on disk couldn't be read at startup: never overwrite it with this (incomplete) memory.
+      console.error(`[Disk Store] Not saving: ${STORE_FILE} could not be loaded at startup. Fix or restore it, then restart.`);
+      return;
+    }
+    const json = JSON.stringify(data, null, 2);
+    // Keep a backup of the last good file (refreshed at most every 10 minutes)
+    try {
+      if (Date.now() - lastBackupAt > 10 * 60 * 1000 && fs.existsSync(STORE_FILE)) {
+        fs.copyFileSync(STORE_FILE, STORE_FILE + '.bak');
+        lastBackupAt = Date.now();
+      }
+    } catch (e) {}
+    // Write to a temp file first, then rename: a crash mid-write can't leave a half-written store
+    const tmp = STORE_FILE + '.tmp';
+    fs.writeFileSync(tmp, json, 'utf-8');
+    fs.renameSync(tmp, STORE_FILE);
     const legacyPath = path.join(__dirname, 'dataStore.json');
     // Only mirror to the legacy path when no explicit DATA_STORE_PATH was given; otherwise a
     // test or alternate store would silently overwrite the real src/dataStore.json.
     if (!process.env.DATA_STORE_PATH && legacyPath !== STORE_FILE && fs.existsSync(legacyPath)) {
-      try { fs.writeFileSync(legacyPath, JSON.stringify(data, null, 2), 'utf-8'); } catch (e) {}
+      try { fs.writeFileSync(legacyPath, json, 'utf-8'); } catch (e) {}
     }
   } catch (err) {
     console.error('[Disk Store] Save Error:', err.message);
@@ -391,8 +430,7 @@ function loadDiskStore() {
       targetFile = path.join(__dirname, 'dataStore.json');
     }
     if (fs.existsSync(targetFile)) {
-      const raw = fs.readFileSync(targetFile, 'utf-8');
-      const data = JSON.parse(raw);
+      const data = readStoreFile(targetFile);
       if (data.registeredUsers && Array.isArray(data.registeredUsers)) {
         registeredUsers.length = 0;
         data.registeredUsers.forEach(u => {
@@ -497,10 +535,23 @@ function loadDiskStore() {
       if (data.deletedMobiles && Array.isArray(data.deletedMobiles)) deletedMobiles.length = 0, deletedMobiles.push(...data.deletedMobiles);
       if (data.livePlayersMap && typeof data.livePlayersMap === 'object') Object.assign(livePlayersMap, data.livePlayersMap);
       if (data.autoPlayerConfig && typeof data.autoPlayerConfig === 'object') Object.assign(autoPlayerConfig, data.autoPlayerConfig);
+      // Deleted accounts never come back, even if an older copy of the file still lists them
+      const deletedSet = new Set(deletedMobiles);
+      for (let i = registeredUsers.length - 1; i >= 0; i--) {
+        const m = String(registeredUsers[i].mobile || '').replace(/[^0-9]/g, '').slice(-10);
+        if (m && deletedSet.has(m)) registeredUsers.splice(i, 1);
+      }
+      // Withdrawal copies that older code added from MongoDB next to the original request
+      try {
+        const removed = require('./utils/dataSafety').collapseDuplicateWithdrawals(memoryWithdrawals);
+        if (removed) console.log(`[Disk Store] Removed ${removed} duplicate withdrawal request(s).`);
+      } catch (e) { console.error('[Disk Store] Duplicate check failed:', e.message); }
       console.log(`[Disk Store] Successfully loaded disk data from ${targetFile}! Registered users: ${registeredUsers.length}`);
     }
   } catch (err) {
-    console.error('[Disk Store] Load Error:', err.message);
+    // Starting empty and then saving would wipe every user: refuse to save until this is fixed.
+    storeLoadFailed = true;
+    console.error('[Disk Store] Load Error:', err.message, '- saving is disabled so the file is not overwritten.');
   }
 }
 

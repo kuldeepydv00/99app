@@ -7,7 +7,10 @@ const connectDB = async () => {
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
 
-    const { registeredUsers, memoryBets, bannersListStore, saveDiskStore } = require('../store');
+    const { registeredUsers, memoryBets, bannersListStore, saveDiskStore, deletedMobiles } = require('../store');
+    // dataStore.json (memory) is the source of truth. MongoDB only fills in records that are
+    // missing from memory, and never brings back an account the admin deleted.
+    const isDeleted = m => Array.isArray(deletedMobiles) && deletedMobiles.includes(m);
 
     // 1. Load all registered users from MongoDB Atlas
     try {
@@ -17,6 +20,7 @@ const connectDB = async () => {
         dbUsers.forEach(dbU => {
           if (dbU.mobile) {
             const cleanMobile = dbU.mobile.replace(/[^0-9]/g, '').slice(-10);
+            if (isDeleted(cleanMobile)) return;
             let existing = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
             if (!existing) {
               existing = {
@@ -36,15 +40,9 @@ const connectDB = async () => {
               };
               registeredUsers.push(existing);
             } else {
-              if (dbU.referral_code) existing.referral_code = dbU.referral_code;
-              if (dbU.referred_by) existing.referred_by = dbU.referred_by;
-              if (dbU.deposit_balance !== undefined) existing.deposit_balance = dbU.deposit_balance;
-              if (dbU.winning_balance !== undefined) existing.winning_balance = dbU.winning_balance;
-              if (dbU.bonus_balance !== undefined) existing.bonus_balance = dbU.bonus_balance;
-              if (dbU.commission_balance !== undefined) existing.commission_balance = dbU.commission_balance;
-              if (dbU.wallet_balance !== undefined && dbU.wallet_balance > existing.balance) {
-                existing.balance = dbU.wallet_balance;
-              }
+              // Balances stay as saved in dataStore.json (MongoDB copies can be older)
+              if (dbU.referral_code && !existing.referral_code) existing.referral_code = dbU.referral_code;
+              if (dbU.referred_by && !existing.referred_by) existing.referred_by = dbU.referred_by;
             }
           }
         });
@@ -63,6 +61,9 @@ const connectDB = async () => {
           const betId = dbB._id.toString();
           const dbMob = String(dbB.mobile || dbB.user || '').replace(/[^0-9]/g, '').slice(-10);
           const dbTime = dbB.created_at ? new Date(dbB.created_at).getTime() : (dbB.createdAt ? new Date(dbB.createdAt).getTime() : 0);
+          // Bets of deleted accounts, and bets older than the 40 days the app keeps, stay out
+          if (dbMob && isDeleted(dbMob)) return;
+          if (dbTime && dbTime < Date.now() - 40 * 24 * 60 * 60 * 1000) return;
 
           const existing = memoryBets.find(b => {
             if (String(b._id || b.id) === betId) return true;
@@ -120,6 +121,28 @@ const connectDB = async () => {
     }
 
     saveDiskStore();
+
+    // 4. Bring MongoDB's balances in line with dataStore.json, so nothing reads stale money from it
+    try {
+      const User = require('../models/User');
+      const ops = registeredUsers
+        .map(u => ({ u, mob: String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) }))
+        .filter(x => x.mob.length === 10)
+        .map(({ u, mob }) => {
+          const dep = parseFloat((u.deposit_balance || 0).toFixed(2));
+          const win = parseFloat((u.winning_balance || 0).toFixed(2));
+          return { updateMany: { filter: { mobile: { $regex: new RegExp(mob + '$') } }, update: { $set: {
+            deposit_balance: dep, winning_balance: win, wallet_balance: parseFloat((dep + win).toFixed(2)),
+            bonus_balance: parseFloat((u.bonus_balance || 0).toFixed(2)), commission_balance: parseFloat((u.commission_balance || 0).toFixed(2))
+          } } } };
+        });
+      if (ops.length) {
+        await User.bulkWrite(ops, { ordered: false });
+        console.log(`[MongoDB] Copied ${ops.length} users' balances from dataStore.json to MongoDB.`);
+      }
+    } catch (e) {
+      console.error('[MongoDB] Balance mirror error:', e.message);
+    }
   } catch (error) {
     console.log(`MongoDB not connected (${error.message}). Running server with in-memory storage fallback.`);
   }

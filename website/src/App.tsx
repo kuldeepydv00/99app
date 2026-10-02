@@ -39,12 +39,17 @@ const fetchApi = async (endpoint: string, options: any = {}) => {
     ...options,
     headers: { ...getAuthHeaders(), ...(options.headers || {}) }
   };
+  const method = String(options.method || 'GET').toUpperCase();
+  let lastErr: unknown = null;
   for (const base of API_BASE_URLS) {
     try {
       const res = await fetch(`${base}${endpoint}`, mergedOptions);
-      if (res.ok) return res;
-    } catch (e) {}
+      // A POST/PUT/DELETE that reached a server must not be sent again to the next address:
+      // that created duplicate withdrawal/deposit requests.
+      if (res.ok || method !== 'GET') return res;
+    } catch (e) { lastErr = e; }
   }
+  if (method !== 'GET') throw lastErr instanceof Error ? lastErr : new Error('Network error');
   return fetch(`${API_BASE_URLS[0]}${endpoint}`, mergedOptions);
 };
 
@@ -677,16 +682,8 @@ export default function App() {
         setWithdrawMessage(`Error: ${data.message || 'Withdrawal failed'}`);
       }
     } catch (err) {
-      if (user) {
-        const updatedUser = { ...user, balance: Math.max(0, user.balance - numAmt) };
-        setUser(updatedUser);
-        localStorage.setItem('99x_web_user', JSON.stringify(updatedUser));
-      }
-      setWithdrawMessage(`✅ Withdrawal request of ₹${numAmt} submitted! Settling within 15 minutes.`);
-      setTimeout(() => {
-        setShowWithdrawModal(false);
-        setWithdrawMessage('');
-      }, 2500);
+      // The request didn't reach the server: say so (it used to claim success and lower the balance)
+      setWithdrawMessage('Error: Could not reach the server. Please check your connection and try again.');
     } finally {
       setIsWithdrawSubmitting(false);
     }

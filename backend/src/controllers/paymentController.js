@@ -25,7 +25,14 @@ function getFormattedDate(date = new Date()) {
 /**
  * Reusable helper to credit deposit to user balance idempotently
  */
+const creditingNow = new Set(); // transactions being credited right now (webhook + poller can overlap)
+
 async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData = {}) {
+  const lockKey = String(clientTxnId || utr || '');
+  if (lockKey && creditingNow.has(lockKey)) {
+    return { inProgress: true };
+  }
+  if (lockKey) creditingNow.add(lockKey);
   try {
     const rawMobile = String(extraData.customer_mobile || extraData.udf1 || '').replace(/[^0-9]/g, '');
     const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
@@ -44,14 +51,16 @@ async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData
     if (!dep && mongoose.connection.readyState === 1) {
       try {
         const DepositRequest = require('../models/DepositRequest');
-        const dbDep = await DepositRequest.findOne({ 
-          $or: [
-            { utr_number: clientTxnId },
-            { utr_number: utr },
-            { user_id: cleanMobile, amount: parseFloat(extraData.amount || 0) },
-            { _id: mongoose.Types.ObjectId.isValid(clientTxnId) ? clientTxnId : undefined }
-          ].filter(Boolean)
-        }).sort({ createdAt: -1 });
+        // Only look for a still-pending request for this payment. (The old query included
+        // { _id: undefined }, which matched ANY deposit, and could pick an already approved one.)
+        const or = [];
+        if (clientTxnId) or.push({ utr_number: String(clientTxnId) });
+        if (utr) or.push({ utr_number: String(utr) });
+        if (cleanMobile && parseFloat(extraData.amount || 0) > 0) or.push({ user_id: cleanMobile, amount: parseFloat(extraData.amount) });
+        if (clientTxnId && /^[0-9a-f]{24}$/i.test(String(clientTxnId))) or.push({ _id: String(clientTxnId) });
+        const dbDep = or.length
+          ? await DepositRequest.findOne({ $and: [{ $or: or }, { status: { $in: ['pending', 'Pending'] } }] }).sort({ createdAt: -1 })
+          : null;
         if (dbDep) {
           dep = {
             _id: dbDep._id,
@@ -116,9 +125,9 @@ async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData
     // Clean up any other pending duplicate memory entries for this transaction
     for (let i = memoryDeposits.length - 1; i >= 0; i--) {
       const d = memoryDeposits[i];
+      // (Only copies of this same transaction: other pending deposits of the same amount are real requests)
       if (d !== dep && d.status === 'Pending' && (
-        (clientTxnId && (d.client_txn_id === clientTxnId || d.utr === clientTxnId || d.utr_number === clientTxnId)) ||
-        (cleanMobile && d.mobile === cleanMobile && parseFloat(d.amount) === numAmt)
+        clientTxnId && (d.client_txn_id === clientTxnId || d.utr === clientTxnId || d.utr_number === clientTxnId)
       )) {
         memoryDeposits.splice(i, 1);
       }
@@ -126,10 +135,8 @@ async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData
 
     userWalletStore.balance += numAmt;
 
-    let userObj = registeredUsers.find(u => 
-      (cleanMobile && String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile) ||
-      (dep.user && String(dep.user).includes(String(u.mobile || '')))
-    );
+    const depMobile = cleanMobile || String(dep.mobile || '').replace(/[^0-9]/g, '').slice(-10);
+    let userObj = depMobile.length === 10 ? registeredUsers.find(u => String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === depMobile) : null;
 
     let updatedNewBalance = 0;
     let oldBalVal = 0;
@@ -158,25 +165,17 @@ async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData
         const User = require('../models/User');
         const Transaction = require('../models/Transaction');
 
-        await DepositRequest.updateOne(
-          { $or: [{ utr_number: clientTxnId }, { utr_number: dep.utr }, { _id: dep._id }] },
-          { $set: { status: 'approved', utr_number: dep.utr || utr } },
-          { upsert: false }
-        ).catch(() => {});
+        const or = [];
+        if (clientTxnId) or.push({ utr_number: String(clientTxnId) });
+        if (dep.utr) or.push({ utr_number: String(dep.utr) });
+        for (const v of [dep._id, dep.mongo_id]) if (v && /^[0-9a-f]{24}$/i.test(String(v))) or.push({ _id: String(v) });
+        if (or.length) {
+          await DepositRequest.updateMany({ $or: or }, { $set: { status: 'approved', utr_number: dep.utr || utr } }).catch(() => {});
+        }
 
         if (cleanMobile) {
-          const updatedUser = await User.findOneAndUpdate(
-            { mobile: cleanMobile },
-            { $inc: { deposit_balance: numAmt, wallet_balance: numAmt } },
-            { returnDocument: 'after' }
-          );
-          if (updatedUser) {
-            updatedNewBalance = updatedUser.wallet_balance;
-            if (userObj) {
-              userObj.balance = updatedUser.wallet_balance;
-              userObj.deposit_balance = updatedUser.deposit_balance || userObj.deposit_balance;
-            }
-          }
+          // MongoDB gets the balances from memory (never the other way round)
+          if (userObj) require('../utils/dataSafety').mirrorUserToMongo(userObj);
 
           await Transaction.create({
             user_id: cleanMobile,
@@ -213,6 +212,8 @@ async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData
   } catch (err) {
     console.error('[creditSuccessfulDeposit Error]', err);
     throw err;
+  } finally {
+    if (lockKey) creditingNow.delete(lockKey);
   }
 }
 

@@ -1374,6 +1374,7 @@ fun WalletScreen(
                                     conn.setRequestProperty("User-Agent", "Mozilla/5.0")
                                     AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                                     conn.connectTimeout = 3000
+                                    conn.readTimeout = 15000
                                     conn.doOutput = true
                                     val body = JSONObject().apply {
                                         put("mobile", cleanMob)
@@ -1384,10 +1385,11 @@ fun WalletScreen(
                                         put("method", "Bank Transfer")
                                     }
                                     conn.outputStream.use { it.write(body.toString().toByteArray()) }
-                                    if (conn.responseCode in 200..299) {
-                                        ApiConfig.cachedWorkingUrl = baseUrl
-                                        break
-                                    }
+                                    // The server answered (accepted or refused): never send the same
+                                    // withdrawal again to another address, that created duplicates
+                                    val code = conn.responseCode
+                                    if (code in 200..299) ApiConfig.cachedWorkingUrl = baseUrl
+                                    break
                                 } catch (_: Exception) { }
                             }
                         }

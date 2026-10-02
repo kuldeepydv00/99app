@@ -154,7 +154,9 @@ const placeBet = async (req, res) => {
     return res.status(403).json({ success: false, message: 'You can only place bets from your own account' });
   }
 
-  if (!targetUser && cleanMobile) {
+  // A deleted account must not be brought back from MongoDB to place bets
+  const { deletedMobiles: deletedList } = require('../store');
+  if (!targetUser && cleanMobile && !(deletedList || []).includes(cleanMobile)) {
     try {
       const mongoose = require('mongoose');
       if (mongoose.connection.readyState === 1) {
@@ -414,7 +416,7 @@ const placeBet = async (req, res) => {
       if (refMobile && refMobile !== userCleanMob) {
         let referrer = registeredUsers.find(u => (u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === refMobile);
 
-        if (!referrer) {
+        if (!referrer && !(require('../store').deletedMobiles || []).includes(refMobile)) {
           try {
             const mongoose = require('mongoose');
             if (mongoose.connection.readyState === 1) {

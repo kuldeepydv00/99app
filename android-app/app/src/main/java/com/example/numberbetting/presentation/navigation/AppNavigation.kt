@@ -119,6 +119,7 @@ fun AppNavigation() {
                         connReg.requestMethod = "POST"
                         connReg.setRequestProperty("Content-Type", "application/json")
                         connReg.setRequestProperty("Bypass-Tunnel-Reminder", "true")
+                        AuthManager.getAuthToken(context)?.let { connReg.setRequestProperty("Authorization", "Bearer $it") }
                         connReg.connectTimeout = 2000
                         connReg.doOutput = true
 
@@ -557,6 +558,7 @@ fun AppNavigation() {
                                 connReg.requestMethod = "POST"
                                 connReg.setRequestProperty("Content-Type", "application/json")
                                 connReg.setRequestProperty("Bypass-Tunnel-Reminder", "true")
+                                AuthManager.getAuthToken(context)?.let { connReg.setRequestProperty("Authorization", "Bearer $it") }
                                 connReg.connectTimeout = 10000
                                 connReg.readTimeout = 10000
                                 connReg.doOutput = true
