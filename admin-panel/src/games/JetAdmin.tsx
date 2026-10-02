@@ -220,7 +220,7 @@ export default function JetAdmin({ onOpenUser }: { onOpenUser?: OpenUser }) {
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  ['edgePct', 'House edge (%)', '0.1'], ['bettingSec', 'Betting window (s)', '1'],
+                  ['edgePct', 'House edge (%, 1–50)', '0.1'], ['bettingSec', 'Betting window (s)', '1'],
                   ['minBet', 'Min bet (₹)', '1'], ['maxBet', 'Max bet (₹)', '1'],
                   ['maxWin', 'Max win per bet (₹)', '1'], ['roundCap', 'Round limit (₹, 0 = off)', '1']
                 ] as const).map(([k, label, step]) => (

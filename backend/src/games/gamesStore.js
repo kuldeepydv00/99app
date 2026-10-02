@@ -37,7 +37,7 @@ function defaultState() {
     },
     // 99x Jet (crash game). See jetEngine.js for how rounds and blast points work.
     jet: {
-      config: { enabled: true, edge: 0.04, minBet: 10, maxBet: 10000, maxWin: 100000, bettingSec: 8, roundCap: 0 },
+      config: { enabled: true, edge: 0.4, minBet: 10, maxBet: 10000, maxWin: 100000, bettingSec: 8, roundCap: 0 },
       chain: null,     // seed hash chain: { id, length, terminatingHash, salt, checkpoints, startNo, createdAt }
       oldChains: [],   // finished chains: { id, terminatingHash, salt, startNo, endNo }
       seq: 0,          // last round number used
@@ -79,6 +79,13 @@ function load() {
       if (raw.jet.config) Object.assign(state.jet.config, raw.jet.config);
       for (const k of ['chain', 'oldChains', 'seq', 'nextIndex', 'round', 'history', 'daily', 'configLog']) {
         if (raw.jet[k] !== undefined) state.jet[k] = raw.jet[k];
+      }
+      // 2 Oct 2026: the owner raised the 99x Jet house edge from 4% to 40%. A store still on the
+      // old 4% default moves to 40% once, unless an admin already picked an edge on the settings page.
+      const adminSetEdge = (state.jet.configLog || []).some(c => c && c.changes && c.changes.edge);
+      if (state.jet.config.edge === 0.04 && !adminSetEdge) {
+        state.jet.config.edge = 0.4;
+        state.jet.configLog = [{ at: new Date().toISOString(), by: 'system', changes: { edge: { from: 0.04, to: 0.4 } } }, ...(state.jet.configLog || [])];
       }
     }
     // 99x payout is fixed by design

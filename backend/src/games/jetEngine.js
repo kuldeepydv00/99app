@@ -660,7 +660,7 @@ function updateConfig(body = {}, by = 'admin') {
   if (maxWin !== undefined) { if (!Number.isFinite(maxWin) || maxWin < 1) throw new GameError(400, 'Max win must be a positive amount'); next.maxWin = Math.floor(maxWin); }
   if (bettingSec !== undefined) { if (!Number.isFinite(bettingSec) || bettingSec < 5 || bettingSec > 30) throw new GameError(400, 'Betting window must be 5 to 30 seconds'); next.bettingSec = Math.round(bettingSec); }
   if (roundCap !== undefined) { if (!Number.isFinite(roundCap) || roundCap < 0) throw new GameError(400, 'Round limit must be 0 (off) or a positive amount'); next.roundCap = Math.floor(roundCap); }
-  if (edge !== undefined) { if (!Number.isFinite(edge) || edge < 0.01 || edge > 0.1) throw new GameError(400, 'House edge must be between 1% and 10%'); next.edge = Math.round(edge * 10000) / 10000; }
+  if (edge !== undefined) { if (!Number.isFinite(edge) || edge < 0.01 || edge > 0.5) throw new GameError(400, 'House edge must be between 1% and 50%'); next.edge = Math.round(edge * 10000) / 10000; }
   if (next.maxBet < next.minBet) throw new GameError(400, 'Maximum bet must be at least the minimum bet');
   if (next.maxWin < next.maxBet * MIN_CASHOUT) throw new GameError(400, `Max win must be at least ${MIN_CASHOUT}× the maximum bet`);
   if (next.roundCap > 0 && next.roundCap < next.maxWin) throw new GameError(400, 'Round limit must be at least the max win per bet (or 0 for off)');
