@@ -84,7 +84,7 @@ fun NewGamesBetsList(mobile: String, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("all" to "All", "matka99" to "99x Matka", "jet" to "99x Jet", "number" to "Number", "card" to "Card", "colour" to "Colour").forEach { (key, label) ->
+            listOf("all" to "All", "matka99" to "99x Matka", "jet" to "99x Jet", "dragontiger" to "Dragon Tiger", "number" to "Number", "card" to "Card", "colour" to "Colour").forEach { (key, label) ->
                 val sel = filter == key
                 Box(
                     modifier = Modifier
@@ -115,6 +115,7 @@ fun NewGamesBetsList(mobile: String, modifier: Modifier = Modifier) {
                     val title = when (game) {
                         "matka99" -> b.optString("marketName")
                         "jet" -> "99x Jet"
+                        "dragontiger" -> "Dragon Tiger"
                         "number" -> "Number"
                         "card" -> "Card"
                         else -> "Colour"

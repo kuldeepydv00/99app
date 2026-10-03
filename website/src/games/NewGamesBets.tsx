@@ -3,9 +3,9 @@ import { gamesGet } from './api';
 import { inr, OptionTag } from './ui';
 
 type Bet = { id: string; game: string; option: string; amount: number; status: string; win_amount: number; result: string | number | null; created_at: string; roundId?: string; marketName?: string; dateKey?: string; cashout?: number | null };
-type Filter = 'all' | 'matka99' | 'jet' | 'number' | 'card' | 'colour';
+type Filter = 'all' | 'matka99' | 'jet' | 'dragontiger' | 'number' | 'card' | 'colour';
 
-const LABEL: Record<string, string> = { matka99: '99x Matka', jet: '99x Jet', number: 'Number', card: 'Card', colour: 'Colour' };
+const LABEL: Record<string, string> = { matka99: '99x Matka', jet: '99x Jet', dragontiger: 'Dragon Tiger', number: 'Number', card: 'Card', colour: 'Colour' };
 
 export default function NewGamesBets({ mobile }: { mobile: string }) {
   const [bets, setBets] = useState<Bet[] | null>(null);
@@ -23,7 +23,7 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
   return (
     <div className="space-y-3">
       <div className="g-noscroll flex gap-2 overflow-x-auto">
-        {(['all', 'matka99', 'jet', 'number', 'card', 'colour'] as Filter[]).map(f => (
+        {(['all', 'matka99', 'jet', 'dragontiger', 'number', 'card', 'colour'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${filter === f ? 'bg-[#C9A87C] text-slate-950' : 'border border-gray-800 bg-[#123A2C] text-gray-300'}`}>
             {f === 'all' ? 'All' : LABEL[f]}

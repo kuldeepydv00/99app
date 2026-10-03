@@ -6,13 +6,19 @@ import {
 } from './common';
 import type { OpenUser } from './common';
 
-type GameKey = 'number' | 'card' | 'colour';
+type GameKey = 'number' | 'card' | 'colour' | 'dragontiger';
 
 const TITLES: Record<GameKey, { title: string; icon: string; blurb: string }> = {
   number: { title: 'Number Trading', icon: '🔢', blurb: '00–99 · a round every hour · bet :00–:50 · result at :60' },
   card: { title: 'Card Trading', icon: '🃏', blurb: '52 cards · a round every hour · bet :00–:50 · result at :60' },
-  colour: { title: 'Colour Trading', icon: '🎨', blurb: 'Red / Blue / Green · a round every minute · bet 0–50s · result at 60s' }
+  colour: { title: 'Colour Trading', icon: '🎨', blurb: 'Red / Blue / Green · a round every minute · bet 0–50s · result at 60s' },
+  dragontiger: { title: 'Dragon Tiger', icon: '🐉', blurb: 'Dragon / Tie / Tiger · a round every minute · bet 0–50s · result at 60s' }
 };
+const MINUTE_GAMES: GameKey[] = ['colour', 'dragontiger'];
+const pct = (f: number) => Math.round((Number(f) || 0) * 10000) / 100;
+const oneIn = (f: number) => (Number(f) > 0 ? Math.round(1 / Number(f)) : 0);
+// Settings form: Dragon Tiger's tie chance is edited as a percentage
+const toForm = (c: any) => ({ ...c, ...(c && c.tieChance !== undefined ? { tieChancePct: pct(c.tieChance) } : {}) });
 
 type Dialog = null | { kind: 'cancel'; roundId: string; bets: number; staked: number } | { kind: 'pause' } | { kind: 'resume' };
 
@@ -37,16 +43,16 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
     try {
       const d = await apiGet(`/api/admin/games/trading/${game}/overview`);
       setOverview(d);
-      setForm((f: any) => f || { ...d.config });
+      setForm((f: any) => f || toForm(d.config));
       setError('');
     } catch (e: any) { setError(e.message); }
-  }, game === 'colour' ? 2000 : 5000, [game]);
+  }, MINUTE_GAMES.includes(game) ? 2000 : 5000, [game]);
 
   const refreshRounds = usePolling(async () => {
     const q = new URLSearchParams({ limit: '100', withBetsOnly: String(withBetsOnly) });
     if (roundDate) q.set('date', roundDate);
     setRounds(await apiGet(`/api/admin/games/trading/${game}/rounds?${q.toString()}`));
-  }, game === 'colour' ? 5000 : 15000, [game, withBetsOnly, roundDate]);
+  }, MINUTE_GAMES.includes(game) ? 5000 : 15000, [game, withBetsOnly, roundDate]);
 
   const refreshBets = usePolling(async () => {
     const roundId = selectedRound || overview?.round?.roundId || '';
@@ -69,10 +75,13 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
   const saveConfig = async () => {
     setSaving(true); setMessage(''); setError('');
     try {
-      const d = await apiPost(`/api/admin/games/trading/${game}/config`, {
-        enabled: form.enabled, payout: Number(form.payout), minBet: Number(form.minBet), maxBet: Number(form.maxBet)
-      });
-      setForm({ ...d.config });
+      const body: any = { enabled: form.enabled, payout: Number(form.payout), minBet: Number(form.minBet), maxBet: Number(form.maxBet) };
+      if (game === 'dragontiger') {
+        body.tiePayout = Number(form.tiePayout);
+        body.tieChance = Number(form.tieChancePct) / 100;
+      }
+      const d = await apiPost(`/api/admin/games/trading/${game}/config`, body);
+      setForm(toForm(d.config));
       setMessage('Settings saved. New bets use them from now on; bets already placed keep their payout.');
       refreshOverview();
     } catch (e: any) { setError(e.message); }
@@ -91,8 +100,9 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
   ]);
 
   const exportRounds = () => downloadCsv(`${game}-rounds.csv`, [
-    ['Round', 'Status', 'Ended (IST)', 'Staked', 'Bets', 'Players', 'Result', 'On result', 'Tied', 'Winners', 'Paid', 'Net', 'Refunded'],
-    ...rounds.rounds.map((x: any) => [x.roundId, x.status, istDateTime(x.end), x.totalStaked, x.betCount, x.players, x.result || '', x.winningTotal ?? '', x.tiedCount ?? '', x.winners, x.totalPaid, x.net, x.refundedAmount || 0])
+    ['Round', 'Status', 'Ended (IST)', 'Staked', 'Bets', 'Players', 'Result', 'On result', 'Tied', 'Winners', 'Paid', 'Net', 'Refunded', ...(game === 'dragontiger' ? ['Dragon total', 'Tiger total', 'Tie total', 'Random tie', 'Cards'] : [])],
+    ...rounds.rounds.map((x: any) => [x.roundId, x.status, istDateTime(x.end), x.totalStaked, x.betCount, x.players, x.result || '', x.winningTotal ?? '', x.tiedCount ?? '', x.winners, x.totalPaid, x.net, x.refundedAmount || 0,
+      ...(game === 'dragontiger' ? [x.totals?.DRAGON || 0, x.totals?.TIGER || 0, x.totals?.TIE || 0, x.randomTie ? 'yes' : 'no', x.cards ? `${x.cards.dragon} vs ${x.cards.tiger}` : ''] : [])])
   ]);
 
   if (!overview) {
@@ -116,7 +126,9 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DEE2E6] bg-white p-4 shadow-sm">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-[#212529]"><span>{meta.icon}</span>{meta.title}</h1>
-          <p className="mt-1 text-xs text-gray-500">{meta.blurb} · lowest total bet wins, ties random · pays {overview.config.payout}x</p>
+          <p className="mt-1 text-xs text-gray-500">{game === 'dragontiger'
+            ? <>{meta.blurb} · lower bet of Dragon/Tiger wins · Tie at random about 1 in {oneIn(overview.config.tieChance)} ({pct(overview.config.tieChance)}%) · Dragon/Tiger pay {overview.config.payout}x · Tie pays {overview.config.tiePayout}x · on a Tie, Dragon/Tiger bets lose</>
+            : <>{meta.blurb} · lowest total bet wins, ties random · pays {overview.config.payout}x</>}</p>
         </div>
         <div className="flex items-center gap-2">
           {overview.config.enabled ? <Pill tone="green">Game ON</Pill> : <Pill tone="red">Game OFF</Pill>}
@@ -150,7 +162,7 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
         <Kpi label="Staked this round" value={inr(r.totalStaked)} sub={`${r.betCount} bets · ${r.players} players`} />
         <Kpi label="Would win if it ended now"
           value={cancelled ? '—' : p.lowestCount > 12 ? `${p.lowestCount} options tied` : <span className="flex flex-wrap gap-2">{p.lowestOptions.map((o: string) => <OptionLabel key={o} game={game} value={o} />)}</span>}
-          sub={cancelled ? 'round cancelled' : `at ${inr(p.lowestTotal)} each · pays ${p.payoutMin === p.payoutMax ? inr(p.payoutMin) : `${inr(p.payoutMin)}–${inr(p.payoutMax)}`}`} />
+          sub={cancelled ? 'round cancelled' : `at ${inr(p.lowestTotal)} each · pays ${p.payoutMin === p.payoutMax ? inr(p.payoutMin) : `${inr(p.payoutMin)}–${inr(p.payoutMax)}`}${p.tie ? ` · or a random Tie (${pct(p.tie.chance)}%) pays ${inr(p.tie.wouldPay)}` : ''}`} />
         <Kpi label="Today (IST)" value={<span className={overview.today.net >= 0 ? 'text-emerald-700' : 'text-red-600'}>{inr(overview.today.net)} net</span>}
           sub={`${inr(overview.today.staked)} staked · ${inr(overview.today.paid)} paid · ${overview.today.rounds} rounds`} />
       </div>
@@ -182,6 +194,24 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
                 ))}
               </div>
             ))}
+          </div>
+        )}
+        {game === 'dragontiger' && (
+          <div className="space-y-3">
+            {overview.options.map((o: string) => {
+              const w = max ? Math.round((totals[o] / max) * 100) : 0;
+              const bar = o === 'DRAGON' ? 'bg-red-500' : o === 'TIGER' ? 'bg-blue-500' : 'bg-emerald-500';
+              return (
+                <div key={o} className="flex items-center gap-3">
+                  <div className="w-24"><OptionLabel game="dragontiger" value={o} /></div>
+                  <div className="h-7 flex-1 overflow-hidden rounded-lg bg-gray-100">
+                    <div className={`h-full ${bar} transition-all duration-500`} style={{ width: `${w}%` }} />
+                  </div>
+                  <div className="w-28 text-right text-sm font-bold tabular-nums">{inr(totals[o])}</div>
+                  <div className="w-32 text-right">{o === 'TIE' ? <Pill tone="grey">random · 1 in {oneIn(overview.config.tieChance)}</Pill> : lowestSet.has(o) ? <Pill tone="green">lower</Pill> : null}</div>
+                </div>
+              );
+            })}
           </div>
         )}
         {game === 'colour' && (
@@ -242,7 +272,11 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
                         <td colSpan={6} className="px-2 py-2"><Pill tone="red">Cancelled</Pill> <span className="ml-1 text-[11px]">{inr(x.refundedAmount)} refunded on {x.refundedBets} bets{x.cancelReason ? ` · ${x.cancelReason}` : ''}</span></td>
                       ) : (
                         <>
-                          <td className="px-2 py-2"><OptionLabel game={game} value={x.result} /></td>
+                          <td className="px-2 py-2">
+                            <OptionLabel game={game} value={x.result} />
+                            {game === 'dragontiger' && x.cards && <span className="ml-1.5 font-mono text-[10px] text-gray-500">{x.cards.dragon} vs {x.cards.tiger}</span>}
+                            {game === 'dragontiger' && x.randomTie && <span className="ml-1.5"><Pill tone="grey">random</Pill></span>}
+                          </td>
                           <td className="px-2 py-2 text-right tabular-nums">{inr(x.winningTotal)}</td>
                           <td className="px-2 py-2 text-right tabular-nums">{x.tiedCount}</td>
                           <td className="px-2 py-2 text-right tabular-nums">{x.winners}</td>
@@ -267,10 +301,27 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
                 <input type="checkbox" checked={!!form.enabled} onChange={e => setForm({ ...form, enabled: e.target.checked })} />
               </label>
               <div>
-                <label className="mb-1 block font-semibold text-gray-700">Payout multiplier (x)</label>
+                <label className="mb-1 block font-semibold text-gray-700">{game === 'dragontiger' ? 'Dragon / Tiger payout (x)' : 'Payout multiplier (x)'}</label>
                 <input type="number" step="0.1" value={form.payout} onChange={e => setForm({ ...form, payout: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 font-bold focus:border-blue-500 focus:outline-none" />
               </div>
+              {game === 'dragontiger' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block font-semibold text-gray-700">Tie payout (x)</label>
+                    <input type="number" step="1" value={form.tiePayout ?? ''} onChange={e => setForm({ ...form, tiePayout: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 font-bold focus:border-blue-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block font-semibold text-gray-700">Tie chance (%)</label>
+                    <input type="number" step="0.5" min="0" max="50" value={form.tieChancePct ?? ''} onChange={e => setForm({ ...form, tieChancePct: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 font-bold focus:border-blue-500 focus:outline-none" />
+                  </div>
+                  <p className="col-span-2 text-[11px] text-gray-500">
+                    {Number(form.tieChancePct) > 0 ? `About 1 in ${Math.round(100 / Number(form.tieChancePct))} rounds is a Tie, picked at random.` : 'Tie is off: every round goes to Dragon or Tiger.'} Allowed 0–50%, Tie payout 2–100x.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="mb-1 block font-semibold text-gray-700">Min bet (₹)</label>
@@ -361,7 +412,7 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
         <ConfirmDialog title={`Resume ${meta.title}?`} tone="green" confirmLabel="Resume game"
           onClose={() => setDialog(null)}
           onConfirm={async () => { await setEnabled(true); }}>
-          <p>A new round starts on the next {game === 'colour' ? 'minute' : 'hour'} and players can bet again.</p>
+          <p>A new round starts on the next {MINUTE_GAMES.includes(game) ? 'minute' : 'hour'} and players can bet again.</p>
         </ConfirmDialog>
       )}
     </div>

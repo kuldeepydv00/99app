@@ -1,4 +1,4 @@
-// Persistent store for the new games (99x Matka, Number / Card / Colour Trading).
+// Persistent store for the new games (99x Matka, Number / Card / Colour Trading, Dragon Tiger, 99x Jet).
 // Kept in its own file (gamesStore.json) so the existing dataStore.json is never touched.
 const fs = require('fs');
 const path = require('path');
@@ -23,9 +23,11 @@ function defaultState() {
     config: {
       number: { enabled: true, payout: 99, minBet: 10, maxBet: 10000 },
       card: { enabled: true, payout: 50, minBet: 10, maxBet: 10000 },
-      colour: { enabled: true, payout: 2, minBet: 10, maxBet: 5000 }
+      colour: { enabled: true, payout: 2, minBet: 10, maxBet: 5000 },
+      // Dragon Tiger: Dragon/Tiger pay `payout`, Tie pays `tiePayout`; tieChance 0.05 = about 1 in 20 rounds
+      dragontiger: { enabled: true, payout: 2, tiePayout: 15, tieChance: 0.05, minBet: 10, maxBet: 5000 }
     },
-    rounds: { number: {}, card: {}, colour: {} },
+    rounds: { number: {}, card: {}, colour: {}, dragontiger: {} },
     bets: [],
     matka99: {
       config: { payout: 99, minBet: 10, maxBet: 10000 },

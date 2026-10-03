@@ -79,9 +79,20 @@ export function ColourLabel({ value }: { value: string | null | undefined }) {
   );
 }
 
+const DT_CLASS: Record<string, string> = { DRAGON: 'bg-red-600', TIGER: 'bg-blue-600', TIE: 'bg-emerald-600' };
+export function DragonTigerLabel({ value }: { value: string | null | undefined }) {
+  if (!value) return <span>—</span>;
+  return (
+    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-bold text-white ${DT_CLASS[value] || 'bg-gray-500'}`}>
+      {value.charAt(0) + value.slice(1).toLowerCase()}
+    </span>
+  );
+}
+
 export function OptionLabel({ game, value }: { game: string; value: string | null | undefined }) {
   if (game === 'card') return <CardLabel code={value} />;
   if (game === 'colour') return <ColourLabel value={value} />;
+  if (game === 'dragontiger') return <DragonTigerLabel value={value} />;
   return <span className="font-mono font-bold">{value ?? '—'}</span>;
 }
 

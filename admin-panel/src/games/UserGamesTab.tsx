@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { apiGet, inr, istDateTime, usePolling, Pill, OptionLabel, BetStatus, ExportButton, downloadCsv, matkaPick } from './common';
 
 const GAMES = [
-  { key: 'matka99', icon: '💎' }, { key: 'jet', icon: '✈️' }, { key: 'number', icon: '🔢' }, { key: 'card', icon: '🃏' }, { key: 'colour', icon: '🎨' }
+  { key: 'matka99', icon: '💎' }, { key: 'jet', icon: '✈️' }, { key: 'dragontiger', icon: '🐉' }, { key: 'number', icon: '🔢' }, { key: 'card', icon: '🃏' }, { key: 'colour', icon: '🎨' }
 ];
 
 // User Details → "99x & Trading": every new-game bet this player placed, with totals.

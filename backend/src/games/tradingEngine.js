@@ -1,10 +1,13 @@
-// Shared round engine for Number, Card and Colour Trading.
+// Shared round engine for Number, Card and Colour Trading, and Dragon Tiger.
 //
 // How a round works (disclosed to players on every trading screen):
 //   - betting is open for the first part of the round, then locked;
 //   - at the end of the round, the option with the LOWEST total amount bet wins;
 //   - ties between equally-low options are broken with crypto.randomInt;
 //   - an option nobody bet on has 0 staked, so it counts as lowest.
+// Dragon Tiger (also disclosed on its screen): about 1 round in 20 is a Tie, picked at random
+// whatever the bets; otherwise the lower total of Dragon and Tiger wins. The two cards are then
+// drawn to match the result (higher card wins, A low, K high; same rank = Tie).
 const crypto = require('crypto');
 const { state, saveNow, markDirty } = require('./gamesStore');
 const wallet = require('./wallet');
@@ -33,13 +36,90 @@ const GAMES = {
     key: 'colour', label: 'Colour Trading', prefix: 'COL',
     options: ['RED', 'BLUE', 'GREEN'],
     roundMs: MINUTE, betMs: 50 * 1000, maxOptionsPerBet: 3
+  },
+  dragontiger: {
+    key: 'dragontiger', label: 'Dragon Tiger', prefix: 'DT',
+    options: ['DRAGON', 'TIGER', 'TIE'],
+    roundMs: MINUTE, betMs: 50 * 1000, maxOptionsPerBet: 3
   }
 };
 
+// ---------- Dragon Tiger ----------
+const DT = 'dragontiger';
+const DT_SIDES = ['DRAGON', 'TIGER'];
+const DT_DEFAULT_TIE_CHANCE = 0.05; // 1 in 20
+
+function tieChanceOf(cfg) {
+  const c = Number(cfg && cfg.tieChance);
+  return Number.isFinite(c) && c >= 0 && c <= 0.5 ? c : DT_DEFAULT_TIE_CHANCE;
+}
+const oneIn = p => (p > 0 ? Math.round(1 / p) : 0);
+const pctText = p => `${Math.round(p * 10000) / 100}%`;
+
+// Payout multiplier for one option (Dragon Tiger's Tie has its own).
+function payoutFor(game, option) {
+  const cfg = state.config[game];
+  if (game === DT && option === 'TIE') return Number(cfg.tiePayout) || 15;
+  return cfg.payout;
+}
+
+// Picks the result of a Dragon Tiger round from its totals.
+function pickDtResult(totals, cfg) {
+  const p = tieChanceOf(cfg);
+  const d = (totals && totals.DRAGON) || 0;
+  const t = (totals && totals.TIGER) || 0;
+  if (p > 0 && crypto.randomInt(1000000) < Math.round(p * 1000000)) {
+    return { result: 'TIE', winningTotal: (totals && totals.TIE) || 0, tiedCount: 1, randomTie: true };
+  }
+  if (d === t) return { result: DT_SIDES[crypto.randomInt(2)], winningTotal: d, tiedCount: 2, randomTie: false };
+  return d < t
+    ? { result: 'DRAGON', winningTotal: d, tiedCount: 1, randomTie: false }
+    : { result: 'TIGER', winningTotal: t, tiedCount: 1, randomTie: false };
+}
+
+// Draws the two cards that show a result: the winner gets the higher rank (A low, K high),
+// a Tie gets the same rank. Ranks and suits come from crypto.randomInt.
+function drawDtCards(result) {
+  const suit = () => SUITS[crypto.randomInt(SUITS.length)];
+  let d, t;
+  if (result === 'TIE') {
+    d = t = crypto.randomInt(RANKS.length);
+  } else {
+    const a = crypto.randomInt(RANKS.length);
+    let b = crypto.randomInt(RANKS.length - 1);
+    if (b >= a) b += 1;
+    const hi = Math.max(a, b), lo = Math.min(a, b);
+    if (result === 'DRAGON') { d = hi; t = lo; } else { d = lo; t = hi; }
+  }
+  return { dragon: RANKS[d] + suit(), tiger: RANKS[t] + suit() };
+}
+
 const RULE_LINE = 'Lowest total bet wins this round. Ties are picked at random.';
+function ruleLineFor(game) {
+  if (game !== DT) return RULE_LINE;
+  const p = tieChanceOf(state.config[game]);
+  return p > 0
+    ? `Lower total bet of Dragon and Tiger wins. About 1 in ${oneIn(p)} rounds is a Tie.`
+    : 'Lower total bet of Dragon and Tiger wins.';
+}
 function rulesText(game) {
   const def = GAMES[game];
   const cfg = state.config[game];
+  if (game === DT) {
+    const p = tieChanceOf(cfg);
+    return [
+      'A new round starts every minute: betting is open for the first 50 seconds, then locked; the result is out at 60 seconds.',
+      p > 0
+        ? `About 1 in ${oneIn(p)} rounds (${pctText(p)}) is a Tie. A Tie is picked at random, no matter how much is bet on anything.`
+        : 'Tie is switched off right now, so every round is won by Dragon or Tiger.',
+      'In every other round, Dragon or Tiger wins: whichever side has the LOWER total amount bet on it this round. If both totals are equal, one is picked at random.',
+      'A side nobody bet on has ₹0 on it, so it counts as the lower one.',
+      'The two cards are drawn to show the result: the higher card wins (A is low, K is high). The same rank on both is a Tie.',
+      `Dragon and Tiger pay ${cfg.payout}x the amount bet. Tie pays ${Number(cfg.tiePayout) || 15}x. On a Tie, Dragon and Tiger bets lose.`,
+      'Winnings go into your Winning balance.',
+      `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per option per round.`
+    ];
+  }
   const win = def.roundMs >= HOUR ? 'every hour: betting is open from :00 to :50, then locked; the result is out at :60.'
     : 'every minute: betting is open for the first 50 seconds, then locked; the result is out at 60 seconds.';
   return [
@@ -99,10 +179,17 @@ function publicRound(r, raw = false) {
 }
 
 function receipt(r) {
-  return {
+  const out = {
     roundId: r.roundId, result: r.result, winningTotal: r.winningTotal,
     tiedCount: r.tiedCount, totalOptions: GAMES[r.game].options.length, settledAt: r.settledAt, end: r.end
   };
+  if (r.game === DT) {
+    out.cards = r.cards || null;
+    out.randomTie = !!r.randomTie;
+    // After the round is over, both side totals are shown so players can check the rule.
+    out.sides = { DRAGON: (r.totals && r.totals.DRAGON) || 0, TIGER: (r.totals && r.totals.TIGER) || 0 };
+  }
+  return out;
 }
 
 // ---------- settlement ----------
@@ -113,13 +200,20 @@ function settleRound(game, r) {
   settling.add(key);
   try {
     const def = GAMES[game];
-    let min = Infinity;
-    for (const opt of def.options) {
-      const v = r.totals[opt] || 0;
-      if (v < min) min = v;
+    let result, min, tiedCount, dtPick = null;
+    if (game === DT) {
+      dtPick = pickDtResult(r.totals, state.config[game]);
+      result = dtPick.result; min = dtPick.winningTotal; tiedCount = dtPick.tiedCount;
+    } else {
+      min = Infinity;
+      for (const opt of def.options) {
+        const v = r.totals[opt] || 0;
+        if (v < min) min = v;
+      }
+      const tied = def.options.filter(o => (r.totals[o] || 0) === min);
+      result = tied[crypto.randomInt(tied.length)];
+      tiedCount = tied.length;
     }
-    const tied = def.options.filter(o => (r.totals[o] || 0) === min);
-    const result = tied[crypto.randomInt(tied.length)];
 
     let winners = 0, totalPaid = 0, anyCredit = false;
     for (const b of state.bets) {
@@ -145,7 +239,12 @@ function settleRound(game, r) {
 
     r.result = result;
     r.winningTotal = wallet.round2(min);
-    r.tiedCount = tied.length;
+    r.tiedCount = tiedCount;
+    if (dtPick) {
+      r.randomTie = dtPick.randomTie;
+      r.tieChance = tieChanceOf(state.config[game]);
+      r.cards = drawDtCards(result);
+    }
     r.winners = winners;
     r.totalPaid = wallet.round2(totalPaid);
     r.status = 'settled';
@@ -162,7 +261,7 @@ function settleRound(game, r) {
 }
 
 // ---------- ticker ----------
-const KEEP_MS = { number: 30 * 24 * HOUR, card: 30 * 24 * HOUR, colour: 3 * 24 * HOUR };
+const KEEP_MS = { number: 30 * 24 * HOUR, card: 30 * 24 * HOUR, colour: 3 * 24 * HOUR, dragontiger: 3 * 24 * HOUR };
 const BET_KEEP_MS = 40 * 24 * HOUR;
 let lastPrune = 0;
 
@@ -281,11 +380,12 @@ function placeBets(game, mobile, items) {
   const createdAt = new Date(t).toISOString();
   const created = [];
   for (const [opt, amt] of Object.entries(merged)) {
+    const mult = payoutFor(game, opt);
     const bet = {
       id: `${def.prefix.toLowerCase()}_${t}_${crypto.randomInt(1e9)}`,
       game, roundId: round.roundId, mobile: clean, user: u.name || `User ${clean.slice(-4)}`,
-      option: opt, amount: amt, multiplier: cfg.payout,
-      potential_win: wallet.round2(amt * cfg.payout),
+      option: opt, amount: amt, multiplier: mult,
+      potential_win: wallet.round2(amt * mult),
       ...wallet.shareOf(split, total, amt),
       status: 'pending', win_amount: 0, result: null,
       created_at: createdAt
@@ -314,15 +414,23 @@ function getPublicState(game) {
   const t = now();
   const b = roundBounds(game, t);
   const live = state.rounds[game][roundIdFor(game, b.start)];
-  return {
+  const out = {
     game, label: def.label, serverTime: t,
     enabled: cfg.enabled !== false, payout: cfg.payout, minBet: cfg.minBet, maxBet: cfg.maxBet,
     options: def.options,
     round: live ? publicRound(live) : { roundId: roundIdFor(game, b.start), start: b.start, lock: b.lock, end: b.end, status: t >= b.lock ? 'locked' : 'open' },
-    lastResults: settledRounds(game).slice(0, game === 'colour' ? 30 : 20).map(receipt),
-    ruleLine: RULE_LINE,
+    lastResults: settledRounds(game).slice(0, game === DT ? 60 : (def.roundMs < HOUR ? 30 : 20)).map(receipt),
+    ruleLine: ruleLineFor(game),
     rules: rulesText(game)
   };
+  if (game === DT) {
+    const p = tieChanceOf(cfg);
+    out.payouts = { DRAGON: cfg.payout, TIGER: cfg.payout, TIE: payoutFor(game, 'TIE') };
+    out.tiePayout = payoutFor(game, 'TIE');
+    out.tieChance = p;
+    out.tieOneIn = oneIn(p);
+  }
+  return out;
 }
 
 function getLobby() {
@@ -333,6 +441,7 @@ function getLobby() {
       label: s.label, enabled: s.enabled, payout: s.payout, round: s.round,
       lastResult: s.lastResults[0] || null
     };
+    if (game === DT) { out.trading[game].tiePayout = s.tiePayout; out.trading[game].tieOneIn = s.tieOneIn; }
   }
   return out;
 }
@@ -360,9 +469,11 @@ function getAdminOverview(game) {
 
   const totals = {};
   def.options.forEach(o => { totals[o] = live ? (live.totals[o] || 0) : 0; });
+  // Dragon Tiger: only Dragon and Tiger compete on totals (Tie is random).
+  const contest = game === DT ? DT_SIDES : def.options;
   let min = Infinity;
-  def.options.forEach(o => { if (totals[o] < min) min = totals[o]; });
-  const lowest = def.options.filter(o => totals[o] === min);
+  contest.forEach(o => { if (totals[o] < min) min = totals[o]; });
+  const lowest = contest.filter(o => totals[o] === min);
 
   // What the round would pay if it ended now, for each currently-lowest option
   const payByOption = {};
@@ -374,6 +485,17 @@ function getAdminOverview(game) {
     }
   }
   const pays = lowest.map(o => payByOption[o] || 0);
+  let tie = null;
+  if (game === DT) {
+    const p = tieChanceOf(cfg);
+    let tiePay = 0;
+    if (live) {
+      for (const bet of state.bets) {
+        if (bet.game === game && bet.roundId === live.roundId && bet.status === 'pending' && bet.option === 'TIE') tiePay += bet.amount * bet.multiplier;
+      }
+    }
+    tie = { chance: p, oneIn: oneIn(p), payout: payoutFor(game, 'TIE'), wouldPay: wallet.round2(tiePay) };
+  }
 
   const dayStart = istDayStart(t);
   const today = Object.values(state.rounds[game]).filter(r => r.start >= dayStart && r.status !== 'cancelled');
@@ -391,7 +513,8 @@ function getAdminOverview(game) {
       lowestOptions: lowest.length > 12 ? lowest.slice(0, 12) : lowest,
       lowestCount: lowest.length, lowestTotal: min === Infinity ? 0 : min,
       payoutMin: pays.length ? wallet.round2(Math.min(...pays)) : 0,
-      payoutMax: pays.length ? wallet.round2(Math.max(...pays)) : 0
+      payoutMax: pays.length ? wallet.round2(Math.max(...pays)) : 0,
+      tie
     },
     today: {
       staked: wallet.round2(staked), paid: wallet.round2(paid), net: wallet.round2(staked - paid),
@@ -415,7 +538,8 @@ function getAdminRounds(game, { limit = 50, offset = 0, withBetsOnly = false, da
       start: r.start, end: r.end, totalStaked: r.totalStaked, betCount: r.betCount,
       players: Object.keys(r.players || {}).length, result: r.result, winningTotal: r.winningTotal,
       tiedCount: r.tiedCount, winners: r.winners, totalPaid: r.totalPaid,
-      net: r.status === 'cancelled' ? 0 : wallet.round2((r.totalStaked || 0) - (r.totalPaid || 0))
+      net: r.status === 'cancelled' ? 0 : wallet.round2((r.totalStaked || 0) - (r.totalPaid || 0)),
+      ...(game === DT ? { cards: r.cards || null, randomTie: !!r.randomTie, totals: r.totals || {} } : {})
     }))
   };
 }
@@ -517,13 +641,24 @@ function updateConfig(game, body) {
     if (!Number.isInteger(maxBet) || maxBet < 1) throw new GameError(400, 'Maximum bet must be a whole number');
     cfg.maxBet = maxBet;
   }
+  if (game === DT) {
+    const tiePayout = num(body.tiePayout), tieChance = num(body.tieChance);
+    if (tiePayout !== undefined) {
+      if (!Number.isFinite(tiePayout) || tiePayout < 2 || tiePayout > 100) throw new GameError(400, 'Tie payout must be between 2x and 100x');
+      cfg.tiePayout = tiePayout;
+    }
+    if (tieChance !== undefined) {
+      if (!Number.isFinite(tieChance) || tieChance < 0 || tieChance > 0.5) throw new GameError(400, 'Tie chance must be between 0% and 50%');
+      cfg.tieChance = Math.round(tieChance * 10000) / 10000;
+    }
+  }
   if (cfg.maxBet < cfg.minBet) throw new GameError(400, 'Maximum bet must be at least the minimum bet');
   saveNow();
   return cfg;
 }
 
 module.exports = {
-  GAMES, CARD_OPTIONS, RULE_LINE, GameError,
+  GAMES, CARD_OPTIONS, RULE_LINE, GameError, DT, payoutFor, pickDtResult, drawDtCards, tieChanceOf,
   setClock, now, roundBounds, roundIdFor, ensureRound, tick, startTicker, stopTicker, settleRound,
   placeBets, getPublicState, getLobby, getMyBets,
   getAdminOverview, getAdminRounds, getAdminBets, updateConfig, cancelRound, getDailyReport, istDateOf

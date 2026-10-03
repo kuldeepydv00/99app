@@ -704,6 +704,15 @@ fun AppNavigation() {
                         userBonus = bonus
                     }
                 )
+                "trading_dragontiger" -> com.example.numberbetting.presentation.games.DragonTigerScreen(
+                    mobile = currentUserPhone,
+                    balance = userBalance,
+                    onBack = { currentScreen = "game" },
+                    onBalances = { bal, bonus ->
+                        userBalance = bal
+                        userBonus = bonus
+                    }
+                )
                 "trading_number", "trading_card", "trading_colour" -> com.example.numberbetting.presentation.games.TradingScreen(
                     game = targetScreen.removePrefix("trading_"),
                     mobile = currentUserPhone,

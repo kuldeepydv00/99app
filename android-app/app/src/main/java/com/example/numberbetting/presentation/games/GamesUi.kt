@@ -98,6 +98,20 @@ fun colourName(option: String): String = when (option) {
     else -> option
 }
 
+/** Dragon Tiger sides: Dragon red, Tiger blue, Tie green. */
+fun dtColor(option: String): Color = when (option) {
+    "DRAGON" -> Color(0xFFE23B52)
+    "TIGER" -> Color(0xFF3D7BF0)
+    "TIE" -> Color(0xFF1FA463)
+    else -> Color(0xFF6B7280)
+}
+fun dtName(option: String): String = when (option) { "DRAGON" -> "Dragon"; "TIGER" -> "Tiger"; "TIE" -> "Tie"; else -> option }
+fun dtGradient(option: String): List<Color> = when (option) {
+    "DRAGON" -> listOf(Color(0xFFD4314A), Color(0xFF6E0F1E))
+    "TIGER" -> listOf(Color(0xFF2F6FE0), Color(0xFF0F2D6E))
+    else -> listOf(Color(0xFF1DA35A), Color(0xFF0B4D25))
+}
+
 fun suitSymbol(s: String): String = when (s) { "S" -> "♠"; "H" -> "♥"; "D" -> "♦"; else -> "♣" }
 fun suitName(s: String): String = when (s) { "S" -> "Spades"; "H" -> "Hearts"; "D" -> "Diamonds"; else -> "Clubs" }
 fun isRedSuit(s: String): Boolean = s == "H" || s == "D"
@@ -140,6 +154,17 @@ fun OptionTag(game: String, value: String?, large: Boolean = false) {
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = if (large) 17.sp else 12.sp
                 )
+            }
+        }
+        "dragontiger" -> {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Brush.verticalGradient(dtGradient(value)))
+                    .padding(horizontal = if (large) 12.dp else 6.dp, vertical = if (large) 6.dp else 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(dtName(value), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = if (large) 14.sp else 11.sp)
             }
         }
         "colour" -> {
@@ -276,6 +301,7 @@ fun BetSlip(
     count: Int,
     amount: Int,
     winIfHit: Double,
+    winText: String? = null,
     message: String?,
     messageOk: Boolean,
     buttonText: String,
@@ -308,7 +334,7 @@ fun BetSlip(
         }
         if (count > 0) {
             Text(
-                text = "If one of your picks wins: ${inr(winIfHit)}",
+                text = winText ?: "If one of your picks wins: ${inr(winIfHit)}",
                 color = Color(0xFF6B7280),
                 fontSize = 10.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 2.dp)

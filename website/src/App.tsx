@@ -9,6 +9,7 @@ import { useLobby, HomeGameBoxes, Matka99Section, SectionHeader } from './games/
 import MarketTile, { shortTime } from './games/MarketTile';
 import TradingPage from './games/TradingPage';
 import JetPage from './games/JetPage';
+import DragonTigerPage from './games/DragonTigerPage';
 import type { Balances } from './games/TradingPage';
 import Matka99Page from './games/Matka99Page';
 import Matka99Chart from './games/Matka99Chart';
@@ -3214,7 +3215,15 @@ export default function App() {
             onBalances={applyGameBalances}
           />
         )}
-        {tradingGame && (
+        {tradingGame === 'dragontiger' && (
+          <DragonTigerPage
+            mobile={user?.mobile || ''}
+            balance={user?.balance || 0}
+            onBack={() => setTradingGame(null)}
+            onBalances={applyGameBalances}
+          />
+        )}
+        {tradingGame && tradingGame !== 'dragontiger' && (
           <TradingPage
             key={tradingGame}
             game={tradingGame}

@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { apiGet, inr, istToday, istDateTime, usePolling, Card, Kpi, Pill, OptionLabel, PlayerCell, downloadCsv, ExportButton, matkaPick } from './common';
 import type { OpenUser } from './common';
 
-type GameKey = 'matka99' | 'jet' | 'number' | 'card' | 'colour';
+type GameKey = 'matka99' | 'jet' | 'dragontiger' | 'number' | 'card' | 'colour';
 const GAMES: { key: GameKey; tab: string; icon: string }[] = [
   { key: 'matka99', tab: 'matka99', icon: '💎' },
   { key: 'jet', tab: 'jetGame', icon: '✈️' },
+  { key: 'dragontiger', tab: 'dragonTiger', icon: '🐉' },
   { key: 'number', tab: 'numberTrading', icon: '🔢' },
   { key: 'card', tab: 'cardTrading', icon: '🃏' },
   { key: 'colour', tab: 'colourTrading', icon: '🎨' }
 ];
-const BAR: Record<GameKey, string> = { matka99: '#E0B7A0', jet: '#8B5CF6', number: '#10B981', card: '#F59E0B', colour: '#3B82F6' };
+const BAR: Record<GameKey, string> = { matka99: '#E0B7A0', jet: '#8B5CF6', dragontiger: '#DC2626', number: '#10B981', card: '#F59E0B', colour: '#3B82F6' };
 
 const shift = (iso: string, days: number) => {
   const d = new Date(iso + 'T12:00:00Z');
@@ -61,7 +62,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
       <div className="flex flex-col gap-3 rounded-xl border border-[#DEE2E6] bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-[#212529]"><span>🎮</span>New Games Overview</h1>
-          <p className="mt-1 text-xs text-gray-500">99x Matka, Number, Card and Colour Trading together · {data.from === data.to ? data.from : `${data.from} → ${data.to}`} (IST)</p>
+          <p className="mt-1 text-xs text-gray-500">All new games together: 99x Matka, 99x Jet, Dragon Tiger, Number, Card and Colour Trading · {data.from === data.to ? data.from : `${data.from} → ${data.to}`} (IST)</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {preset(1, 'Today')}{preset(-1, 'Yesterday')}{preset(7, '7 days')}{preset(30, '30 days')}
@@ -120,7 +121,7 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
                   <tr key={g.key} className="border-t border-gray-100 hover:bg-blue-50/40">
                     <td className="px-2 py-2.5 font-bold text-gray-900"><span className="mr-1.5">{g.icon}</span>{x.label}</td>
                     <td className="px-2 py-2.5">{x.enabled ? <Pill tone="green">ON{g.key === 'matka99' && x.enabledMarkets !== undefined ? ` · ${x.enabledMarkets}/8` : ''}</Pill> : <Pill tone="red">OFF</Pill>}</td>
-                    <td className="px-2 py-2.5 text-right tabular-nums">{x.payout}x</td>
+                    <td className="px-2 py-2.5 text-right tabular-nums">{g.key === 'jet' ? (x.edgePct != null ? `edge ${x.edgePct}%` : '—') : g.key === 'dragontiger' ? `${x.payout}x · Tie ${x.tiePayout ?? 15}x` : `${x.payout}x`}</td>
                     <td className="px-2 py-2.5 text-right tabular-nums">{x.bets}</td>
                     <td className="px-2 py-2.5 text-right tabular-nums">{x.players}</td>
                     <td className="px-2 py-2.5 text-right font-semibold tabular-nums">{inr(x.staked)}</td>

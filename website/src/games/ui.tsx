@@ -37,7 +37,14 @@ export const COLOURS: Record<string, { name: string; bg: string; ring: string; t
   GREEN: { name: 'Green', bg: 'bg-[#2ECC8F]', ring: 'ring-[#2ECC8F]', text: 'text-[#2ECC8F]', hex: '#2ECC8F' }
 };
 
-// Small inline rendering of any game option (number, card code or colour)
+// Dragon Tiger sides: Dragon red, Tiger blue, Tie green
+export const DT_SIDES: Record<string, { name: string; short: string; hex: string; bg: string }> = {
+  DRAGON: { name: 'Dragon', short: 'D', hex: '#E23B52', bg: 'bg-gradient-to-b from-[#D4314A] to-[#6E0F1E]' },
+  TIGER: { name: 'Tiger', short: 'T', hex: '#3D7BF0', bg: 'bg-gradient-to-b from-[#2F6FE0] to-[#0F2D6E]' },
+  TIE: { name: 'Tie', short: '=', hex: '#1FA463', bg: 'bg-gradient-to-b from-[#1DA35A] to-[#0B4D25]' }
+};
+
+// Small inline rendering of any game option (number, card code, colour or Dragon Tiger side)
 export function OptionTag({ game, value, size = 'sm' }: { game: string; value: string | null | undefined; size?: 'sm' | 'lg' }) {
   if (!value) return <span className="text-gray-500">—</span>;
   const big = size === 'lg';
@@ -47,6 +54,14 @@ export function OptionTag({ game, value, size = 'sm' }: { game: string; value: s
     return (
       <span className={`inline-flex items-center justify-center rounded-md bg-[#F5EDE2] font-extrabold shadow ${big ? 'w-10 h-14 text-lg' : 'px-1.5 py-0.5 text-xs'} ${s?.red ? 'text-[#E23B52]' : 'text-[#0A0F0D]'}`}>
         {rank}{s?.sym}
+      </span>
+    );
+  }
+  if (game === 'dragontiger') {
+    const d = DT_SIDES[value];
+    return (
+      <span className={`inline-flex items-center justify-center rounded-md font-extrabold text-white shadow ${d?.bg || 'bg-gray-700'} ${big ? 'px-3 py-1.5 text-sm' : 'px-1.5 py-0.5 text-[11px]'}`}>
+        {d?.name || value}
       </span>
     );
   }

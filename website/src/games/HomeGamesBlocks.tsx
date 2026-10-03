@@ -7,7 +7,7 @@ import MarketTile, { shortTime } from './MarketTile';
 
 export type Lobby = {
   serverTime: number;
-  trading: Record<TradingGame, { label: string; enabled: boolean; payout: number; round: { roundId: string; start: number; lock: number; end: number; status: string }; lastResult: { result: string } | null }>;
+  trading: Record<TradingGame, { label: string; enabled: boolean; payout: number; tiePayout?: number; tieOneIn?: number; round: { roundId: string; start: number; lock: number; end: number; status: string }; lastResult: { result: string } | null }>;
   matka99: { payout: number; haroofPayout?: number; ruleLine?: string; rules?: string[]; markets: { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; lastResult: { number: string; date: string } | null; todayResult: string | null }[] };
   jet?: { label: string; enabled: boolean; serverTime: number; growth: number; lastPoint: number | null; recent: number[];
     round: { id?: string; phase: string; bettingEndsAt?: number; flyAt?: number | null; point?: number | null } };
@@ -77,6 +77,7 @@ const BOXES: { id: BoxId; img: string; title: string }[] = [
   { id: 'matka', img: '/banners/banner_matka.webp', title: 'Play Matka' },
   { id: 'matka99', img: '/banners/banner_matka99.webp', title: 'Play 99x Matka' },
   { id: 'jet', img: '/banners/banner_jet.webp', title: 'Play 99x Jet' },
+  { id: 'dragontiger', img: '/banners/banner_dragontiger.webp', title: 'Play Dragon Tiger' },
   { id: 'number', img: '/banners/banner_number.webp', title: 'Play Number Trading' },
   { id: 'card', img: '/banners/banner_card.webp', title: 'Play Card Trading' },
   { id: 'colour', img: '/banners/banner_colour.webp', title: 'Play Colour Trading' }
@@ -116,7 +117,8 @@ export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpe
     if (!t || !t.enabled) return { status: 'Paused for now', live: false, disabled: true };
     const locked = now >= t.round.lock;
     const left = locked ? t.round.end - now : t.round.lock - now;
-    return { status: `${locked ? 'Result in' : 'Betting closes in'} ${clock(left)} · pays ${t.payout}x`, live: !locked, idle: 'Result soon' };
+    const pays = id === 'dragontiger' ? `${t.payout}x · Tie ${t.tiePayout ?? 15}x` : `pays ${t.payout}x`;
+    return { status: `${locked ? 'Result in' : 'Betting closes in'} ${clock(left)} · ${pays}`, live: !locked, idle: 'Result soon' };
   };
 
   const open = (id: BoxId) => {

@@ -169,8 +169,9 @@ fun GameBoxes(
         val locked = now >= lock
         val left = if (locked) end - now else lock - now
         val pays = formatPayout(t.optDouble("payout", 0.0))
+        val paysText = if (g == "dragontiger") "${pays}x · Tie ${formatPayout(t.optDouble("tiePayout", 15.0))}x" else "pays ${pays}x"
         return BoxInfo(
-            (if (locked) "Result in " else "Betting closes in ") + clockText(left) + " · pays ${pays}x",
+            (if (locked) "Result in " else "Betting closes in ") + clockText(left) + " · " + paysText,
             if (locked) "Result soon" else "Live",
             !locked
         )
@@ -204,6 +205,7 @@ fun GameBoxes(
             info = BoxInfo(jet.first, if (jet.second) "Live" else if (lobby == null) "Live" else "Paused", jet.second, jet.third),
             rose = false, onClick = onOpenJet
         )
+        GameBox(image = R.drawable.banner_dragontiger, title = "Play Dragon Tiger", info = tradingInfo("dragontiger"), rose = false, onClick = { onOpenTrading("dragontiger") })
         GameBox(image = R.drawable.banner_number, title = "Play Number Trading", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })
         GameBox(image = R.drawable.banner_card, title = "Play Card Trading", info = tradingInfo("card"), rose = false, onClick = { onOpenTrading("card") })
         GameBox(image = R.drawable.banner_colour, title = "Play Colour Trading", info = tradingInfo("colour"), rose = false, onClick = { onOpenTrading("colour") })

@@ -37,4 +37,4 @@ export const gamesGet = <T = any>(path: string) => request<T>(path);
 export const gamesPost = <T = any>(path: string, body: unknown) =>
   request<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
-export type TradingGame = 'number' | 'card' | 'colour';
+export type TradingGame = 'number' | 'card' | 'colour' | 'dragontiger';
