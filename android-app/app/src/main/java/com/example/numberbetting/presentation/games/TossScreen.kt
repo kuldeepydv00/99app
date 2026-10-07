@@ -330,23 +330,6 @@ fun TossScreen(
                     Text("ⓘ How it works", color = GameColors.GoldLight, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showRules = true })
                 }
 
-                // Last result
-                val last = results.firstOrNull()
-                if (last != null) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GameColors.Deep).border(1.dp, Color(0xFF1F2937), RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(last.optString("roundId"), color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                            Text(tossResultLine(last), color = GameColors.Muted, fontSize = 11.sp)
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        OptionTag(TOSS_GAME, last.optString("result"), large = true)
-                    }
-                }
-
                 // Bet buttons
                 Spacer(Modifier.height(16.dp))
                 if (locked) {

@@ -174,7 +174,6 @@ export default function TossPage({ mobile, balance, onBack, onBalances }: {
     );
   }
 
-  const last = st.lastResults[0];
   const phase: CoinPhase = coin.phase || (locked ? 'tense' : 'idle');
   const landed = coin.phase === 'landed' && coin.receipt;
   const winner = landed ? coin.receipt!.result : null;
@@ -259,17 +258,6 @@ export default function TossPage({ mobile, balance, onBack, onBalances }: {
             <Info className="h-3.5 w-3.5" /> How it works
           </button>
         </div>
-
-        {/* Last result */}
-        {last && (
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-800 bg-[#0A0F0D] px-4 py-2.5">
-            <div className="min-w-0 text-[11px] text-gray-400">
-              <p className="font-mono text-gray-500">{last.roundId}</p>
-              <p className="mt-0.5 truncate">{resultLine(last)}</p>
-            </div>
-            <OptionTag game={GAME} value={last.result} size="lg" />
-          </div>
-        )}
 
         {/* Bet buttons */}
         <div className="relative">
