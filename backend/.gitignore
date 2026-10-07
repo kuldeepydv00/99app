@@ -4,3 +4,7 @@ node_modules
 src/dataStore.json
 gamesStore.json
 gamesStore.json.tmp
+# local data backups/temp files made by store.js (contain user data)
+src/dataStore.json.bak
+src/dataStore.json.tmp
+src/dataStore.json.corrupt-*

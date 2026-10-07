@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
 import { gamesGet, gamesPost } from './api';
 import { inr, clock, useServerNow, CountdownRing, StatusPill, AmountPicker, Sheet, SUITS, cardParts, DT_SIDES, OptionTag } from './ui';
 import type { Balances } from './TradingPage';
+import { dragonSvg, tigerSvg, DT_ART_CSS } from './dtArt';
 
 // Dragon Tiger: 1-minute rounds. The rule (lower total bet of Dragon and Tiger wins; a Tie comes
 // at random about 1 round in 20) comes from the server and is shown on this screen and in "How it works".
@@ -21,15 +22,37 @@ type State = {
 type Bet = { id: string; roundId: string; option: string; amount: number; multiplier: number; status: string; win_amount: number; result: string | null; created_at: string };
 
 const GAME = 'dragontiger';
+// Page-level effects: winner flash on the stage; small creatures on the bet tiles only breathe.
+const DT_PAGE_CSS = `
+.dt-flash{animation:dt-flash 1.6s ease-out forwards}
+@keyframes dt-flash{0%{opacity:0}12%{opacity:1}100%{opacity:.35}}
+.dtart.dt-tile{animation-duration:4.5s}
+.dtart.dt-tile .dt-embers,.dtart.dt-tile .dt-puff{display:none}
+@media (prefers-reduced-motion:reduce){.dt-flash{animation:none;opacity:.35}}
+`;
 const BOARD = ['DRAGON', 'TIE', 'TIGER'] as const;
 
+type Mood = 'idle' | 'tense' | 'win' | 'lose';
+
+/** Animated dragon or tiger head. The SVG markup never changes; the mood is a class on the wrapper. */
+const Creature = memo(function Creature({ kind, mood, className = '' }: { kind: 'dragon' | 'tiger'; mood: Mood; className?: string }) {
+  const id = 'dt' + useId().replace(/[^a-zA-Z0-9]/g, '');
+  const html = useMemo(() => (kind === 'dragon' ? dragonSvg(id) : tigerSvg(id)), [kind, id]);
+  return (
+    <div className={`dtart ${mood === 'idle' ? '' : 'dt-' + mood} ${className}`}>
+      <svg viewBox="0 0 400 400" className="block h-full w-full" aria-label={kind === 'dragon' ? 'Dragon' : 'Tiger'} role="img"
+        dangerouslySetInnerHTML={{ __html: html }} />
+    </div>
+  );
+});
+
 function PlayingCard({ code, faceDown, glow, animate }: { code?: string | null; faceDown?: boolean; glow?: string | null; animate?: boolean }) {
-  const dims = 'h-[7.6rem] w-[5.4rem] sm:h-36 sm:w-[6.4rem]';
+  const dims = 'h-[5.2rem] w-[3.7rem] sm:h-[6.2rem] sm:w-[4.4rem]';
   if (!code || faceDown) {
     return (
       <div className={`${dims} flex items-center justify-center rounded-xl border-2 border-[#C9A87C]/60 shadow-xl`}
         style={{ background: 'repeating-linear-gradient(45deg,#123A2C 0 7px,#0C241B 7px 14px)' }}>
-        <span className="rounded-full border border-[#C9A87C]/60 bg-[#0A0F0D]/80 px-2 py-1 text-[11px] font-black tracking-widest text-[#E0C9A0]">99x</span>
+        <span className="rounded-full border border-[#C9A87C]/60 bg-[#0A0F0D]/80 px-1.5 py-0.5 text-[9px] font-black tracking-widest text-[#E0C9A0]">99x</span>
       </div>
     );
   }
@@ -38,9 +61,9 @@ function PlayingCard({ code, faceDown, glow, animate }: { code?: string | null; 
   const style: CSSProperties | undefined = glow ? { boxShadow: `0 0 0 3px ${glow}, 0 0 34px ${glow}` } : undefined;
   return (
     <div className={`${dims} relative rounded-xl bg-gradient-to-br from-[#FFFDF7] to-[#E9DFD0] font-extrabold shadow-2xl ${s?.red ? 'text-[#D8263F]' : 'text-[#0A0F0D]'} ${animate ? 'g-flip' : ''}`} style={style}>
-      <span className="absolute left-2 top-1.5 flex flex-col items-center leading-none"><span className="text-xl">{rank}</span><span className="text-base">{s?.sym}</span></span>
-      <span className="absolute inset-0 flex items-center justify-center text-5xl">{s?.sym}</span>
-      <span className="absolute bottom-1.5 right-2 flex rotate-180 flex-col items-center leading-none"><span className="text-xl">{rank}</span><span className="text-base">{s?.sym}</span></span>
+      <span className="absolute left-1.5 top-1 flex flex-col items-center leading-none"><span className="text-base">{rank}</span><span className="text-xs">{s?.sym}</span></span>
+      <span className="absolute inset-0 flex items-center justify-center text-3xl">{s?.sym}</span>
+      <span className="absolute bottom-1 right-1.5 flex rotate-180 flex-col items-center leading-none"><span className="text-base">{rank}</span><span className="text-xs">{s?.sym}</span></span>
     </div>
   );
 }
@@ -189,9 +212,13 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
   const showing = reveal?.receipt || null;
   const winner = showing?.result || null;
   const winGlow = winner ? DT_SIDES[winner]?.hex : null;
+  const moodOf = (side: 'DRAGON' | 'TIGER'): Mood => (showing ? (winner === side || winner === 'TIE' ? 'win' : 'lose') : locked ? 'tense' : 'idle');
+  const dragonMood = moodOf('DRAGON');
+  const tigerMood = moodOf('TIGER');
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-[#06120C] text-white">
+      <style>{DT_ART_CSS + DT_PAGE_CSS}</style>
       {/* Header */}
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-800/80 bg-[#0A0F0D]/95 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -204,50 +231,65 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
         <span className="rounded-full border border-[#C9A87C]/40 bg-[#0C241B] px-3 py-1 text-xs font-extrabold tabular-nums text-[#F0DDB8]">{inr(balance)}</span>
       </div>
 
-      <div className="mx-auto w-full max-w-md flex-1 space-y-4 px-4 pb-48 pt-4">
+      <div className="mx-auto w-full max-w-md flex-1 space-y-4 px-4 pb-48 pt-4 md:max-w-xl">
         {!st.enabled && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs font-bold text-amber-300">This game is paused right now.</div>
         )}
 
-        {/* Table */}
-        <div className="g-rise relative overflow-hidden rounded-3xl border border-[#C9A87C]/30 px-3 pb-4 pt-3"
-          style={{ background: 'radial-gradient(ellipse 60% 80% at 18% 45%, rgba(226,59,82,.30), transparent 70%), radial-gradient(ellipse 60% 80% at 82% 45%, rgba(76,141,255,.30), transparent 70%), linear-gradient(180deg,#0B1712,#07100C)' }}>
-          <div className="mb-2 flex items-center justify-between">
+        {/* Stage: dragon vs tiger */}
+        <div className="g-rise relative overflow-hidden rounded-3xl border border-[#C9A87C]/35 shadow-2xl shadow-black/60"
+          style={{ background: 'radial-gradient(ellipse 60% 75% at 22% 50%, rgba(234,88,12,.38), transparent 70%), radial-gradient(ellipse 60% 75% at 78% 50%, rgba(61,123,240,.38), transparent 70%), radial-gradient(ellipse 80% 60% at 50% 110%, rgba(201,168,124,.25), transparent 70%), linear-gradient(180deg,#120A0C 0%,#0A0F14 55%,#06120C 100%)' }}>
+          <div className="pointer-events-none absolute inset-0 opacity-[0.07]"
+            style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, #F0DDB8 1px, transparent 1.5px), radial-gradient(circle at 75% 75%, #F0DDB8 1px, transparent 1.5px)', backgroundSize: '22px 22px' }} />
+          {showing && winGlow && (
+            <div key={showing.roundId + 'flash'} className="dt-flash pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at ${winner === 'DRAGON' ? '25%' : winner === 'TIGER' ? '75%' : '50%'} 45%, ${winGlow}88, transparent 60%)` }} />
+          )}
+          <div className="relative z-10 flex items-center justify-between px-3 pt-3">
             <StatusPill status={locked ? 'locked' : 'open'} />
-            <span className="font-mono text-[11px] text-gray-400">{st.round.roundId}</span>
+            <span className="font-mono text-[10px] text-gray-400">{st.round.roundId}</span>
           </div>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-[11px] font-black tracking-[0.3em] text-[#FF8A98]">DRAGON</span>
+
+          <div className="relative grid grid-cols-2 px-1 pt-1">
+            <Creature kind="dragon" mood={dragonMood} className="mx-auto aspect-square w-full max-w-[210px] md:max-w-[270px]" />
+            <Creature kind="tiger" mood={tigerMood} className="mx-auto aspect-square w-full max-w-[210px] md:max-w-[270px]" />
+            <div className="absolute left-1/2 top-[44%] flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#FFF3B0]/70 text-sm font-black italic text-[#2A1B08] shadow-[0_0_24px_rgba(240,221,184,.55)]"
+              style={{ background: 'radial-gradient(circle at 35% 30%, #FFF6DF, #E0C9A0 40%, #8A6D47 90%)' }}>VS</div>
+          </div>
+
+          <div className="relative -mt-7 grid grid-cols-[1fr_auto_1fr] items-end px-3 pb-2">
+            <div className="flex flex-col items-start gap-1 pl-1">
               <PlayingCard key={showing ? showing.roundId + 'd' : 'down-d'} code={showing?.cards?.dragon} faceDown={!showing} animate={!!showing}
                 glow={showing && winner === 'DRAGON' ? winGlow : showing && winner === 'TIE' ? DT_SIDES.TIE.hex : null} />
+              <span className="text-[11px] font-black tracking-[0.3em] text-[#FF8A98] drop-shadow">DRAGON</span>
             </div>
-            <div className="flex flex-col items-center gap-1">
-              <CountdownRing now={now} start={st.round.start} lock={st.round.lock} end={st.round.end} size={90} />
+            <div className="pb-4">
+              <CountdownRing now={now} start={st.round.start} lock={st.round.lock} end={st.round.end} size={84} />
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-[11px] font-black tracking-[0.3em] text-[#8DB7FF]">TIGER</span>
+            <div className="flex flex-col items-end gap-1 pr-1">
               <PlayingCard key={showing ? showing.roundId + 't' : 'down-t'} code={showing?.cards?.tiger} faceDown={!showing} animate={!!showing}
                 glow={showing && winner === 'TIGER' ? winGlow : showing && winner === 'TIE' ? DT_SIDES.TIE.hex : null} />
+              <span className="text-[11px] font-black tracking-[0.3em] text-[#8DB7FF] drop-shadow">TIGER</span>
             </div>
           </div>
-          <div className="mt-3 min-h-[2.75rem] text-center">
+
+          <div className="relative min-h-[3.4rem] px-3 pb-4 text-center">
             {showing ? (
               <div className="g-pop">
-                <p className="text-lg font-black tracking-wide" style={{ color: winGlow || '#fff' }}>
-                  {winner === 'TIE' ? 'TIE!' : `${DT_SIDES[winner || '']?.name.toUpperCase()} WINS`}
+                <p className="bg-clip-text text-2xl font-black tracking-wide text-transparent drop-shadow-[0_2px_10px_rgba(0,0,0,.8)]"
+                  style={{ backgroundImage: winner === 'TIE' ? 'linear-gradient(180deg,#D1FAE5,#34D399 55%,#047857)' : winner === 'DRAGON' ? 'linear-gradient(180deg,#FFF3B0,#FDBA74 45%,#E23B52)' : 'linear-gradient(180deg,#FFF3B0,#93C5FD 45%,#3D7BF0)' }}>
+                  {winner === 'TIE' ? 'IT\u2019S A TIE!' : `${DT_SIDES[winner || '']?.name.toUpperCase()} WINS!`}
                 </p>
                 {reveal && reveal.won > 0
-                  ? <p className="text-sm font-black text-[#3EE08A]">You won {inr(reveal.won)}!</p>
+                  ? <p className="text-base font-black text-[#3EE08A]">You won {inr(reveal.won)}!</p>
                   : reveal && reveal.staked > 0
                     ? <p className="text-[11px] text-gray-400">Not this time</p>
-                    : <p className="text-[11px] text-gray-500">{resultLine(showing, st.tieOneIn)}</p>}
+                    : <p className="text-[11px] text-gray-400">{resultLine(showing, st.tieOneIn)}</p>}
                 <p className="mt-0.5 font-mono text-[10px] text-gray-500">Result of {showing.roundId}</p>
               </div>
             ) : locked ? (
-              <p className="animate-pulse pt-2 text-xs font-bold text-[#E0C9A0]">Dealing the cards… result in {clock(st.round.end - now)}</p>
+              <p className="animate-pulse pt-3 text-sm font-bold text-[#E0C9A0]">Dealing the cards… result in {clock(st.round.end - now)}</p>
             ) : (
-              <p className="pt-2 text-xs font-bold text-gray-300">Place your bets · closes in {clock(st.round.lock - now)}</p>
+              <p className="pt-3 text-sm font-bold text-gray-200">Place your bets · closes in {clock(st.round.lock - now)}</p>
             )}
           </div>
         </div>
@@ -279,11 +321,16 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
               const on = selected.includes(o);
               return (
                 <button key={o} onClick={() => toggle(o)}
-                  className={`relative flex h-32 flex-col items-center justify-center rounded-2xl ${d.bg} text-white shadow-xl transition-all duration-150 active:scale-95 ${on ? 'scale-[1.02] ring-[3px] ring-white/90' : 'opacity-85 hover:opacity-100'}`}>
-                  <span className={`font-black drop-shadow ${o === 'TIE' ? 'text-base' : 'text-lg'}`}>{d.name.toUpperCase()}</span>
-                  <span className="mt-0.5 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-extrabold">{payOf(o)}x</span>
-                  {myStake[o] ? <span className="absolute bottom-2 rounded-full bg-[#F0DDB8] px-2 py-0.5 text-[10px] font-black text-[#0A0F0D]">You: {inr(myStake[o])}</span> : null}
-                  {on && !myStake[o] && <span className="absolute bottom-2 rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-extrabold">Picked</span>}
+                  className={`relative flex h-40 flex-col items-center justify-start overflow-hidden rounded-2xl border border-white/15 ${d.bg} pt-2 text-white shadow-xl transition-all duration-150 active:scale-95 ${on ? 'scale-[1.02] ring-[3px] ring-[#FFF3B0]' : 'opacity-90 hover:opacity-100'}`}>
+                  <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,.22),transparent_60%)]" />
+                  {o === 'TIE'
+                    ? <span className="relative mt-2 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#FFF3B0]/80 text-lg font-black text-[#2A1B08] shadow-[0_0_18px_rgba(255,243,176,.5)]"
+                        style={{ background: 'radial-gradient(circle at 35% 30%, #FFF6DF, #E0C9A0 45%, #8A6D47 95%)' }}>=</span>
+                    : <Creature kind={o === 'DRAGON' ? 'dragon' : 'tiger'} mood={on ? 'tense' : 'idle'} className="dt-tile relative h-[4.6rem] w-[4.6rem]" />}
+                  <span className={`relative mt-1 font-black tracking-wide drop-shadow ${o === 'TIE' ? 'mt-3 text-base' : 'text-lg'}`}>{d.name.toUpperCase()}</span>
+                  <span className="relative mt-0.5 rounded-full bg-black/35 px-2.5 py-0.5 text-[11px] font-extrabold">{payOf(o)}x</span>
+                  {myStake[o] ? <span className="absolute left-1/2 top-1.5 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#F0DDB8] px-2 py-0.5 text-[10px] font-black text-[#0A0F0D] shadow">You: {inr(myStake[o])}</span> : null}
+                  {on && <span className="absolute right-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#FFF3B0] text-[11px] font-black text-[#0A0F0D] shadow">✓</span>}
                 </button>
               );
             })}
@@ -346,7 +393,7 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
 
       {/* Sticky bet slip */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#C9A87C]/25 bg-[#0A0F0D]/95 px-4 pb-5 pt-3 backdrop-blur-md">
-        <div className="mx-auto max-w-md space-y-2">
+        <div className="mx-auto max-w-md space-y-2 md:max-w-xl">
           {msg && <p className={`text-center text-xs font-bold ${msg.ok ? 'text-[#3EE08A]' : 'text-[#FF6B7E]'}`}>{msg.text}</p>}
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-400">{selected.length === 0 ? 'Tap Dragon, Tie or Tiger' : selected.map(o => DT_SIDES[o]?.name).join(' + ') + ` × ${inr(amount)}`}</span>

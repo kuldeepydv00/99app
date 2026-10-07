@@ -1,7 +1,31 @@
 package com.example.numberbetting.presentation.games
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.zIndex
+import com.example.numberbetting.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -221,59 +245,95 @@ fun DragonTigerScreen(
                     Spacer(Modifier.height(12.dp))
                 }
 
-                // Table
-                Column(
+                // Stage: animated dragon vs tiger
+                val moodOf: (String) -> String = { side -> if (showing != null) (if (winner == side || winner == "TIE") "win" else "lose") else if (locked) "tense" else "idle" }
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFF3A0A14), Color(0xFF0B1712), Color(0xFF0A1A3D))))
-                        .border(1.dp, GameColors.Gold.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
-                        .padding(horizontal = 12.dp, vertical = 12.dp)
+                        .drawBehind {
+                            drawRect(Brush.verticalGradient(listOf(Color(0xFF120A0C), Color(0xFF0A0F14), Color(0xFF06120C))))
+                            drawRect(Brush.radialGradient(listOf(Color(0x61EA580C), Color.Transparent), center = Offset(size.width * 0.22f, size.height * 0.42f), radius = size.width * 0.6f))
+                            drawRect(Brush.radialGradient(listOf(Color(0x613D7BF0), Color.Transparent), center = Offset(size.width * 0.78f, size.height * 0.42f), radius = size.width * 0.6f))
+                            val wc = when (winner) { "DRAGON" -> 0.25f; "TIGER" -> 0.75f; "TIE" -> 0.5f; else -> -1f }
+                            if (showing != null && wc >= 0f) drawRect(Brush.radialGradient(listOf(dtColor(winner ?: "").copy(alpha = 0.45f), Color.Transparent), center = Offset(size.width * wc, size.height * 0.4f), radius = size.width * 0.55f))
+                        }
+                        .border(1.dp, GameColors.Gold.copy(alpha = 0.35f), RoundedCornerShape(24.dp))
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        StatusPill(open = !locked)
-                        Spacer(Modifier.weight(1f))
-                        Text(roundId, color = Color(0xFF9CA3AF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("DRAGON", color = Color(0xFFFF8A98), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                            Spacer(Modifier.height(8.dp))
-                            DtCard(
-                                code = showCards?.optString("dragon"), faceDown = showing == null,
-                                glow = when (winner) { "DRAGON" -> dtColor("DRAGON"); "TIE" -> dtColor("TIE"); else -> null },
-                                flipKey = showing?.optString("roundId")
-                            )
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.zIndex(2f)) {
+                            StatusPill(open = !locked)
+                            Spacer(Modifier.weight(1f))
+                            Text(roundId, color = Color(0xFF9CA3AF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
                         }
-                        CountdownRing(now = now, start = start, lock = lock, end = end, size = 86.dp)
-                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("TIGER", color = Color(0xFF8DB7FF), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                            Spacer(Modifier.height(8.dp))
-                            DtCard(
-                                code = showCards?.optString("tiger"), faceDown = showing == null,
-                                glow = when (winner) { "TIGER" -> dtColor("TIGER"); "TIE" -> dtColor("TIE"); else -> null },
-                                flipKey = showing?.optString("roundId")
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Column(modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (showing != null) {
-                            Text(
-                                if (winner == "TIE") "TIE!" else "${dtName(winner ?: "").uppercase()} WINS",
-                                color = dtColor(winner ?: ""), fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp
-                            )
-                            when {
-                                revealWon > 0.0 -> Text("You won ${inr(revealWon)}!", color = GameColors.Emerald, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                                revealStaked > 0.0 -> Text("Not this time", color = GameColors.Muted, fontSize = 11.sp)
-                                else -> Text(dtResultLine(showing, tieOneIn), color = Color(0xFF6B7280), fontSize = 11.sp, textAlign = TextAlign.Center)
+                        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                            val creatureW = maxWidth / 2
+                            val creatureH = creatureW * (520f / 480f)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    DtCreature("dragon", moodOf("DRAGON"), Modifier.weight(1f))
+                                    DtCreature("tiger", moodOf("TIGER"), Modifier.weight(1f))
+                                }
+                                Spacer(Modifier.height(64.dp))
                             }
-                            Text("Result of ${showing.optString("roundId")}", color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                        } else if (locked) {
-                            Text("Dealing the cards… result in ${clockText(end - now)}", color = GameColors.GoldLight, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
-                        } else {
-                            Text("Place your bets · closes in ${clockText(lock - now)}", color = Color(0xFFD1D5DB), fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .offset(y = creatureH * 0.40f - 21.dp)
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Brush.radialGradient(listOf(Color(0xFFFFF6DF), Color(0xFFE0C9A0), Color(0xFF8A6D47))))
+                                    .border(2.dp, Color(0xFFFFF3B0).copy(alpha = 0.7f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("VS", color = Color(0xFF2A1B08), fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic)
+                            }
+                            Row(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.Bottom) {
+                                Column(horizontalAlignment = Alignment.Start) {
+                                    DtCard(
+                                        code = showCards?.optString("dragon"), faceDown = showing == null,
+                                        glow = when (winner) { "DRAGON" -> dtColor("DRAGON"); "TIE" -> dtColor("TIE"); else -> null },
+                                        flipKey = showing?.optString("roundId")
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("DRAGON", color = Color(0xFFFF8A98), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                                }
+                                Spacer(Modifier.weight(1f))
+                                Box(modifier = Modifier.padding(bottom = 14.dp)) {
+                                    CountdownRing(now = now, start = start, lock = lock, end = end, size = 82.dp)
+                                }
+                                Spacer(Modifier.weight(1f))
+                                Column(horizontalAlignment = Alignment.End) {
+                                    DtCard(
+                                        code = showCards?.optString("tiger"), faceDown = showing == null,
+                                        glow = when (winner) { "TIGER" -> dtColor("TIGER"); "TIE" -> dtColor("TIE"); else -> null },
+                                        flipKey = showing?.optString("roundId")
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("TIGER", color = Color(0xFF8DB7FF), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Column(modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (showing != null) {
+                                val wcol = dtColor(winner ?: "")
+                                Text(
+                                    if (winner == "TIE") "IT\u2019S A TIE!" else "${dtName(winner ?: "").uppercase()} WINS!",
+                                    color = Color(0xFFFFF3B0), fontSize = 24.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
+                                    style = TextStyle(shadow = Shadow(color = wcol, offset = Offset(0f, 0f), blurRadius = 24f))
+                                )
+                                when {
+                                    revealWon > 0.0 -> Text("You won ${inr(revealWon)}!", color = GameColors.Emerald, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                                    revealStaked > 0.0 -> Text("Not this time", color = GameColors.Muted, fontSize = 11.sp)
+                                    else -> Text(dtResultLine(showing, tieOneIn), color = Color(0xFF9CA3AF), fontSize = 11.sp, textAlign = TextAlign.Center)
+                                }
+                                Text("Result of ${showing.optString("roundId")}", color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                            } else if (locked) {
+                                Text("Dealing the cards… result in ${clockText(end - now)}", color = GameColors.GoldLight, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+                            } else {
+                                Text("Place your bets · closes in ${clockText(lock - now)}", color = Color(0xFFE5E7EB), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+                            }
                         }
                     }
                 }
@@ -326,7 +386,7 @@ fun DragonTigerScreen(
                         Column(
                             modifier = Modifier
                                 .weight(if (o == "TIE") 0.8f else 1f)
-                                .height(120.dp)
+                                .height(150.dp)
                                 .graphicsLayer { scaleX = if (on) 1.03f else 1f; scaleY = if (on) 1.03f else 1f; alpha = if (locked) 0.45f else if (on) 1f else 0.88f }
                                 .clip(shape)
                                 .background(Brush.verticalGradient(dtGradient(o)))
@@ -338,6 +398,20 @@ fun DragonTigerScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
+                            if (o == "TIE") {
+                                Box(
+                                    modifier = Modifier.size(50.dp).clip(CircleShape)
+                                        .background(Brush.radialGradient(listOf(Color(0xFFFFF6DF), Color(0xFFE0C9A0), Color(0xFF8A6D47))))
+                                        .border(2.dp, Color(0xFFFFF3B0).copy(alpha = 0.8f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) { Text("=", color = Color(0xFF2A1B08), fontSize = 20.sp, fontWeight = FontWeight.Black) }
+                                Spacer(Modifier.height(6.dp))
+                            } else {
+                                Image(
+                                    painter = painterResource(if (o == "DRAGON") R.drawable.dt_dragon else R.drawable.dt_tiger),
+                                    contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(62.dp, 67.dp)
+                                )
+                            }
                             Text(dtName(o).uppercase(), color = Color.White, fontSize = if (o == "TIE") 16.sp else 18.sp, fontWeight = FontWeight.Black)
                             Spacer(Modifier.height(4.dp))
                             Text("${formatPayout(payOf(o))}x", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold,
@@ -479,6 +553,90 @@ private fun Bead(result: String, small: Boolean = false) {
     }
 }
 
+/**
+ * Animated dragon or tiger head: breathes, glows, the dragon throws off embers; on a win it roars
+ * (open-mouth art, bounce, shake, fire glow or roar rings); on a loss it turns grey and shrinks.
+ */
+@Composable
+private fun DtCreature(kind: String, mood: String, modifier: Modifier = Modifier) {
+    val isDragon = kind == "dragon"
+    val win = mood == "win"
+    val lose = mood == "lose"
+    val infinite = rememberInfiniteTransition(label = "dt-$kind")
+    val breathe by infinite.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(if (mood == "tense") 1500 else 3600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breathe"
+    )
+    val clock by infinite.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing)), label = "clock"
+    )
+    val pulse by infinite.animateFloat(
+        initialValue = 0.6f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(if (mood == "idle") 2800 else 800), RepeatMode.Reverse), label = "pulse"
+    )
+    val scale by animateFloatAsState(if (win) 1.1f else if (lose) 0.9f else 1f, spring(dampingRatio = 0.45f, stiffness = 260f), label = "scale")
+    val shake = remember { Animatable(0f) }
+    LaunchedEffect(win) {
+        if (win) {
+            repeat(5) { shake.animateTo(if (it % 2 == 0) 3f else -3f, tween(70)) }
+            shake.animateTo(0f, tween(80))
+        }
+    }
+    val grey = remember { ColorMatrix().apply { setToSaturation(0f) } }
+    val glow = if (isDragon) Color(0xFFF97316) else Color(0xFF3D7BF0)
+    Box(
+        modifier = modifier
+            .aspectRatio(480f / 520f)
+            .graphicsLayer {
+                val s = scale * (1f + 0.02f * breathe)
+                scaleX = s; scaleY = s
+                translationY = -3.dp.toPx() * breathe
+                rotationZ = shake.value
+                alpha = if (lose) 0.65f else 1f
+            }
+            .drawWithContent {
+                val c = Offset(size.width * 0.5f, size.height * 0.44f)
+                val r = size.width * 0.5f
+                drawCircle(Brush.radialGradient(listOf(glow.copy(alpha = 0.55f * pulse * (if (lose) 0.25f else 1f)), Color.Transparent), center = c, radius = r), radius = r, center = c)
+                if (isDragon && !lose) {
+                    for (i in 0 until 12) {
+                        val ph = (clock + i / 12f) % 1f
+                        val x = size.width * (0.1f + 0.8f * ((i * 7 % 12) / 12f)) + 8.dp.toPx() * ph
+                        val y = size.height * (0.9f - 0.8f * ph)
+                        drawCircle(Color(0xFFFFD27A).copy(alpha = (1f - ph) * 0.9f), radius = (1.5f + (i % 3)).dp.toPx() * 0.8f, center = Offset(x, y))
+                    }
+                }
+                drawContent()
+                val mouth = Offset(size.width * 0.504f, size.height * 0.673f)
+                if (win && isDragon) {
+                    val fr = size.width * (0.22f + 0.08f * pulse)
+                    drawCircle(Brush.radialGradient(listOf(Color(0xCCFFFBEB), Color(0x88FDE047), Color.Transparent), center = mouth, radius = fr), radius = fr, center = mouth)
+                }
+                if (win && !isDragon) {
+                    for (i in 0 until 3) {
+                        val ph = (clock * 3f + i / 3f) % 1f
+                        drawCircle(
+                            (if (i == 1) Color(0xFF9CC3FF) else Color(0xFFFFE7B0)).copy(alpha = (1f - ph) * 0.85f),
+                            radius = size.width * (0.08f + 0.45f * ph), center = mouth, style = Stroke(width = (4f - i).dp.toPx())
+                        )
+                    }
+                }
+            }
+    ) {
+        Image(
+            painter = painterResource(
+                if (isDragon) (if (win) R.drawable.dt_dragon_roar else R.drawable.dt_dragon)
+                else (if (win) R.drawable.dt_tiger_roar else R.drawable.dt_tiger)
+            ),
+            contentDescription = if (isDragon) "Dragon" else "Tiger",
+            contentScale = ContentScale.Fit,
+            colorFilter = if (lose) ColorFilter.colorMatrix(grey) else null,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
 /** A playing card that flips face up when a result comes in (A low, K high). */
 @Composable
 private fun DtCard(code: String?, faceDown: Boolean, glow: Color?, flipKey: String?) {
@@ -488,7 +646,7 @@ private fun DtCard(code: String?, faceDown: Boolean, glow: Color?, flipKey: Stri
     val showFace = !faceDown && !code.isNullOrEmpty() && rot.value <= 90f
     Box(
         modifier = Modifier
-            .size(84.dp, 120.dp)
+            .size(62.dp, 88.dp)
             .graphicsLayer { rotationY = rot.value; cameraDistance = 12f * density }
             .then(if (glow != null && showFace) Modifier.shadow(18.dp, shape, ambientColor = glow, spotColor = glow) else Modifier)
             .clip(shape)
@@ -506,17 +664,17 @@ private fun DtCard(code: String?, faceDown: Boolean, glow: Color?, flipKey: Stri
             val suit = cardSuit(code)
             val c = if (isRedSuit(suit)) GameColors.CardRed else GameColors.Deep
             Column(modifier = Modifier.align(Alignment.TopStart).padding(start = 7.dp, top = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(cardRank(code), color = c, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 17.sp)
-                Text(suitSymbol(suit), color = c, fontSize = 13.sp, lineHeight = 13.sp)
+                Text(cardRank(code), color = c, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 14.sp)
+                Text(suitSymbol(suit), color = c, fontSize = 11.sp, lineHeight = 11.sp)
             }
-            Text(suitSymbol(suit), color = c, fontSize = 40.sp)
-            Column(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 7.dp, bottom = 5.dp).graphicsLayer { rotationZ = 180f }, horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(cardRank(code), color = c, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 17.sp)
-                Text(suitSymbol(suit), color = c, fontSize = 13.sp, lineHeight = 13.sp)
+            Text(suitSymbol(suit), color = c, fontSize = 28.sp)
+            Column(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 6.dp, bottom = 4.dp).graphicsLayer { rotationZ = 180f }, horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(cardRank(code), color = c, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 14.sp)
+                Text(suitSymbol(suit), color = c, fontSize = 11.sp, lineHeight = 11.sp)
             }
         } else {
-            Text("99x", color = GameColors.GoldLight, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(GameColors.Deep.copy(alpha = 0.8f)).border(1.dp, GameColors.Gold.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp))
+            Text("99x", color = GameColors.GoldLight, fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(GameColors.Deep.copy(alpha = 0.8f)).border(1.dp, GameColors.Gold.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 6.dp, vertical = 2.dp))
         }
     }
 }
