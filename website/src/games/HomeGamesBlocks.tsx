@@ -4,6 +4,7 @@ import { gamesGet } from './api';
 import type { TradingGame } from './api';
 import { clock, useServerNow } from './ui';
 import MarketTile, { shortTime } from './MarketTile';
+import { DragonTigerBanner } from './DtCreature';
 
 export type Lobby = {
   serverTime: number;
@@ -141,8 +142,10 @@ export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpe
             <button key={b.id} onClick={() => open(b.id)} disabled={s.disabled} style={{ animationDelay: `${i * 70}ms` }}
               className="g-rise g-lift group block w-full overflow-hidden rounded-2xl border border-[#C9A87C]/25 bg-[#0B1712] text-left shadow-xl hover:border-[#C9A87C]/70 disabled:opacity-50">
               <div className="relative aspect-[30/17] w-full overflow-hidden bg-[#0A0F0D]">
-                <img src={b.img} alt="" loading={i > 1 ? 'lazy' : 'eager'} draggable={false}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                {b.id === 'dragontiger'
+                  ? <DragonTigerBanner className="transition-transform duration-500 group-hover:scale-[1.03]" />
+                  : <img src={b.img} alt="" loading={i > 1 ? 'lazy' : 'eager'} draggable={false}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />}
               </div>
               <div className="flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">

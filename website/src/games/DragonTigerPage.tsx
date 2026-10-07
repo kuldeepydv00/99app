@@ -1,10 +1,12 @@
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
 import { gamesGet, gamesPost } from './api';
 import { inr, clock, useServerNow, CountdownRing, StatusPill, AmountPicker, Sheet, SUITS, cardParts, DT_SIDES, OptionTag } from './ui';
 import type { Balances } from './TradingPage';
-import { dragonSvg, tigerSvg, DT_ART_CSS } from './dtArt';
+import { DT_ART_CSS } from './dtArt';
+import { Creature } from './DtCreature';
+import type { Mood } from './DtCreature';
 
 // Dragon Tiger: 1-minute rounds. The rule (lower total bet of Dragon and Tiger wins; a Tie comes
 // at random about 1 round in 20) comes from the server and is shown on this screen and in "How it works".
@@ -31,20 +33,6 @@ const DT_PAGE_CSS = `
 @media (prefers-reduced-motion:reduce){.dt-flash{animation:none;opacity:.35}}
 `;
 const BOARD = ['DRAGON', 'TIE', 'TIGER'] as const;
-
-type Mood = 'idle' | 'tense' | 'win' | 'lose';
-
-/** Animated dragon or tiger head. The SVG markup never changes; the mood is a class on the wrapper. */
-const Creature = memo(function Creature({ kind, mood, className = '' }: { kind: 'dragon' | 'tiger'; mood: Mood; className?: string }) {
-  const id = 'dt' + useId().replace(/[^a-zA-Z0-9]/g, '');
-  const html = useMemo(() => (kind === 'dragon' ? dragonSvg(id) : tigerSvg(id)), [kind, id]);
-  return (
-    <div className={`dtart ${mood === 'idle' ? '' : 'dt-' + mood} ${className}`}>
-      <svg viewBox="0 0 400 400" className="block h-full w-full" aria-label={kind === 'dragon' ? 'Dragon' : 'Tiger'} role="img"
-        dangerouslySetInnerHTML={{ __html: html }} />
-    </div>
-  );
-});
 
 function PlayingCard({ code, faceDown, glow, animate }: { code?: string | null; faceDown?: boolean; glow?: string | null; animate?: boolean }) {
   const dims = 'h-[5.2rem] w-[3.7rem] sm:h-[6.2rem] sm:w-[4.4rem]';
