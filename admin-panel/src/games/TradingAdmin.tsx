@@ -6,15 +6,16 @@ import {
 } from './common';
 import type { OpenUser } from './common';
 
-type GameKey = 'number' | 'card' | 'colour' | 'dragontiger';
+type GameKey = 'number' | 'card' | 'colour' | 'dragontiger' | 'toss';
 
 const TITLES: Record<GameKey, { title: string; icon: string; blurb: string }> = {
   number: { title: 'Number Trading', icon: '🔢', blurb: '00–99 · a round every hour · bet :00–:50 · result at :60' },
   card: { title: 'Card Trading', icon: '🃏', blurb: '52 cards · a round every hour · bet :00–:50 · result at :60' },
   colour: { title: 'Colour Trading', icon: '🎨', blurb: 'Red / Blue / Green · a round every minute · bet 0–50s · result at 60s' },
-  dragontiger: { title: 'Dragon Tiger', icon: '🐉', blurb: 'Dragon / Tie / Tiger · a round every minute · bet 0–50s · result at 60s' }
+  dragontiger: { title: 'Dragon Tiger', icon: '🐉', blurb: 'Dragon / Tie / Tiger · a round every minute · bet 0–50s · result at 60s' },
+  toss: { title: 'Toss', icon: '🪙', blurb: 'Head / Tail · a round every minute · bet 0–50s · toss at 60s' }
 };
-const MINUTE_GAMES: GameKey[] = ['colour', 'dragontiger'];
+const MINUTE_GAMES: GameKey[] = ['colour', 'dragontiger', 'toss'];
 const pct = (f: number) => Math.round((Number(f) || 0) * 10000) / 100;
 const oneIn = (f: number) => (Number(f) > 0 ? Math.round(1 / Number(f)) : 0);
 // Settings form: Dragon Tiger's tie chance is edited as a percentage
@@ -194,6 +195,23 @@ export default function TradingAdmin({ game, onOpenUser }: { game: GameKey; onOp
                 ))}
               </div>
             ))}
+          </div>
+        )}
+        {game === 'toss' && (
+          <div className="space-y-3">
+            {overview.options.map((o: string) => {
+              const w = max ? Math.round((totals[o] / max) * 100) : 0;
+              return (
+                <div key={o} className="flex items-center gap-3">
+                  <div className="w-24"><OptionLabel game="toss" value={o} /></div>
+                  <div className="h-7 flex-1 overflow-hidden rounded-lg bg-gray-100">
+                    <div className={`h-full ${o === 'HEAD' ? 'bg-red-500' : 'bg-blue-500'} transition-all duration-500`} style={{ width: `${w}%` }} />
+                  </div>
+                  <div className="w-28 text-right text-sm font-bold tabular-nums">{inr(totals[o])}</div>
+                  <div className="w-24 text-right">{lowestSet.has(o) ? <Pill tone="green">{lowestSet.size > 1 ? 'equal' : 'lower'}</Pill> : null}</div>
+                </div>
+              );
+            })}
           </div>
         )}
         {game === 'dragontiger' && (

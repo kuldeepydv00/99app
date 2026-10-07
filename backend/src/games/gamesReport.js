@@ -6,8 +6,8 @@ const engine = require('./tradingEngine');
 const matka99 = require('./matka99');
 const { getISTDateStr } = require('../utils/dateCycle');
 
-const GAME_KEYS = ['matka99', 'number', 'card', 'colour', 'dragontiger', 'jet'];
-const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger', jet: '99x Jet' };
+const GAME_KEYS = ['matka99', 'number', 'card', 'colour', 'dragontiger', 'toss', 'jet'];
+const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger', toss: 'Toss', jet: '99x Jet' };
 
 // The business date of a bet: 99x Matka uses its market date, trading uses the IST day it was placed.
 const betDate = b => (b.game === 'matka99' ? b.dateKey : engine.istDateOf(b.created_at));

@@ -4,6 +4,7 @@ const GAMES = [
   { key: 'matka99', icon: '💎', tab: 'matka99' },
   { key: 'jet', icon: '✈️', tab: 'jetGame' },
   { key: 'dragontiger', icon: '🐉', tab: 'dragonTiger' },
+  { key: 'toss', icon: '🪙', tab: 'tossGame' },
   { key: 'number', icon: '🔢', tab: 'numberTrading' },
   { key: 'card', icon: '🃏', tab: 'cardTrading' },
   { key: 'colour', icon: '🎨', tab: 'colourTrading' }

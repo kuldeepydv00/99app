@@ -79,7 +79,7 @@ export function ColourLabel({ value }: { value: string | null | undefined }) {
   );
 }
 
-const DT_CLASS: Record<string, string> = { DRAGON: 'bg-red-600', TIGER: 'bg-blue-600', TIE: 'bg-emerald-600' };
+const DT_CLASS: Record<string, string> = { DRAGON: 'bg-red-600', TIGER: 'bg-blue-600', TIE: 'bg-emerald-600', HEAD: 'bg-red-600', TAIL: 'bg-blue-600' };
 export function DragonTigerLabel({ value }: { value: string | null | undefined }) {
   if (!value) return <span>—</span>;
   return (
@@ -93,6 +93,7 @@ export function OptionLabel({ game, value }: { game: string; value: string | nul
   if (game === 'card') return <CardLabel code={value} />;
   if (game === 'colour') return <ColourLabel value={value} />;
   if (game === 'dragontiger') return <DragonTigerLabel value={value} />;
+  if (game === 'toss') return <DragonTigerLabel value={value} />;
   return <span className="font-mono font-bold">{value ?? '—'}</span>;
 }
 

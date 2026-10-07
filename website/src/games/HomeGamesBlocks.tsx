@@ -5,6 +5,7 @@ import type { TradingGame } from './api';
 import { clock, useServerNow } from './ui';
 import MarketTile, { shortTime } from './MarketTile';
 import { DragonTigerBanner } from './DtCreature';
+import { TossBanner } from './TossCoin';
 
 export type Lobby = {
   serverTime: number;
@@ -79,6 +80,7 @@ const BOXES: { id: BoxId; img: string; title: string }[] = [
   { id: 'matka99', img: '/banners/banner_matka99.webp', title: 'Play 99x Matka' },
   { id: 'jet', img: '/banners/banner_jet.webp', title: 'Play 99x Jet' },
   { id: 'dragontiger', img: '/banners/banner_dragontiger.webp', title: 'Play Dragon Tiger' },
+  { id: 'toss', img: '/banners/banner_toss.webp', title: 'Play Toss' },
   { id: 'number', img: '/banners/banner_number.webp', title: 'Play Number Trading' },
   { id: 'card', img: '/banners/banner_card.webp', title: 'Play Card Trading' },
   { id: 'colour', img: '/banners/banner_colour.webp', title: 'Play Colour Trading' }
@@ -144,6 +146,8 @@ export function HomeGameBoxes({ lobby, matkaOpen, matkaTotal, onOpenMatka, onOpe
               <div className="relative aspect-[30/17] w-full overflow-hidden bg-[#0A0F0D]">
                 {b.id === 'dragontiger'
                   ? <DragonTigerBanner className="transition-transform duration-500 group-hover:scale-[1.03]" />
+                  : b.id === 'toss'
+                  ? <TossBanner className="transition-transform duration-500 group-hover:scale-[1.03]" />
                   : <img src={b.img} alt="" loading={i > 1 ? 'lazy' : 'eager'} draggable={false}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />}
               </div>

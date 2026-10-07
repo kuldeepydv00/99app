@@ -206,6 +206,7 @@ fun GameBoxes(
             rose = false, onClick = onOpenJet
         )
         GameBox(image = R.drawable.banner_dragontiger, title = "Play Dragon Tiger", info = tradingInfo("dragontiger"), rose = false, onClick = { onOpenTrading("dragontiger") })
+        GameBox(image = R.drawable.banner_toss, title = "Play Toss", info = tradingInfo("toss"), rose = false, onClick = { onOpenTrading("toss") })
         GameBox(image = R.drawable.banner_number, title = "Play Number Trading", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })
         GameBox(image = R.drawable.banner_card, title = "Play Card Trading", info = tradingInfo("card"), rose = false, onClick = { onOpenTrading("card") })
         GameBox(image = R.drawable.banner_colour, title = "Play Colour Trading", info = tradingInfo("colour"), rose = false, onClick = { onOpenTrading("colour") })

@@ -112,6 +112,12 @@ fun dtGradient(option: String): List<Color> = when (option) {
     else -> listOf(Color(0xFF1DA35A), Color(0xFF0B4D25))
 }
 
+/** Toss sides: Head red, Tail blue (the coin's enamel colours). */
+fun tossColor(option: String): Color = if (option == "TAIL") Color(0xFF3D7BF0) else if (option == "HEAD") Color(0xFFE23B52) else Color(0xFF6B7280)
+fun tossName(option: String): String = when (option) { "HEAD" -> "Head"; "TAIL" -> "Tail"; else -> option }
+fun tossGradient(option: String): List<Color> =
+    if (option == "TAIL") listOf(Color(0xFF2F6FE0), Color(0xFF0F2D6E)) else listOf(Color(0xFFD4314A), Color(0xFF6E0F1E))
+
 fun suitSymbol(s: String): String = when (s) { "S" -> "♠"; "H" -> "♥"; "D" -> "♦"; else -> "♣" }
 fun suitName(s: String): String = when (s) { "S" -> "Spades"; "H" -> "Hearts"; "D" -> "Diamonds"; else -> "Clubs" }
 fun isRedSuit(s: String): Boolean = s == "H" || s == "D"
@@ -154,6 +160,17 @@ fun OptionTag(game: String, value: String?, large: Boolean = false) {
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = if (large) 17.sp else 12.sp
                 )
+            }
+        }
+        "toss" -> {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Brush.verticalGradient(tossGradient(value)))
+                    .padding(horizontal = if (large) 12.dp else 6.dp, vertical = if (large) 6.dp else 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(tossName(value), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = if (large) 14.sp else 11.sp)
             }
         }
         "dragontiger" -> {

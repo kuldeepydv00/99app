@@ -14,12 +14,13 @@ type State = {
 type Bet = { id: string; roundId: string; option: string; amount: number; multiplier: number; status: string; win_amount: number; result: string | null; created_at: string };
 export type Balances = { balance: number; deposit_balance: number; winning_balance: number; bonus_balance: number };
 
-const TITLE: Record<TradingGame, string> = { number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger' };
+const TITLE: Record<TradingGame, string> = { number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger', toss: 'Toss' };
 const PICK_HINT: Record<TradingGame, string> = {
   number: 'Tap numbers to pick them',
   card: 'Tap cards to pick them',
   colour: 'Tap a colour to pick it',
-  dragontiger: 'Tap Dragon, Tie or Tiger' // Dragon Tiger has its own page (DragonTigerPage)
+  dragontiger: 'Tap Dragon, Tie or Tiger', // Dragon Tiger has its own page (DragonTigerPage)
+  toss: 'Tap Head or Tail' // Toss has its own page (TossPage)
 };
 
 export default function TradingPage({ game, mobile, balance, onBack, onBalances }: {

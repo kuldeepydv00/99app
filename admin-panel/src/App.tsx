@@ -285,10 +285,10 @@ export default function App() {
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
-    'matka99' | 'jetGame' | 'dragonTiger' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
+    'matka99' | 'jetGame' | 'dragonTiger' | 'tossGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'dragonTiger', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -2247,6 +2247,7 @@ export default function App() {
               { id: 'matka99', label: '99x Matka', icon: '💎' },
               { id: 'jetGame', label: '99x Jet', icon: '✈️' },
               { id: 'dragonTiger', label: 'Dragon Tiger', icon: '🐉' },
+              { id: 'tossGame', label: 'Toss', icon: '🪙' },
               { id: 'numberTrading', label: 'Number Trading', icon: '🔢' },
               { id: 'cardTrading', label: 'Card Trading', icon: '🃏' },
               { id: 'colourTrading', label: 'Colour Trading', icon: '🎨' },
@@ -7088,6 +7089,7 @@ export default function App() {
             {activeTab === 'cardTrading' && <TradingAdmin key="card" game="card" onOpenUser={openUserByMobile} />}
             {activeTab === 'colourTrading' && <TradingAdmin key="colour" game="colour" onOpenUser={openUserByMobile} />}
             {activeTab === 'dragonTiger' && <TradingAdmin key="dragontiger" game="dragontiger" onOpenUser={openUserByMobile} />}
+            {activeTab === 'tossGame' && <TradingAdmin key="toss" game="toss" onOpenUser={openUserByMobile} />}
 
           </main>
 

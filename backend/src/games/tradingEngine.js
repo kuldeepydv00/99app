@@ -41,8 +41,15 @@ const GAMES = {
     key: 'dragontiger', label: 'Dragon Tiger', prefix: 'DT',
     options: ['DRAGON', 'TIGER', 'TIE'],
     roundMs: MINUTE, betMs: 50 * 1000, maxOptionsPerBet: 3
+  },
+  // Toss: Head or Tail. Uses the standard rule (lower total wins, equal totals picked at random).
+  toss: {
+    key: 'toss', label: 'Toss', prefix: 'TS',
+    options: ['HEAD', 'TAIL'],
+    roundMs: MINUTE, betMs: 50 * 1000, maxOptionsPerBet: 2
   }
 };
+const TOSS = 'toss';
 
 // ---------- Dragon Tiger ----------
 const DT = 'dragontiger';
@@ -96,6 +103,7 @@ function drawDtCards(result) {
 
 const RULE_LINE = 'Lowest total bet wins this round. Ties are picked at random.';
 function ruleLineFor(game) {
+  if (game === TOSS) return 'The side with the lower total bet wins. If Head and Tail are equal, the coin picks at random.';
   if (game !== DT) return RULE_LINE;
   const p = tieChanceOf(state.config[game]);
   return p > 0
@@ -118,6 +126,17 @@ function rulesText(game) {
       `Dragon and Tiger pay ${cfg.payout}x the amount bet. Tie pays ${Number(cfg.tiePayout) || 15}x. On a Tie, Dragon and Tiger bets lose.`,
       'Winnings go into your Winning balance.',
       `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per option per round.`
+    ];
+  }
+  if (game === TOSS) {
+    return [
+      'A new round starts every minute: betting is open for the first 50 seconds, then locked; the coin is tossed at 60 seconds.',
+      'When the round ends, Head or Tail wins: whichever side has the LOWER total amount bet on it this round.',
+      'A side nobody bet on has ₹0 on it, so it counts as the lower one.',
+      'If Head and Tail have the same total, one side is picked at random.',
+      'The coin toss you see shows that result.',
+      `Winning bets pay ${cfg.payout}x the amount bet, into your Winning balance.`,
+      `Bets: ₹${Number(cfg.minBet).toLocaleString('en-IN')} minimum, ₹${Number(cfg.maxBet).toLocaleString('en-IN')} maximum per side per round.`
     ];
   }
   const win = def.roundMs >= HOUR ? 'every hour: betting is open from :00 to :50, then locked; the result is out at :60.'
@@ -188,6 +207,9 @@ function receipt(r) {
     out.randomTie = !!r.randomTie;
     // After the round is over, both side totals are shown so players can check the rule.
     out.sides = { DRAGON: (r.totals && r.totals.DRAGON) || 0, TIGER: (r.totals && r.totals.TIGER) || 0 };
+  }
+  if (r.game === TOSS) {
+    out.sides = { HEAD: (r.totals && r.totals.HEAD) || 0, TAIL: (r.totals && r.totals.TAIL) || 0 };
   }
   return out;
 }
@@ -261,7 +283,7 @@ function settleRound(game, r) {
 }
 
 // ---------- ticker ----------
-const KEEP_MS = { number: 30 * 24 * HOUR, card: 30 * 24 * HOUR, colour: 3 * 24 * HOUR, dragontiger: 3 * 24 * HOUR };
+const KEEP_MS = { number: 30 * 24 * HOUR, card: 30 * 24 * HOUR, colour: 3 * 24 * HOUR, dragontiger: 3 * 24 * HOUR, toss: 3 * 24 * HOUR };
 const BET_KEEP_MS = 40 * 24 * HOUR;
 let lastPrune = 0;
 
@@ -419,7 +441,7 @@ function getPublicState(game) {
     enabled: cfg.enabled !== false, payout: cfg.payout, minBet: cfg.minBet, maxBet: cfg.maxBet,
     options: def.options,
     round: live ? publicRound(live) : { roundId: roundIdFor(game, b.start), start: b.start, lock: b.lock, end: b.end, status: t >= b.lock ? 'locked' : 'open' },
-    lastResults: settledRounds(game).slice(0, game === DT ? 60 : (def.roundMs < HOUR ? 30 : 20)).map(receipt),
+    lastResults: settledRounds(game).slice(0, game === DT || game === TOSS ? 60 : (def.roundMs < HOUR ? 30 : 20)).map(receipt),
     ruleLine: ruleLineFor(game),
     rules: rulesText(game)
   };
@@ -539,7 +561,8 @@ function getAdminRounds(game, { limit = 50, offset = 0, withBetsOnly = false, da
       players: Object.keys(r.players || {}).length, result: r.result, winningTotal: r.winningTotal,
       tiedCount: r.tiedCount, winners: r.winners, totalPaid: r.totalPaid,
       net: r.status === 'cancelled' ? 0 : wallet.round2((r.totalStaked || 0) - (r.totalPaid || 0)),
-      ...(game === DT ? { cards: r.cards || null, randomTie: !!r.randomTie, totals: r.totals || {} } : {})
+      ...(game === DT ? { cards: r.cards || null, randomTie: !!r.randomTie, totals: r.totals || {} } : {}),
+      ...(game === TOSS ? { totals: r.totals || {} } : {})
     }))
   };
 }
@@ -658,7 +681,7 @@ function updateConfig(game, body) {
 }
 
 module.exports = {
-  GAMES, CARD_OPTIONS, RULE_LINE, GameError, DT, payoutFor, pickDtResult, drawDtCards, tieChanceOf,
+  GAMES, CARD_OPTIONS, RULE_LINE, GameError, DT, TOSS, payoutFor, pickDtResult, drawDtCards, tieChanceOf,
   setClock, now, roundBounds, roundIdFor, ensureRound, tick, startTicker, stopTicker, settleRound,
   placeBets, getPublicState, getLobby, getMyBets,
   getAdminOverview, getAdminRounds, getAdminBets, updateConfig, cancelRound, getDailyReport, istDateOf
