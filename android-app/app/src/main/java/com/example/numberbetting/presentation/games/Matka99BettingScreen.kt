@@ -172,17 +172,6 @@ fun Matka99BettingScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     if (market != null) StatusPill(open = isOpen)
-                    // How the last automatic result was picked
-                    val last = market?.optJSONObject("lastResult")
-                    if (last != null && last.has("tiedCount")) {
-                        val tied = last.optInt("tiedCount", 1)
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "Last result ${last.optString("number")} (${last.optString("date")}): ${inr(last.optDouble("winningTotal", 0.0))} was bet on it" +
-                                if (tied > 1) " · picked at random from $tied numbers tied for lowest" else " · lowest of all 100 numbers",
-                            color = Color(0xFF6B7280), fontSize = 10.sp, lineHeight = 14.sp
-                        )
-                    }
                     Spacer(Modifier.height(10.dp))
                     Text(
                         data?.optString("ruleLine")?.ifEmpty { null } ?: "Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.",

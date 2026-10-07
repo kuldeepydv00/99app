@@ -103,12 +103,6 @@ export default function Matka99Page({ marketKey, mobile, balance, onBack, onBala
             {market && <StatusPill status={market.isOpen ? 'open' : 'locked'} />}
             {market?.lastResult && <span className="flex items-center gap-1.5 text-[11px] text-gray-400">Last result <OptionTag game="number" value={market.lastResult.number} /></span>}
           </div>
-          {market?.lastResult?.tiedCount !== undefined && (
-            <p className="mt-1.5 text-[10px] text-gray-500">
-              {market.lastResult.date}: {inr(market.lastResult.winningTotal || 0)} was bet on {market.lastResult.number}
-              {market.lastResult.tiedCount > 1 ? ` · picked at random from ${market.lastResult.tiedCount} numbers tied for lowest` : ' · lowest of all 100 numbers'}
-            </p>
-          )}
           <p className="mt-3 text-xs font-semibold leading-snug text-gray-200">{data?.ruleLine || 'Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.'}</p>
           <button onClick={() => setShowRules(true)} className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-[#E0C9A0] hover:text-white">
             <Info className="h-3.5 w-3.5" /> How it works

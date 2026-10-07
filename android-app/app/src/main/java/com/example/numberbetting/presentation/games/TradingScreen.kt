@@ -245,27 +245,6 @@ fun TradingScreen(
                     }
                 }
 
-                // Receipt of the last round
-                val receipt = results.firstOrNull()
-                if (receipt != null) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GameColors.Surface).border(1.dp, GameColors.Gold.copy(alpha = 0.25f), RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(receipt.optString("roundId"), color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                            val tied = receipt.optInt("tiedCount", 1)
-                            Text(
-                                "${inr(receipt.optDouble("winningTotal", 0.0))} staked on the result" + (if (tied > 1) " · $tied options tied, picked at random" else " · lowest of all"),
-                                color = GameColors.Muted, fontSize = 11.sp
-                            )
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        OptionTag(game, receipt.optString("result"), large = true)
-                    }
-                }
-
                 Spacer(Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -574,12 +553,6 @@ private fun ResultRevealDialog(game: String, receipt: JSONObject, won: Double, o
                 }
             }
             Spacer(Modifier.height(16.dp))
-            val tied = receipt.optInt("tiedCount", 1)
-            Text(
-                "${inr(receipt.optDouble("winningTotal", 0.0))} staked on it" + (if (tied > 1) " · $tied tied" else ""),
-                color = GameColors.Muted, fontSize = 11.sp, textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(10.dp))
             if (won > 0.0) Text("You won ${inr(won)}!", color = GameColors.Emerald, fontSize = 18.sp, fontWeight = FontWeight.Black)
             else Text("Tap to close", color = Color(0xFF6B7280), fontSize = 11.sp)
         }

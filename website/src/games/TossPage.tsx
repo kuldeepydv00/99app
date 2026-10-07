@@ -31,12 +31,6 @@ function Bead({ result, small }: { result: string; small?: boolean }) {
   );
 }
 
-function resultLine(r: Receipt) {
-  const h = r.sides?.HEAD ?? 0, t = r.sides?.TAIL ?? 0;
-  if (r.tiedCount > 1) return `Head ${inr(h)} = Tail ${inr(t)} · equal, picked at random`;
-  return `Head ${inr(h)} · Tail ${inr(t)} · lower bet won`;
-}
-
 export default function TossPage({ mobile, balance, onBack, onBalances }: {
   mobile: string; balance: number; onBack: () => void; onBalances: (b: Balances) => void;
 }) {
@@ -237,7 +231,7 @@ export default function TossPage({ mobile, balance, onBack, onBalances }: {
                     ? <p className="text-base font-black text-[#3EE08A]">You won {inr(coin.won)}!</p>
                     : coin.staked > 0
                       ? <p className="text-[11px] text-gray-400">Not this time</p>
-                      : <p className="truncate text-[11px] text-gray-400">{resultLine(coin.receipt!)}</p>}
+                      : null}
                   <p className="font-mono text-[10px] text-gray-500">Result of {coin.receipt!.roundId}</p>
                 </div>
               ) : coin.phase === 'flip' ? (

@@ -136,7 +136,6 @@ export default function TradingPage({ game, mobile, balance, onBack, onBalances 
     );
   }
 
-  const receipt = st.lastResults[0];
   const cardSuits = suit === 'ALL' ? ['S', 'H', 'D', 'C'] : [suit];
 
   return (
@@ -175,17 +174,6 @@ export default function TradingPage({ game, mobile, balance, onBack, onBalances 
             </div>
           </div>
         </GlassCard>
-
-        {/* Last receipt */}
-        {receipt && (
-          <div className="g-rise flex items-center justify-between rounded-2xl border border-[#C9A87C]/25 bg-[#0C241B] px-4 py-3" style={{ animationDelay: '60ms' }}>
-            <div className="text-[11px] text-gray-400">
-              <p className="font-mono text-gray-500">{receipt.roundId}</p>
-              <p className="mt-0.5">{inr(receipt.winningTotal)} staked on the result{receipt.tiedCount > 1 ? ` · ${receipt.tiedCount} options tied, picked at random` : ' · lowest of all'}</p>
-            </div>
-            <OptionTag game={game} value={receipt.result} size="lg" />
-          </div>
-        )}
 
         {/* Picker */}
         <div className="relative space-y-3">
@@ -361,7 +349,6 @@ export default function TradingPage({ game, mobile, balance, onBack, onBalances 
                     </span>
                   : <span className="font-mono text-7xl font-black text-[#F0DDB8]">{reveal.receipt.result}</span>}
             </div>
-            <p className="mt-4 text-[11px] text-gray-400">{inr(reveal.receipt.winningTotal)} staked on it{reveal.receipt.tiedCount > 1 ? ` · ${reveal.receipt.tiedCount} tied` : ''}</p>
             {reveal.won > 0
               ? <p className="mt-3 text-lg font-black text-[#3EE08A]">You won {inr(reveal.won)}!</p>
               : <p className="mt-3 text-xs text-gray-500">Tap to close</p>}

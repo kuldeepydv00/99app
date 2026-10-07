@@ -304,7 +304,6 @@ fun TossScreen(
                                     when {
                                         tossWon > 0.0 -> Text("You won ${inr(tossWon)}!", color = GameColors.Emerald, fontSize = 15.sp, fontWeight = FontWeight.Black)
                                         tossStaked > 0.0 -> Text("Not this time", color = GameColors.Muted, fontSize = 11.sp)
-                                        else -> Text(tossResultLine(r), color = Color(0xFF9CA3AF), fontSize = 11.sp, maxLines = 1)
                                     }
                                     Text("Result of ${r.optString("roundId")}", color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
                                 } else if (coinPhase == "flip") {
@@ -478,14 +477,6 @@ fun TossScreen(
             )
         }
     }
-}
-
-private fun tossResultLine(r: JSONObject): String {
-    val sides = r.optJSONObject("sides")
-    val h = sides?.optDouble("HEAD", 0.0) ?: 0.0
-    val t = sides?.optDouble("TAIL", 0.0) ?: 0.0
-    return if (r.optInt("tiedCount", 1) > 1) "Head ${inr(h)} = Tail ${inr(t)} · equal, picked at random"
-    else "Head ${inr(h)} · Tail ${inr(t)} · lower bet won"
 }
 
 @Composable

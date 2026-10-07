@@ -326,7 +326,6 @@ fun DragonTigerScreen(
                                 when {
                                     revealWon > 0.0 -> Text("You won ${inr(revealWon)}!", color = GameColors.Emerald, fontSize = 15.sp, fontWeight = FontWeight.Black)
                                     revealStaked > 0.0 -> Text("Not this time", color = GameColors.Muted, fontSize = 11.sp)
-                                    else -> Text(dtResultLine(showing, tieOneIn), color = Color(0xFF9CA3AF), fontSize = 11.sp, textAlign = TextAlign.Center)
                                 }
                                 Text("Result of ${showing.optString("roundId")}", color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
                             } else if (locked) {
@@ -347,24 +346,6 @@ fun DragonTigerScreen(
                     Text(data.optString("ruleLine"), color = Color(0xFFE5E7EB), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, lineHeight = 16.sp, modifier = Modifier.weight(1f))
                     Spacer(Modifier.width(8.dp))
                     Text("ⓘ How it works", color = GameColors.GoldLight, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showRules = true })
-                }
-
-                // Last result
-                val last = results.firstOrNull()
-                if (last != null) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GameColors.Deep).border(1.dp, Color(0xFF1F2937), RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            val c = last.optJSONObject("cards")
-                            Text(last.optString("roundId") + (if (c != null) " · ${c.optString("dragon")} vs ${c.optString("tiger")}" else ""), color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                            Text(dtResultLine(last, tieOneIn), color = GameColors.Muted, fontSize = 11.sp)
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        OptionTag(DT_GAME, last.optString("result"), large = true)
-                    }
                 }
 
                 // Betting board
@@ -529,15 +510,6 @@ fun DragonTigerScreen(
             )
         }
     }
-}
-
-private fun dtResultLine(r: JSONObject, tieOneIn: Int): String {
-    if (r.optBoolean("randomTie", false)) return "Tie, picked at random (about 1 in ${if (tieOneIn > 0) tieOneIn else 20} rounds)"
-    val sides = r.optJSONObject("sides")
-    val d = sides?.optDouble("DRAGON", 0.0) ?: 0.0
-    val t = sides?.optDouble("TIGER", 0.0) ?: 0.0
-    return if (r.optInt("tiedCount", 1) > 1) "Dragon ${inr(d)} = Tiger ${inr(t)} · equal, picked at random"
-    else "Dragon ${inr(d)} · Tiger ${inr(t)} · lower bet won"
 }
 
 @Composable

@@ -65,13 +65,6 @@ function Bead({ result, small }: { result: string; small?: boolean }) {
   );
 }
 
-function resultLine(r: Receipt, tieOneIn: number) {
-  if (r.randomTie) return `Tie, picked at random (about 1 in ${tieOneIn || 20} rounds)`;
-  const d = r.sides?.DRAGON ?? 0, t = r.sides?.TIGER ?? 0;
-  if (r.tiedCount > 1) return `Dragon ${inr(d)} = Tiger ${inr(t)} · equal, picked at random`;
-  return `Dragon ${inr(d)} · Tiger ${inr(t)} · lower bet won`;
-}
-
 export default function DragonTigerPage({ mobile, balance, onBack, onBalances }: {
   mobile: string; balance: number; onBack: () => void; onBalances: (b: Balances) => void;
 }) {
@@ -196,7 +189,6 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
     );
   }
 
-  const last = st.lastResults[0];
   const showing = reveal?.receipt || null;
   const winner = showing?.result || null;
   const winGlow = winner ? DT_SIDES[winner]?.hex : null;
@@ -271,7 +263,7 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
                   ? <p className="text-base font-black text-[#3EE08A]">You won {inr(reveal.won)}!</p>
                   : reveal && reveal.staked > 0
                     ? <p className="text-[11px] text-gray-400">Not this time</p>
-                    : <p className="text-[11px] text-gray-400">{resultLine(showing, st.tieOneIn)}</p>}
+                    : null}
                 <p className="mt-0.5 font-mono text-[10px] text-gray-500">Result of {showing.roundId}</p>
               </div>
             ) : locked ? (
@@ -289,17 +281,6 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
             <Info className="h-3.5 w-3.5" /> How it works
           </button>
         </div>
-
-        {/* Last result */}
-        {last && (
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-800 bg-[#0A0F0D] px-4 py-2.5">
-            <div className="min-w-0 text-[11px] text-gray-400">
-              <p className="font-mono text-gray-500">{last.roundId}{last.cards ? ` · ${last.cards.dragon} vs ${last.cards.tiger}` : ''}</p>
-              <p className="mt-0.5 truncate">{resultLine(last, st.tieOneIn)}</p>
-            </div>
-            <OptionTag game={GAME} value={last.result} size="lg" />
-          </div>
-        )}
 
         {/* Betting board */}
         <div className="relative">

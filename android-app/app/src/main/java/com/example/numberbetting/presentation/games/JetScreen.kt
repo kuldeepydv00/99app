@@ -317,7 +317,7 @@ fun JetScreen(
                 IconButton(onClick = onBack) { Text("←", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold) }
                 Column(modifier = Modifier.weight(1f)) {
                     Text("99x Jet", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
-                    Text("Fair crash game · up to ${cfg.optInt("maxPoint", 2000)}x", color = GameColors.GoldLight, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Crash game · up to ${cfg.optInt("maxPoint", 2000)}x", color = GameColors.GoldLight, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Text("ⓘ", color = GameColors.Muted, fontSize = 18.sp, modifier = Modifier.clickable { showRules = true }.padding(horizontal = 10.dp))
                 Box(

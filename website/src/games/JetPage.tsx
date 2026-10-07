@@ -386,7 +386,7 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
           <button onClick={onBack} className="rounded-full p-1 text-gray-300 hover:bg-white/5 hover:text-white" aria-label="Back"><ArrowLeft className="h-5 w-5" /></button>
           <div>
             <h2 className="text-base font-black tracking-wide">99x Jet</h2>
-            <p className="text-[10px] font-semibold text-[#E0C9A0]">Fair crash game · up to {st.config.maxPoint}x</p>
+            <p className="text-[10px] font-semibold text-[#E0C9A0]">Crash game · up to {st.config.maxPoint}x</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
