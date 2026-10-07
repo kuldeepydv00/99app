@@ -67,19 +67,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 import java.util.Locale
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 import kotlin.math.atan2
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 
 // 99x Jet: a fair crash game. The blast point of every round is fixed before betting opens
-// (from a published hash chain), so players can check each round with "Fair play".
+// (from a published hash chain).
 
 private val JetSky = listOf(Color(0xFF163A52), Color(0xFF0B2233), Color(0xFF05101A))
 private val JetOrange = Color(0xFFF08A24)
@@ -91,33 +87,6 @@ private fun JSONObject.dbl(k: String): Double? = if (has(k) && !isNull(k)) optDo
 private fun JSONObject.lng(k: String): Long = if (has(k) && !isNull(k)) optLong(k) else 0L
 private fun JSONObject.str(k: String): String = if (has(k) && !isNull(k)) optString(k) else ""
 
-// ---------- checking a round on the phone (same maths as the server) ----------
-private fun sha256Hex(s: String): String =
-    MessageDigest.getInstance("SHA-256").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
-
-private fun hmacHex(key: String, msg: String): String {
-    val mac = Mac.getInstance("HmacSHA256")
-    mac.init(SecretKeySpec(key.toByteArray(), "HmacSHA256"))
-    return mac.doFinal(msg.toByteArray()).joinToString("") { "%02x".format(it) }
-}
-
-private fun blastPointOf(seed: String, salt: String, edge: Double): Double {
-    val h = hmacHex(seed, salt)
-    val r = java.lang.Long.parseLong(h.substring(0, 13), 16).toDouble() / 2.0.pow(52)
-    val keep = (10000 - Math.round(edge * 10000)) / 100.0
-    return min(2000.0, max(1.0, floor(keep / (1 - r)) / 100))
-}
-
-private class Proof(val id: String, val hash: String, val seed: String, val point: Double?, val hashOk: Boolean, val recomputed: Double, val pointOk: Boolean?)
-
-private fun checkProof(p: JSONObject): Proof {
-    val seed = p.str("seed")
-    val salt = p.str("salt")
-    val edge = p.optDouble("edge", 0.04)
-    val point = p.dbl("point")
-    val re = blastPointOf(seed, salt, edge)
-    return Proof(p.str("id"), p.str("hash"), seed, point, sha256Hex(seed) == p.str("hash"), re, if (point == null) null else re == point)
-}
 
 // ---------- live stream reader (server-sent events) ----------
 private suspend fun readJetStream(onEvent: suspend (String, JSONObject) -> Unit) {
@@ -171,7 +140,6 @@ fun JetScreen(
     var round by remember { mutableStateOf(JSONObject().put("phase", "waiting")) }
     var history by remember { mutableStateOf<List<JSONObject>>(emptyList()) }
     var live by remember { mutableStateOf(JSONObject()) }
-    var fairness by remember { mutableStateOf(JSONObject()) }
     var rules by remember { mutableStateOf<List<String>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var lastEventAt by remember { mutableStateOf(0L) }
@@ -183,9 +151,6 @@ fun JetScreen(
     var busySlot by remember { mutableStateOf(0) }
     var tab by remember { mutableStateOf("all") }
     var showRules by remember { mutableStateOf(false) }
-    var showFair by remember { mutableStateOf(false) }
-    var proof by remember { mutableStateOf<Proof?>(null) }
-    var proofError by remember { mutableStateOf<String?>(null) }
 
     fun toList(arr: JSONArray?): List<JSONObject> = if (arr == null) emptyList() else (0 until arr.length()).map { arr.getJSONObject(it) }
 
@@ -195,7 +160,6 @@ fun JetScreen(
         round = d.optJSONObject("round") ?: JSONObject().put("phase", "waiting")
         history = toList(d.optJSONArray("history"))
         live = d.optJSONObject("live") ?: JSONObject()
-        fairness = d.optJSONObject("fairness") ?: JSONObject()
         val r = d.optJSONArray("rules")
         rules = if (r == null) emptyList() else (0 until r.length()).map { r.getString(it) }
         loadError = null
@@ -335,19 +299,6 @@ fun JetScreen(
         }
     }
 
-    fun openProof(id: String) {
-        proof = null
-        proofError = null
-        scope.launch {
-            try {
-                val d = GamesApi.get(context, "/api/games/jet/round/$id")
-                val p = d.optJSONObject("round") ?: throw Exception("Round not found")
-                proof = withContext(Dispatchers.Default) { checkProof(p) }
-            } catch (e: Exception) {
-                proofError = e.message ?: "Could not check this round"
-            }
-        }
-    }
 
     fun slotActive(slot: Int): JSONObject? {
         val list = active.filter { it.optInt("slot") == slot }
@@ -386,7 +337,7 @@ fun JetScreen(
                         Text(
                             fmtX(p), color = c, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace,
                             modifier = Modifier.clip(RoundedCornerShape(50)).background(c.copy(alpha = 0.1f)).border(1.dp, c.copy(alpha = 0.4f), RoundedCornerShape(50))
-                                .clickable { showFair = true; openProof(h.str("id")) }.padding(horizontal = 9.dp, vertical = 3.dp)
+                                .padding(horizontal = 9.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -396,12 +347,10 @@ fun JetScreen(
 
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val code = round.str("hash")
                     Text(
-                        (if (roundId.isEmpty()) "—" else roundId) + (if (code.length > 10) " · code ${code.take(10)}…" else ""),
+                        if (roundId.isEmpty()) "—" else roundId,
                         color = Color(0xFF6B7280), fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f), maxLines = 1
                     )
-                    Text("🛡 Fair play", color = GameColors.GoldLight, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showFair = true })
                 }
 
                 val msg = message
@@ -491,49 +440,6 @@ fun JetScreen(
         )
     }
 
-    if (showFair) {
-        AlertDialog(
-            onDismissRequest = { showFair = false; proof = null; proofError = null },
-            confirmButton = { TextButton(onClick = { showFair = false; proof = null; proofError = null }) { Text("Close", color = GameColors.GoldLight, fontWeight = FontWeight.Bold) } },
-            title = { Text("Fair play", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Every blast point is fixed before betting opens. Before a round you see its code; after the blast the seed is shown, and your phone recomputes the point.", color = Color(0xFFD1D5DB), fontSize = 11.sp, lineHeight = 15.sp)
-                    Text("Chain end: ${fairness.str("terminatingHash")}", color = Color(0xFF9CA3AF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                    Text("Salt: ${fairness.str("salt")}", color = Color(0xFF9CA3AF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                    Text("Tap a past round to check it", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        history.take(15).forEach { h ->
-                            Text(
-                                "${h.str("id")} · ${fmtX(h.optDouble("point"))}", color = GameColors.Champagne, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-                                modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, GameColors.Border, RoundedCornerShape(50)).clickable { openProof(h.str("id")) }.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                    val pe = proofError
-                    if (pe != null) Text(pe, color = GameColors.ErrorText, fontSize = 11.sp)
-                    val p = proof
-                    if (p != null) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GameColors.Emerald.copy(alpha = 0.06f)).border(1.dp, GameColors.Emerald.copy(alpha = 0.3f), RoundedCornerShape(12.dp)).padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(p.id, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                            Text("Code shown before: ${p.hash}", color = Color(0xFF9CA3AF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                            Text("Seed revealed: ${p.seed}", color = Color(0xFF9CA3AF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                            Text(if (p.hashOk) "✓ SHA-256(seed) matches the code" else "✕ seed does not match the code", color = if (p.hashOk) GameColors.Emerald else GameColors.ErrorText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            val ok = p.pointOk
-                            if (ok != null) Text(
-                                if (ok) "✓ Recomputed blast point ${fmtX(p.recomputed)} matches" else "✕ Recomputed ${fmtX(p.recomputed)}, round shows ${fmtX(p.point)}",
-                                color = if (ok) GameColors.Emerald else GameColors.ErrorText, fontSize = 11.sp, fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            },
-            containerColor = Color(0xFF0C1712)
-        )
-    }
 }
 
 @Composable

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Info, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { gamesGet, gamesPost, API_BASE } from './api';
 import { inr, Sheet } from './ui';
 import type { Balances } from './TradingPage';
@@ -24,24 +24,11 @@ type JState = {
 };
 type Active = { id: string; slot: number; roundId: string; amount: number; auto: number | null; status: string; cashout: number | null; win: number; queued: boolean };
 type MyBet = { id: string; roundId: string; slot: number; amount: number; auto: number | null; status: string; cashout: number | null; win_amount: number; result: number | null; created_at: string };
-type Proof = { id: string; hash: string; seed: string; edge: number; point: number | null; phase: string; salt: string | null; terminatingHash: string | null; chainIndex: number };
 
 const multAt = (growth: number, ms: number) => (ms <= 0 ? 1 : Math.floor(Math.exp(growth * ms) * 100 + 1e-9) / 100);
 const fmtX = (x: number | null | undefined) => (x == null ? '—' : `${x.toFixed(2)}x`);
 const pointColour = (p: number) => (p >= 10 ? 'text-[#F0C36A] border-[#F0C36A]/50 bg-[#F0C36A]/10' : p >= 2 ? 'text-[#3EE08A] border-[#3EE08A]/40 bg-[#3EE08A]/10' : 'text-gray-300 border-gray-700 bg-white/5');
 
-// ---------- browser-side check of a round (same maths as the server) ----------
-async function verifyProof(p: Proof) {
-  const enc = new TextEncoder();
-  const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
-  const hash = hex(await crypto.subtle.digest('SHA-256', enc.encode(p.seed)));
-  const key = await crypto.subtle.importKey('raw', enc.encode(p.seed), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const mac = hex(await crypto.subtle.sign('HMAC', key, enc.encode(p.salt || '')));
-  const r = parseInt(mac.slice(0, 13), 16) / 2 ** 52;
-  const keep = (10000 - Math.round(p.edge * 10000)) / 100;
-  const point = Math.min(2000, Math.max(1, Math.floor(keep / (1 - r)) / 100));
-  return { hashOk: hash === p.hash, point, pointOk: p.point === null ? null : point === p.point };
-}
 
 // ---------- live connection: server-sent events, polling as a fallback ----------
 function useJetLive(onRoundEnd: () => void) {
@@ -335,9 +322,6 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const [showRules, setShowRules] = useState(false);
-  const [showFair, setShowFair] = useState(false);
-  const [proof, setProof] = useState<{ p: Proof; check: { hashOk: boolean; point: number; pointOk: boolean | null } } | null>(null);
-  const [proofErr, setProofErr] = useState('');
   const prevActive = useRef<Active[]>([]);
   const balancesRef = useRef(onBalances);
   balancesRef.current = onBalances;
@@ -379,16 +363,6 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
     return { 1: pick(1), 2: pick(2) };
   }, [active]);
 
-  const openProof = async (id: string) => {
-    setProofErr(''); setProof(null);
-    try {
-      const d = await gamesGet<{ round: Proof }>(`/api/games/jet/round/${encodeURIComponent(id)}`);
-      const check = await verifyProof(d.round);
-      setProof({ p: d.round, check });
-    } catch (e: any) {
-      setProofErr(e.message || 'Could not check this round');
-    }
-  };
 
   if (!st) {
     return (
@@ -426,18 +400,17 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
         <div className="g-noscroll flex gap-1.5 overflow-x-auto">
           {st.history.length === 0 && <span className="text-[11px] text-gray-500">No rounds yet</span>}
           {st.history.map(h => (
-            <button key={h.id} onClick={() => { setShowFair(true); openProof(h.id); }}
+            <span key={h.id}
               className={`shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-extrabold tabular-nums ${pointColour(h.point)}`}>
               {h.point.toFixed(2)}x
-            </button>
+            </span>
           ))}
         </div>
 
         <Flight round={st.round} config={st.config} serverNow={serverNow} />
 
         <div className="flex items-center justify-between text-[10px] text-gray-500">
-          <span className="truncate font-mono">{st.round.id || '—'}{st.round.hash ? ` · code ${st.round.hash.slice(0, 10)}…` : ''}</span>
-          <button onClick={() => setShowFair(true)} className="inline-flex shrink-0 items-center gap-1 font-bold text-[#E0C9A0] hover:text-white"><ShieldCheck className="h-3.5 w-3.5" /> Fair play</button>
+          <span className="truncate font-mono">{st.round.id || '—'}</span>
         </div>
 
         {msg && (
@@ -503,36 +476,6 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
         </ul>
       </Sheet>
 
-      <Sheet open={showFair} onClose={() => { setShowFair(false); setProof(null); setProofErr(''); }} title="Fair play">
-        <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1 text-[11px] text-gray-300">
-          <p>Every blast point is fixed before betting opens. Before a round you see its code; after the blast the seed is shown, and anyone can recompute the point.</p>
-          <div className="space-y-1 rounded-xl border border-gray-800 bg-[#0A0F0D] p-3 font-mono text-[10px] break-all">
-            <p><span className="text-gray-500">Chain end (published): </span>{st.fairness.terminatingHash}</p>
-            <p><span className="text-gray-500">Salt: </span>{st.fairness.salt}</p>
-            <p><span className="text-gray-500">Formula: </span>{st.fairness.formula}</p>
-          </div>
-          <p className="font-bold text-white">Tap a past round to check it</p>
-          <div className="flex flex-wrap gap-1.5">
-            {st.history.slice(0, 15).map(h => (
-              <button key={h.id} onClick={() => openProof(h.id)} className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold ${pointColour(h.point)}`}>{h.id} · {h.point.toFixed(2)}x</button>
-            ))}
-          </div>
-          {proofErr && <p className="text-red-300">{proofErr}</p>}
-          {proof && (
-            <div className="space-y-1 rounded-xl border border-[#3EE08A]/30 bg-[#3EE08A]/5 p-3 font-mono text-[10px] break-all">
-              <p className="font-sans text-xs font-extrabold text-white">{proof.p.id}</p>
-              <p><span className="text-gray-500">Code shown before: </span>{proof.p.hash}</p>
-              <p><span className="text-gray-500">Seed revealed: </span>{proof.p.seed}</p>
-              <p className={proof.check.hashOk ? 'text-[#3EE08A]' : 'text-red-300'}>{proof.check.hashOk ? '✓ SHA-256(seed) matches the code' : '✕ seed does not match the code'}</p>
-              {proof.check.pointOk !== null && (
-                <p className={proof.check.pointOk ? 'text-[#3EE08A]' : 'text-red-300'}>
-                  {proof.check.pointOk ? `✓ Recomputed blast point ${fmtX(proof.check.point)} matches` : `✕ Recomputed ${fmtX(proof.check.point)}, round shows ${fmtX(proof.p.point)}`}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </Sheet>
     </div>
   );
 }

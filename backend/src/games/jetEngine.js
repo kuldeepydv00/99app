@@ -491,7 +491,6 @@ function rulesText() {
     `This gives a ${c.edgePct}% house edge: on average ₹${(100 - c.edgePct).toFixed(0)} of every ₹100 bet comes back to players, whatever cash-out they choose. About ${(100 - (100 - c.edgePct) / 1.01).toFixed(1)}% of rounds blast at 1.00x.`,
     `Auto cash-out pays exactly its target (from ${c.minCashout.toFixed(2)}x) if the jet reaches it. A cash-out at exactly the blast point wins.`,
     `Bets: ${inr(c.minBet)} to ${inr(c.maxBet)}, up to 2 bets per round. Maximum win ${inr(c.maxWin)} per bet: a bet cashes out by itself when it reaches it.`,
-    'Check any round: before it starts you see its code, SHA-256(seed). After the blast the seed is shown; r comes from HMAC-SHA256(seed, salt). Use Verify on a past round.',
     `If the jet reaches ${c.maxPoint}x, every bet still flying cashes out at ${c.maxPoint}x.`,
     'If the server restarts during a flight, that round is cancelled and every open bet is refunded.'
   ];
