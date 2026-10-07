@@ -5,8 +5,11 @@ import {
   CheckCircle, MessageCircle, Clock, Trophy, ChevronRight, X, Bell 
 } from 'lucide-react';
 import { parseCopyPasteText, ParsedBetItem } from './utils/copyPasteParser';
-import { useLobby, HomeGameBoxes, Matka99Section, SectionHeader } from './games/HomeGamesBlocks';
-import MarketTile, { shortTime } from './games/MarketTile';
+import { useLobby } from './games/HomeGamesBlocks';
+import { SideRail, MobileMenu, TopBar, BottomBar, SiteFooter } from './layout/Shell';
+import type { ShellActions, HomeSection } from './layout/Shell';
+import HomeLobby from './layout/Lobby';
+import type { MarketView, Promo, GameId } from './layout/Lobby';
 import TradingPage from './games/TradingPage';
 import JetPage from './games/JetPage';
 import DragonTigerPage from './games/DragonTigerPage';
@@ -697,8 +700,16 @@ export default function App() {
   const [tradingGame, setTradingGame] = useState<TradingGame | null>(null);
   const [jetOpen, setJetOpen] = useState(false);
   const [chartMode, setChartMode] = useState<'matka' | 'matka99'>('matka');
-  // Home shows one picture box per game; Matka and 99x Matka open their own market pages.
-  const [homeSection, setHomeSection] = useState<null | 'matka' | 'matka99'>(null);
+  // Home is a casino lobby; its tabs are Lobby (null), Originals, Matka and 99x Matka.
+  const [homeSection, setHomeSection] = useState<HomeSection>(null);
+  // Desktop sidebar: full or icons only (remembered on this browser)
+  const [navCollapsed, setNavCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem('99x_nav_collapsed') === '1'; } catch { return false; }
+  });
+  const toggleNav = () => setNavCollapsed(c => {
+    try { localStorage.setItem('99x_nav_collapsed', c ? '0' : '1'); } catch { /* ignore */ }
+    return !c;
+  });
   // 99x Matka markets open the same betting screen as Matka (Jodi / Paste / Crossing / Haroof); bets go to the 99x API
   const [bet99, setBet99] = useState<null | { key: string; name: string }>(null);
   const [show99Rules, setShow99Rules] = useState(false);
@@ -711,12 +722,8 @@ export default function App() {
     setBetCategory('Jodi'); setJodiGrid({}); setCopyPasteParsedList([]); setCopyPasteInputText(''); setCrossingDigits(''); setBetMessage('');
     setSelectedGameForBetting(m?.name || key);
   };
-  const openHomeSection = (sec: 'matka' | 'matka99') => { setHomeSection(sec); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
-  const closeHomeSection = () => {
-    setHomeSection(null);
-    // land back on the game boxes, not the top of the page
-    setTimeout(() => { try { document.getElementById('all-games')?.scrollIntoView({ block: 'start' }); } catch { /* ignore */ } }, 0);
-  };
+  const openHomeSection = (sec: Exclude<HomeSection, null>) => { setHomeSection(sec); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
+  const closeHomeSection = () => { setHomeSection(null); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
   const [betsMode, setBetsMode] = useState<'matka' | 'new'>('matka');
   const applyGameBalances = (b: Balances) => {
     setUser(prev => {
@@ -1462,9 +1469,89 @@ export default function App() {
     }, 500);
   };
 
+  // ---------- Casino layout: actions, Matka market cards, promotions ----------
+  const handleWebLogout = () => {
+    setUser(null);
+    setMyBetsList([]);
+    localStorage.removeItem('99x_web_user'); localStorage.removeItem('99x_web_token');
+    localStorage.removeItem('99x_web_view');
+    localStorage.removeItem('99x_web_tab');
+    localStorage.removeItem('99x_selected_game');
+    localStorage.removeItem('99x_my_bets');
+    setAuthStep('phone');
+    setMobileNumber('');
+    setOtpInput('');
+    setAuthError('');
+    setActiveWebTab('home'); setHomeSection(null);
+    setSelectedGameForBetting(null);
+    setView('landing');
+    setIsSideMenuOpen(false);
+  };
+  const toTop = () => { try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
+  const shellActions: ShellActions = {
+    home: () => { setSelectedGameForBetting(null); setActiveWebTab('home'); setHomeSection(null); toTop(); },
+    section: (s) => { setSelectedGameForBetting(null); setActiveWebTab('home'); openHomeSection(s); },
+    jet: () => setJetOpen(true),
+    trading: (g) => setTradingGame(g),
+    myBets: () => { setSelectedGameForBetting(null); setActiveWebTab('mybets'); toTop(); },
+    charts: () => { setSelectedGameForBetting(null); setActiveWebTab('charts'); toTop(); },
+    wallet: () => setShowWalletModal(true),
+    deposit: () => setShowDepositModal(true),
+    withdraw: () => setShowWithdrawModal(true),
+    refer: () => setShowReferralModal(true),
+    rules: () => setShowRulesModal(true),
+    profile: () => setShowProfileModal(true),
+    notifications: () => setShowNotificationsModal(true),
+    download: () => handleDownloadApk(),
+    logout: handleWebLogout,
+    supportUrl: `https://wa.me/${whatsappNumber}`
+  };
+  const openLobbyGame = (id: GameId) => {
+    if (id === 'matka' || id === 'matka99') openHomeSection(id);
+    else if (id === 'jet') setJetOpen(true);
+    else setTradingGame(id);
+  };
+  const MATKA_MARKETS = ['Shiv Parwati', 'Delhi Bazar', 'Dubai Market', 'Shree Ganesh', 'Faridabad', 'Ghaziabad', 'Gali', 'Desawar'];
+  const marketViews: MarketView[] = MATKA_MARKETS.map((name) => {
+    const sched = gameSchedules[name] || DEFAULT_SCHEDULES[name];
+    const open = isGameBettingOpen(name, gameSchedules[name]);
+    const r = declaredResults[name] ?? declaredResults[name === 'Desawar' ? 'Disawer' : (name === 'Shree Ganesh' ? 'Shri Ganesh' : name)];
+    const declared = r !== undefined && r !== null && String(r).trim() !== '' && String(r) !== '--';
+    return {
+      name,
+      open,
+      minsLeft: open ? getRemainingMinutesToClose(name, sched) : 0,
+      openAt: sched?.open || '',
+      closeAt: sched?.close || '',
+      resultAt: sched?.result || '',
+      result: declared ? String(r).padStart(2, '0') : null
+    };
+  });
+  const homePromos: Promo[] = (() => {
+    const list: Promo[] = [];
+    // banners uploaded in the admin panel come first
+    const slides: any[] = webBanners.length > 0 ? webBanners : [null];
+    slides.forEach((b, i) => {
+      const src = formatBannerImageSrc(b ? getValidBannerImg(b, null) : getValidBannerImg(null, globalBannerConfig, bannerConfig));
+      const custom = src.startsWith('data:image') || (src.startsWith('http') && !src.includes('logo')) || (src.startsWith('/') && src !== '/app_logo.png');
+      if (!custom) return;
+      const link = b?.link && typeof b.link === 'string' && !b.link.startsWith('data:') ? b.link : null;
+      list.push({ id: `admin${i}`, kind: 'image', src, alt: b?.name || b?.title || '99xmatka offer', onClick: link ? () => window.open(link, '_blank') : undefined });
+    });
+    const dt = gamesLobby?.trading?.dragontiger;
+    list.push(
+      { id: 'p99', kind: 'card', tag: 'Fixed payout', title: '99x Matka', text: `Same 8 markets with a fixed ${gamesLobby?.matka99.payout ?? 99}x on Jodi. The lowest total bet wins.`, cta: 'Play now', art: '/tiles/promo_99x.webp', tint: '#8A1846', onClick: () => shellActions.section('matka99') },
+      { id: 'pdt', kind: 'card', tag: 'New game', title: 'Dragon Tiger', text: `One-minute rounds. Pays ${dt?.payout ?? 2}x, and a Tie pays ${dt?.tiePayout ?? 15}x.`, cta: 'Play now', art: '/tiles/promo_dt.webp', tint: '#8A1020', onClick: () => setTradingGame('dragontiger') },
+      { id: 'pref', kind: 'card', tag: 'Promotion', title: 'Refer & Earn', text: 'Invite friends and earn commission on every bet they place, for life.', cta: 'Invite friends', art: '/tiles/promo_coin.webp', tint: '#8A5A06', onClick: () => setShowReferralModal(true) },
+      { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: () => setJetOpen(true) },
+      { id: 'papp', kind: 'card', tag: 'Android app', title: 'Get the 99x app', text: 'Faster play and instant result alerts on your phone.', cta: 'Download', art: '/app_logo.png', tint: '#0F6B4A', onClick: () => handleDownloadApk() }
+    );
+    return list;
+  })();
+
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex justify-center">
-      <div className="w-full max-w-xl bg-white min-h-screen flex flex-col relative">
+    <div className={view === 'webapp' ? 'min-h-screen bg-nv-bg text-white' : 'min-h-screen bg-white text-gray-900 flex justify-center'}>
+      <div className={view === 'webapp' ? 'relative min-h-screen w-full' : 'w-full max-w-xl bg-white min-h-screen flex flex-col relative'}>
 
         {/* Full Screen Blocked Overlay */}
         {isWebUserBlocked && (
@@ -1956,518 +2043,32 @@ export default function App() {
         {/* VIEW 3: WEB APP PLAYER PORTAL (100% Mobile App Replica!)   */}
         {/* ========================================================= */}
         {view === 'webapp' && (
-          <div className="flex-1 bg-[#091610] text-white flex flex-col pb-20 min-h-screen">
-            {/* SIDE MENU DRAWER OVERLAY & PANEL */}
+          <div className="nv font-nv min-h-screen bg-nv-bg text-white antialiased">
+            {/* Casino layout: desktop sidebar, phone menu, top bar, content, footer, phone bottom bar */}
+            <SideRail a={shellActions} tab={activeWebTab} section={homeSection} collapsed={navCollapsed} onToggle={toggleNav} />
             {isSideMenuOpen && (
-              <div className="fixed inset-0 z-50 flex">
-                {/* Dark Backdrop Overlay */}
-                <div 
-                  className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-                  onClick={() => setIsSideMenuOpen(false)}
-                />
+              <MobileMenu a={shellActions} tab={activeWebTab} section={homeSection} onClose={() => setIsSideMenuOpen(false)}
+                name={user?.name} mobile={user?.mobile} balance={user?.balance || 0} />
+            )}
+            <div className={`flex min-h-screen flex-col transition-[padding] duration-200 ${navCollapsed ? 'lg:pl-[68px]' : 'lg:pl-60'}`}>
+              <TopBar a={shellActions} balance={user?.balance || 0} unread={notificationsList.length > 0} />
+              <main className={`mx-auto w-full flex-1 pt-4 sm:pt-6 ${activeWebTab === 'home' ? 'max-w-[1200px] px-4 sm:px-6' : 'max-w-2xl'}`}>
 
-                {/* Left Side Drawer */}
-                <div className="relative w-80 max-w-[85vw] bg-[#0A0F0D] border-r border-gray-800 h-full flex flex-col z-50 shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300">
-                  {/* Drawer Header (Clickable Profile) */}
-                  <div 
-                    onClick={() => {
-                      setShowProfileModal(true);
-                      setIsSideMenuOpen(false);
-                    }}
-                    className="p-5 bg-gradient-to-r from-[#123A2C] to-[#0A0F0D] border-b border-gray-800 flex justify-between items-center cursor-pointer hover:bg-gray-800/50 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2ECC8F] to-[#1E8A6E] flex items-center justify-center text-xl font-bold text-white shadow-lg border border-emerald-400/30">
-                        👑
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-white">{user?.name || 'Player'}</h3>
-                        <p className="text-[11px] text-gray-400 font-mono">+91 {user?.mobile || '9999999999'}</p>
-                        <div className="mt-1 inline-flex items-center gap-1 bg-[#2ECC8F]/15 border border-[#2ECC8F]/40 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#2ECC8F]">
-                          💵 ₹{user?.balance ? user.balance.toFixed(2) : '0.00'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center text-sm font-bold"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  {/* Drawer Menu Items */}
-                  <div className="p-4 space-y-1.5 flex-1">
-                    <button
-                      onClick={() => {
-                        setActiveWebTab('home'); setHomeSection(null);
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
-                    >
-                      <span className="text-base">🏠</span> Home
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveWebTab('charts');
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
-                    >
-                      <span className="text-base">📊</span> Charts & Results
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveWebTab('mybets');
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
-                    >
-                      <span className="text-base">📜</span> My Bet History
-                    </button>
-
-                    <div className="my-2 border-t border-gray-800/80" />
-
-                    <button
-                      onClick={() => {
-                        setShowDepositModal(true);
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#2ECC8F] hover:bg-[#2ECC8F]/10 transition-all text-left"
-                    >
-                      <span className="text-base">💵</span> Add Cash (Deposit)
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setShowWithdrawModal(true);
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#D9B98C] hover:bg-[#D9B98C]/10 transition-all text-left"
-                    >
-                      <span className="text-base">🏦</span> Withdraw Cash
-                    </button>
-
-                    <div className="my-2 border-t border-gray-800/80" />
-
-                    <button
-                      onClick={() => {
-                        setShowReferralModal(true);
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-[#F0DDB8] hover:bg-[#D9B98C]/10 transition-all text-left"
-                    >
-                      <span className="text-base">🎁</span> Refer & Earn (Lifetime Commission)
-                    </button>
-
-                    <a
-                      href={`https://wa.me/${whatsappNumber}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => setIsSideMenuOpen(false)}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
-                    >
-                      <span className="text-base">💬</span> Customer Support
-                    </a>
-
-                    <button
-                      onClick={() => {
-                        setShowRulesModal(true);
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-gray-200 hover:bg-[#123A2C] hover:text-white transition-all text-left"
-                    >
-                      <span className="text-base">📋</span> Rules & Rates
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        handleDownloadApk();
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all text-left"
-                    >
-                      <span className="text-base">📱</span> Download Android App (Latest)
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setUser(null);
-                        setMyBetsList([]);
-                        localStorage.removeItem('99x_web_user'); localStorage.removeItem('99x_web_token');
-                        localStorage.removeItem('99x_web_view');
-                        localStorage.removeItem('99x_web_tab');
-                        localStorage.removeItem('99x_selected_game');
-                        localStorage.removeItem('99x_my_bets');
-                        setAuthStep('phone');
-                        setMobileNumber('');
-                        setOtpInput('');
-                        setAuthError('');
-                        setActiveWebTab('home'); setHomeSection(null);
-                        setSelectedGameForBetting(null);
-                        setView('landing');
-                        setIsSideMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/10 transition-all text-left mt-4"
-                    >
-                      <span className="text-base">🚪</span> Logout
-                    </button>
-                  </div>
-
-                  {/* Drawer Footer */}
-                  <div className="p-4 border-t border-gray-800 text-center text-[10px] text-gray-500">
-                    99xmatka v2.4 · 100% Safe & Secure
-                  </div>
-                </div>
-              </div>
+            {/* HOME: casino lobby (promotions, search, tabs, 99x Originals, Matka, 99x Matka) */}
+            {activeWebTab === 'home' && (
+              <HomeLobby
+                lobby={gamesLobby}
+                section={homeSection}
+                onSection={(s) => (s ? openHomeSection(s) : closeHomeSection())}
+                markets={marketViews}
+                onPlayMarket={(name) => { setSelectedGameForBetting(name); setBetMessage(''); }}
+                onOpenMatka99={(key) => openMatka99Betting(key)}
+                onOpenGame={openLobbyGame}
+                onMatka99Chart={() => { setChartMode('matka99'); setActiveWebTab('charts'); }}
+                promos={homePromos}
+              />
             )}
 
-            {/* Top Header Bar */}
-            <div className="px-4 py-3 bg-[#0A0F0D]/90 backdrop-blur-md border-b border-gray-800 flex justify-between items-center sticky top-0 z-20 shadow-md">
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsSideMenuOpen(true)}
-                  className="text-gray-300 hover:text-white p-1"
-                >
-                  <div className="space-y-1">
-                    <span className="block w-5 h-0.5 bg-white rounded-full"></span>
-                    <span className="block w-5 h-0.5 bg-white rounded-full"></span>
-                    <span className="block w-5 h-0.5 bg-white rounded-full"></span>
-                  </div>
-                </button>
-
-                {/* 100% Matching Crown Logo & Brand Title (Matching Mockup media_1789486150552.png) */}
-                <div className="flex items-center gap-1.5">
-                  <svg className="w-8 h-8 fill-[#E0C9A0] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.6)] shrink-0" viewBox="0 0 24 24">
-                    <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
-                  </svg>
-                  <div className="flex flex-col text-left">
-                    <div className="flex items-center gap-0.5 leading-none">
-                      <span className="text-base font-black text-[#E0C9A0] tracking-tight">99x</span>
-                      <span className="text-base font-black text-white tracking-tight">MATKA</span>
-                    </div>
-                    <span className="text-[7.5px] font-black text-[#E0C9A0] tracking-[0.18em] uppercase mt-0.5">TRUST • FAST • WIN</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Gold Wallet Balance Pill with + Button */}
-                <button 
-                  onClick={() => setShowWalletModal(true)}
-                  className="flex items-center gap-1.5 bg-[#12291E] border border-[#C9A87C] text-white pl-2.5 pr-1 py-1 rounded-full text-xs font-bold font-mono shadow-[0_0_12px_rgba(212,175,55,0.25)] hover:bg-[#1E3C2D] transition-all"
-                >
-                  <span className="text-xs">👛</span>
-                  <span className="font-mono font-black text-white text-xs whitespace-nowrap">₹{user?.balance ? user.balance.toFixed(2) : '0.00'}</span>
-                  <span className="w-5 h-5 rounded-full bg-gradient-to-r from-[#F0DDB8] to-[#C9A87C] text-slate-950 flex items-center justify-center text-xs font-black ml-0.5 shadow">+</span>
-                </button>
-              </div>
-            </div>
-
-
-
-            {/* TAB CONTENT: HOME (Hero Banner, Banners, Live Games & Results - Matching Android App!) */}
-            {activeWebTab === 'home' && !homeSection && (
-              <>
-                {/* Horizontal Market Selector Row */}
-                <div className="px-3.5 py-2">
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                    {[
-                      'Shiv Parwati',
-                      'Delhi Bazar',
-                      'Dubai Market',
-                      'Shree Ganesh',
-                      'Faridabad',
-                      'Ghaziabad',
-                      'Gali',
-                      'Desawar'
-                    ].map((mName, idx) => {
-                      const mIcon = getGameIcon(mName);
-                      const isSelected = selectedGameForBetting === mName || (idx === 0 && !selectedGameForBetting);
-                      return (
-                        <button
-                          key={mName}
-                          onClick={() => {
-                            setSelectedDetailGame(mName);
-                          }}
-                          className={`min-w-[82px] flex flex-col items-center flex-shrink-0 rounded-2xl py-2.5 px-2 transition-all cursor-pointer ${
-                            isSelected 
-                              ? 'bg-gradient-to-b from-[#1F3D2E] to-[#0D1F16] border-2 border-[#C9A87C] shadow-[0_0_15px_rgba(212,175,55,0.4)]' 
-                              : 'bg-[#102219] border border-[#C9A87C]/30 hover:border-[#C9A87C]/60'
-                          }`}
-                        >
-                          <span className="text-2xl drop-shadow-md">{mIcon}</span>
-                          <span className="text-[10px] font-bold text-white mt-1.5 whitespace-nowrap tracking-tight w-full text-center">
-                            {mName}
-                          </span>
-                          <span className={`w-5 h-0.5 rounded-full mt-1.5 ${isSelected ? 'bg-[#C9A87C] shadow-[0_0_6px_#C9A87C]' : 'bg-[#C9A87C]/60'}`}></span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Dynamic Auto-Sliding Hero Banner Carousel (Connected to Admin Panel Banners Page) */}
-                {(() => {
-                  const currentSlide = webBanners.length > 0 ? webBanners[webBannerIndex % webBanners.length] : null;
-                  const slideTitle = currentSlide?.name || currentSlide?.title || globalBannerConfig?.title || '99xmatka';
-                  const slideSubtitle = currentSlide?.subtitle || globalBannerConfig?.subtitle || "INDIA'S MOST TRUSTED";
-                  const rawImg = getValidBannerImg(currentSlide, globalBannerConfig, bannerConfig);
-                  const slideImgSrc = formatBannerImageSrc(rawImg);
-                  const slideLink = currentSlide?.link && !currentSlide.link.startsWith('data:') ? currentSlide.link : null;
-                  const dotsCount = webBanners.length > 0 ? webBanners.length : 3;
-
-                  // If admin uploaded a full image banner (base64, remote URL, or custom image file)
-                  const isFullCustomImage = slideImgSrc.startsWith('data:image') || 
-                    (slideImgSrc.startsWith('http') && !slideImgSrc.includes('logo')) ||
-                    (slideImgSrc.startsWith('/') && slideImgSrc !== '/app_logo.png');
-
-                  if (isFullCustomImage) {
-                    return (
-                      <div className="px-3.5 mb-3">
-                        <div 
-                          onClick={() => {
-                            if (slideLink) window.open(slideLink, '_blank');
-                          }}
-                          className={`relative overflow-hidden rounded-2xl border-2 border-[#C9A87C]/80 shadow-[0_0_20px_rgba(212,175,55,0.25)] bg-[#050605] transition-all duration-500 ${slideLink ? 'cursor-pointer' : ''}`}
-                        >
-                          <img 
-                            src={slideImgSrc} 
-                            alt={slideTitle} 
-                            className="w-full h-auto max-h-[220px] object-cover rounded-2xl block" 
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/app_logo.png';
-                            }}
-                          />
-                          
-                          {/* Dynamic Dots Carousel Overlay at bottom right */}
-                          {dotsCount > 1 && (
-                            <div className="absolute bottom-2 right-3 flex gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20 z-10">
-                              {Array.from({ length: dotsCount }).map((_, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setWebBannerIndex(i);
-                                  }}
-                                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                    i === (webBannerIndex % dotsCount)
-                                      ? 'bg-[#C9A87C] w-4'
-                                      : 'bg-gray-400 w-1.5 hover:bg-white'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="px-3.5 mb-3">
-                      <div className="relative overflow-hidden rounded-2xl border-2 border-[#C9A87C]/80 bg-gradient-to-br from-[#0F2A20] via-[#050605] to-[#1A3025] p-4 shadow-[0_0_20px_rgba(212,175,55,0.25)] transition-all duration-500">
-                        <div className="flex justify-between items-center gap-2">
-                          <div className="text-left space-y-1 max-w-[62%]">
-                            <p className="text-[9px] font-extrabold text-[#C9A87C] tracking-[0.2em] uppercase line-clamp-1">
-                              {slideSubtitle}
-                            </p>
-                            <h3 className="text-2.5xl font-black bg-gradient-to-r from-[#F5EDE2] via-[#E0C9A0] to-[#C9A87C] bg-clip-text text-transparent tracking-wide leading-tight line-clamp-1">
-                              {slideTitle}
-                            </h3>
-                            <p className="text-[8.5px] font-extrabold text-gray-300 tracking-wider">
-                              FAST • SECURE • HIGH PAYOUTS
-                            </p>
-                            
-                            <div className="inline-block bg-[#C9A87C]/15 border border-[#C9A87C] px-2.5 py-0.5 rounded-full text-[8.5px] font-extrabold text-[#E0C9A0] mt-1.5 shadow">
-                              INDIA KA SABSE PEHLA KHAIWAL
-                            </div>
-
-                            <div className="pt-2">
-                              <button
-                                onClick={() => {
-                                  if (slideLink) {
-                                    window.open(slideLink, '_blank');
-                                  } else {
-                                    setActiveWebTab('home'); setHomeSection(null);
-                                  }
-                                }}
-                                className="bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#9C7B4F] hover:from-[#E0C9A0] hover:to-[#8A6D47] text-slate-950 font-black px-4.5 py-2 rounded-full text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-                              >
-                                <span>PLAY NOW</span>
-                                <span className="text-sm">➔</span>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* 3D Crown / Custom Admin Graphic Centerpiece */}
-                          <div className="flex flex-col items-center shrink-0">
-                            <div className="relative w-24 h-24 flex items-center justify-center">
-                              <img 
-                                src={slideImgSrc} 
-                                alt="Banner Graphic" 
-                                className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] rounded-xl" 
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/app_logo.png';
-                                }}
-                              />
-                            </div>
-                            <span className="text-[8.5px] font-black text-[#E0C9A0] tracking-widest text-center mt-0.5 uppercase line-clamp-1 max-w-[90px]">
-                              {currentSlide?.name ? currentSlide.name : 'PLAY BIG WIN BIGGER'}
-                            </span>
-                            {/* Interactive Carousel Dots */}
-                            <div className="flex gap-1.5 mt-1.5">
-                              {Array.from({ length: dotsCount }).map((_, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={() => setWebBannerIndex(i)}
-                                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                    i === (webBannerIndex % dotsCount)
-                                      ? 'bg-[#C9A87C] w-4'
-                                      : 'bg-gray-600 w-1.5 hover:bg-gray-400'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* 3 Trust Badges Bar (100% Copy of Mockup media_1789471623091.png) */}
-                <div className="px-3.5 mb-3 grid grid-cols-3 gap-1 text-[9px]">
-                  <div className="flex items-center gap-1.5 bg-[#081310] border border-[#C9A87C]/30 p-2 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-[#0D1512] border border-[#C9A87C]/60 flex items-center justify-center text-xs shrink-0">🛡️</div>
-                    <div className="text-left">
-                      <p className="font-black text-white leading-tight">100% SECURE</p>
-                      <p className="text-gray-400 text-[7.5px]">Safe & Trusted</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-[#081310] border border-[#C9A87C]/30 p-2 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-[#0D1512] border border-[#C9A87C]/60 flex items-center justify-center text-xs shrink-0">⚡</div>
-                    <div className="text-left">
-                      <p className="font-black text-white leading-tight">INSTANT RESULT</p>
-                      <p className="text-gray-400 text-[7.5px]">Real-Time Updates</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-[#081310] border border-[#C9A87C]/30 p-2 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-[#0D1512] border border-[#C9A87C]/60 flex items-center justify-center text-xs shrink-0">🎧</div>
-                    <div className="text-left">
-                      <p className="font-black text-white leading-tight">24x7 SUPPORT</p>
-                      <p className="text-gray-400 text-[7.5px]">Always With You</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 100% Gold & Black Install Our App Banner (Website Only) */}
-                <div className="px-3.5 mb-3">
-                  <div 
-                    onClick={handleDownloadApk}
-                    className="bg-gradient-to-r from-[#173325] via-[#050605] to-[#0A1A12] border border-[#E0C9A0]/60 rounded-2xl p-3 flex justify-between items-center shadow-[0_0_15px_rgba(212,175,55,0.25)] hover:border-[#E0C9A0] cursor-pointer transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#F0DDB8]/25 via-[#C9A87C]/30 to-[#8A6D47]/25 border border-[#E0C9A0]/60 flex items-center justify-center text-[#E0C9A0] text-base shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_10px_rgba(212,175,55,0.3)]">
-                        📱
-                      </div>
-                      <div className="text-left">
-                        <p className="text-xs font-black text-white tracking-wide uppercase">INSTALL OUR APP</p>
-                        <p className="text-[10px] font-semibold text-[#E0C9A0]/90">Get fast & secure mobile gaming experience</p>
-                      </div>
-                    </div>
-                    <div className="w-7 h-7 rounded-full bg-[#0D1512] border border-[#E0C9A0]/50 text-[#E0C9A0] flex items-center justify-center text-xs font-bold shrink-0 group-hover:translate-x-0.5 transition-transform shadow-[0_0_8px_rgba(212,175,55,0.2)]">
-                      ➔
-                    </div>
-                  </div>
-                </div>
-
-              </>
-            )}
-
-            {/* TAB CONTENT: HOME (100% Strictly Separated Live Games & Results - Matching Android App!) */}
-            {activeWebTab === 'home' && homeSection === 'matka' && (() => {
-              const ALL_GAMES = ["Shiv Parwati", "Delhi Bazar", "Dubai Market", "Shree Ganesh", "Faridabad", "Ghaziabad", "Gali", "Desawar"];
-              
-              const liveGames = ALL_GAMES.filter((gName) => isGameBettingOpen(gName, gameSchedules[gName]));
-              const resultGames = ALL_GAMES.filter((gName) => !isGameBettingOpen(gName, gameSchedules[gName]));
-
-              return (
-                <div className="px-4 pt-3 space-y-6">
-                  {/* SECTION 1: LIVE GAMES (Only games currently OPEN for betting!) */}
-                  <div className="space-y-3">
-                    <SectionHeader
-                      title="Matka"
-                      badge="8 MARKETS"
-                      subtitle={`${liveGames.length} open now · tap a market to play`}
-                      onBack={closeHomeSection}
-                    />
-
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {[...liveGames, ...resultGames].map((gameName, i) => {
-                        const sched = gameSchedules[gameName] || DEFAULT_SCHEDULES[gameName];
-                        const isOpen = liveGames.includes(gameName);
-                        const remainingMins = isOpen ? getRemainingMinutesToClose(gameName, sched) : 0;
-                        const isUrgent = remainingMins > 0 && remainingMins <= 30;
-                        const playerCount = livePlayersMap[gameName] || livePlayersMap[gameName === 'Shree Ganesh' ? 'Shri Ganesh' : (gameName === 'Desawar' ? 'Disawer' : gameName)] || 487550;
-                        const result = declaredResults[gameName] ?? declaredResults[gameName === 'Desawar' ? 'Disawer' : (gameName === 'Shree Ganesh' ? 'Shri Ganesh' : gameName)];
-                        const isDeclared = result !== undefined && result !== null && String(result) !== '';
-                        return (
-                          <MarketTile
-                            key={`mk_${gameName}`}
-                            delay={i * 50}
-                            icon={getGameIcon(gameName)}
-                            name={gameName}
-                            sub={isOpen ? `${playerCount.toLocaleString('en-IN')} playing` : `Opens ${shortTime(sched?.open)}`}
-                            state={isOpen
-                              ? (isUrgent ? { kind: 'urgent', note: `${remainingMins} min left` } : { kind: 'open', note: `Closes ${shortTime(sched?.close)}` })
-                              : { kind: 'closed', result: isDeclared ? String(result).padStart(2, '0') : null, note: shortTime(sched?.result) }}
-                            onClick={() => { setSelectedGameForBetting(gameName); setBetMessage(''); }}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* HOME: one picture box per game (Matka, 99x Matka, 99x Jet, Number, Card, Colour) */}
-            {activeWebTab === 'home' && !homeSection && (
-              <div className="mt-6">
-                <HomeGameBoxes
-                  lobby={gamesLobby}
-                  matkaOpen={["Shiv Parwati", "Delhi Bazar", "Dubai Market", "Shree Ganesh", "Faridabad", "Ghaziabad", "Gali", "Desawar"].filter((g) => isGameBettingOpen(g, gameSchedules[g])).length}
-                  matkaTotal={8}
-                  onOpenMatka={() => openHomeSection('matka')}
-                  onOpenMatka99={() => openHomeSection('matka99')}
-                  onOpenTrading={(g) => setTradingGame(g)}
-                  onOpenJet={() => setJetOpen(true)}
-                />
-              </div>
-            )}
-
-            {/* HOME > 99x Matka: its markets as tiles */}
-            {activeWebTab === 'home' && homeSection === 'matka99' && (
-              <div className="px-4 pt-3">
-                <SectionHeader
-                  title="99x Matka"
-                  badge="FIXED 99x"
-                  subtitle={`${gamesLobby ? gamesLobby.matka99.markets.filter(m => m.enabled && m.isOpen).length : 0} open now · lowest total bet wins · Jodi 99x · Haroof 9.9x`}
-                  onBack={closeHomeSection}
-                  right={<button onClick={() => { setChartMode('matka99'); setActiveWebTab('charts'); }} className="shrink-0 text-[12px] font-bold text-[#E0C9A0] hover:text-white">Chart ›</button>}
-                />
-                <Matka99Section lobby={gamesLobby} onOpenMatka99={(key) => openMatka99Betting(key)} />
-              </div>
-            )}
 
             {/* TAB CONTENT: MY BETS */}
             {activeWebTab === 'mybets' && (
@@ -3103,94 +2704,10 @@ export default function App() {
                 </div>
               </div>
             )}
-
-            {/* 100% Pixel-Perfect Luxury Gold Capsule 5-Icon Bottom Navigation Bar (Matching Mockup media_1789481320689.png) */}
-            <div className="fixed bottom-3 left-0 right-0 w-full z-50 pointer-events-none px-3">
-              <div className="max-w-md mx-auto relative pointer-events-auto rounded-full bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#F0DDB8] p-[1.5px] shadow-[0_0_25px_rgba(212,175,55,0.4),0_10px_30px_rgba(0,0,0,0.9)]">
-                <div className="w-full h-full rounded-full bg-gradient-to-b from-[#0D1815] via-[#050605] to-[#040604] px-2 py-1.5 flex justify-around items-center relative overflow-visible backdrop-blur-xl">
-                  
-                  {/* HOME TAB */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setActiveWebTab('home'); setHomeSection(null);
-                    }}
-                    className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
-                      activeWebTab === 'home' && !selectedGameForBetting 
-                        ? 'bg-gradient-to-r from-[#C9A87C]/30 to-[#8A6D47]/20 border border-[#E0C9A0]/60 text-[#E0C9A0] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105' 
-                        : 'text-gray-400 hover:text-gray-200'
-                    }`}
-                  >
-                    <svg className={`w-5 h-5 ${activeWebTab === 'home' && !selectedGameForBetting ? 'fill-[#E0C9A0]' : 'fill-current'}`} viewBox="0 0 24 24">
-                      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">HOME</span>
-                  </button>
-
-                  {/* CHART TAB */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setActiveWebTab('charts');
-                    }}
-                    className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
-                      activeWebTab === 'charts' 
-                        ? 'bg-gradient-to-r from-[#C9A87C]/30 to-[#8A6D47]/20 border border-[#E0C9A0]/60 text-[#E0C9A0] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105' 
-                        : 'text-gray-400 hover:text-gray-200'
-                    }`}
-                  >
-                    <svg className={`w-5 h-5 ${activeWebTab === 'charts' ? 'fill-[#E0C9A0]' : 'fill-current'}`} viewBox="0 0 24 24">
-                      <path d="M4 9h4v11H4zm6-5h4v16h-4zm6 8h4v8h-4z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">CHART</span>
-                  </button>
-
-                  {/* CENTER ELEVATED FLOATING GOLD CROWN BUTTON FOR MY BET */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setActiveWebTab('mybets');
-                    }}
-                    className="relative -top-4 w-13 h-13 rounded-full bg-gradient-to-tr from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47] p-[2px] shadow-[0_0_25px_rgba(212,175,55,0.8),0_4px_15px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 z-20"
-                  >
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#123A2C] to-[#060B08] flex flex-col items-center justify-center border border-[#F0DDB8]/60 shadow-inner">
-                      <svg className="w-5 h-5 fill-[#E0C9A0] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.8)]" viewBox="0 0 24 24">
-                        <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
-                      </svg>
-                      <span className="text-[7.5px] font-black text-[#E0C9A0] tracking-tighter leading-none mt-0.5">MY BET</span>
-                    </div>
-                  </button>
-
-                  {/* CHAT TAB */}
-                  <a 
-                    href={`https://wa.me/${whatsappNumber}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">CHAT</span>
-                  </a>
-
-                  {/* REFER TAB */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setShowReferralModal(true);
-                    }}
-                    className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4V8h16v11z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">REFER</span>
-                  </button>
-
-                </div>
-              </div>
+              </main>
+              <SiteFooter a={shellActions} />
             </div>
+            <BottomBar a={shellActions} tab={activeWebTab} menuOpen={isSideMenuOpen} onMenu={() => setIsSideMenuOpen(o => !o)} />
           </div>
         )}
 

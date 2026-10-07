@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/* ---------- Casino design system (navy + blue) ---------- */
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 100 400; font-display: swap; src: url('/fonts/poppins-400.woff') format('woff'); }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/poppins-500.woff') format('woff'); }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 600 900; font-display: swap; src: url('/fonts/poppins-700.woff') format('woff'); }
+
+@theme {
+  --color-nv-bg: #0F1923;      /* page */
+  --color-nv-side: #0B141C;    /* sidebar, top bar, bottom bar */
+  --color-nv-card: #17242F;    /* cards, nav groups */
+  --color-nv-card2: #213443;   /* hover, active tab */
+  --color-nv-line: #2A3C4B;    /* borders */
+  --color-nv-text: #B1BAD3;    /* secondary text */
+  --color-nv-mute: #8DA2B5;    /* muted text */
+  --color-nv-dim: #5F7487;     /* faint text, idle dots */
+  --color-nv-blue: #1D6FE8;    /* main buttons */
+  --color-nv-blue2: #2B7FF5;   /* main buttons, hover */
+  --color-nv-green: #1FD65F;   /* wins, live */
+  --color-nv-gold: #F2C14E;    /* brand crown */
+  --color-nv-red: #F04A5C;     /* danger */
+  --font-nv: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
 @layer base {
   body {
     background-color: #0A0F0D;
@@ -35,14 +57,14 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0A0F0D;
+  background: #0F1923;
 }
 ::-webkit-scrollbar-thumb {
-  background: #C9A87C;
+  background: #2F4553;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #E0C9A0;
+  background: #3D5A6E;
 }
 
 /* ---------- New games: motion ---------- */
@@ -87,3 +109,25 @@
 @keyframes g-jet-shake { 0%, 100% { transform: none; } 20% { transform: translate(-3px, 2px); } 40% { transform: translate(3px, -2px); } 60% { transform: translate(-2px, -1px); } 80% { transform: translate(2px, 1px); } }
 .g-jet-shake { animation: g-jet-shake 0.35s ease-out 1; }
 @media (prefers-reduced-motion: reduce) { .g-jet-rays, .g-jet-shake { animation: none !important; } }
+
+/* ---------- Casino layout helpers ---------- */
+.nv-noscroll::-webkit-scrollbar { display: none; }
+.nv-noscroll { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+@keyframes nv-drawer { from { transform: translateX(-100%); } to { transform: none; } }
+.nv-drawer { animation: nv-drawer 0.28s cubic-bezier(.19, 1, .22, 1) both; }
+@keyframes nv-fade { from { opacity: 0; } to { opacity: 1; } }
+.nv-fade { animation: nv-fade 0.2s ease both; }
+.nv-tap { -webkit-tap-highlight-color: transparent; }
+/* scrolling rows: how many cards show per screen width (gaps: tiles 10px, promos 12px) */
+.nv-tiles > * { flex: 0 0 auto; width: 30%; }
+.nv-promos > * { flex: 0 0 auto; width: 86%; }
+@media (min-width: 640px) {
+  .nv-tiles > * { width: calc((100% - 30px) / 4); }
+  .nv-promos > * { width: calc((100% - 12px) / 2); }
+}
+@media (min-width: 768px) { .nv-tiles > * { width: calc((100% - 40px) / 5); } }
+@media (min-width: 1024px) { .nv-tiles > * { width: calc((100% - 60px) / 7); } }
+@media (min-width: 1280px) { .nv-promos > * { width: calc((100% - 24px) / 3); } }
+@media (prefers-reduced-motion: reduce) {
+  .nv-drawer, .nv-fade { animation: none !important; }
+}
