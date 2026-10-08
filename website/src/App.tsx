@@ -2050,7 +2050,7 @@ export default function App() {
               <MobileMenu a={shellActions} tab={activeWebTab} section={homeSection} onClose={() => setIsSideMenuOpen(false)}
                 name={user?.name} mobile={user?.mobile} balance={user?.balance || 0} />
             )}
-            <div className={`flex min-h-screen flex-col transition-[padding] duration-200 ${navCollapsed ? 'lg:pl-[68px]' : 'lg:pl-60'}`}>
+            <div className={`flex min-h-screen flex-col lg:transition-[padding] lg:duration-200 ${navCollapsed ? 'lg:pl-[68px]' : 'lg:pl-60'}`}>
               <TopBar a={shellActions} balance={user?.balance || 0} unread={notificationsList.length > 0} />
               <main className={`mx-auto w-full flex-1 pt-4 sm:pt-6 ${activeWebTab === 'home' ? 'max-w-[1200px] px-4 sm:px-6' : 'max-w-2xl'}`}>
 

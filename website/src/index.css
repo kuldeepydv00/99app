@@ -128,6 +128,7 @@
 @media (min-width: 768px) { .nv-tiles > * { width: calc((100% - 40px) / 5); } }
 @media (min-width: 1024px) { .nv-tiles > * { width: calc((100% - 60px) / 7); } }
 @media (min-width: 1280px) { .nv-promos > * { width: calc((100% - 24px) / 3); } }
+.nv-promos > .nv-promo-img { width: auto; } /* admin posters keep their own shape */
 @media (prefers-reduced-motion: reduce) {
   .nv-drawer, .nv-fade { animation: none !important; }
 }

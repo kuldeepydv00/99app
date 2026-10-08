@@ -79,6 +79,7 @@ const initials = (name: string) => {
 function Scroller({ children, className = '', arrowsTop = '50%' }: { children: ReactNode; className?: string; arrowsTop?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [edge, setEdge] = useState({ start: true, end: false });
+  const touched = useRef(false); // the person has scrolled this row themselves
   const update = () => {
     const el = ref.current;
     if (!el) return;
@@ -90,9 +91,26 @@ function Scroller({ children, className = '', arrowsTop = '50%' }: { children: R
     if (!el) return;
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
     ro?.observe(el);
-    return () => ro?.disconnect();
+    // A picture that loads late (an admin banner) changes the row's width and the browser re-snaps to a
+    // later card. Until the person scrolls the row themselves, keep it at the start.
+    const onLoad = () => { if (!touched.current) el.scrollLeft = 0; update(); };
+    const onTouch = () => { touched.current = true; };
+    el.addEventListener('load', onLoad, true);
+    el.addEventListener('pointerdown', onTouch);
+    el.addEventListener('wheel', onTouch, { passive: true });
+    el.addEventListener('touchstart', onTouch, { passive: true });
+    return () => {
+      ro?.disconnect();
+      el.removeEventListener('load', onLoad, true);
+      el.removeEventListener('pointerdown', onTouch);
+      el.removeEventListener('wheel', onTouch);
+      el.removeEventListener('touchstart', onTouch);
+    };
   }, []);
-  const go = (dir: number) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
+  const go = (dir: number) => {
+    touched.current = true;
+    ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
+  };
   const arrow = (dir: number, hidden: boolean) => (
     <button aria-label={dir < 0 ? 'Scroll left' : 'Scroll right'} onClick={() => go(dir)}
       style={{ top: arrowsTop }}
@@ -221,17 +239,20 @@ function Matka99Grid({ lobby, onOpen, limit }: { lobby: Lobby | null; onOpen: (k
 }
 
 function PromoCard({ p }: { p: Promo }) {
+  const [broken, setBroken] = useState(false);
   if (p.kind === 'image') {
+    // Admin banners are posters with their own text: show the whole picture at the row's height, never cropped
+    if (broken) return null;
     return (
-      <button onClick={p.onClick} className="nv-tap block h-[156px] w-full overflow-hidden rounded-lg bg-nv-card ring-1 ring-white/5">
-        <img src={p.src} alt={p.alt} draggable={false} className="h-full w-full object-cover"
-          onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
+      <button onClick={p.onClick} className="nv-tap block h-full overflow-hidden rounded-lg bg-nv-card ring-1 ring-white/5">
+        <img src={p.src} alt={p.alt} draggable={false} className="block h-full w-auto max-w-none object-cover"
+          style={{ maxWidth: 'min(86vw, 640px)' }} onError={() => setBroken(true)} />
       </button>
     );
   }
   return (
     <button onClick={p.onClick}
-      className="nv-tap group relative flex h-[156px] w-full overflow-hidden rounded-lg text-left ring-1 ring-white/5"
+      className="nv-tap group relative flex h-full w-full overflow-hidden rounded-lg text-left ring-1 ring-white/5"
       style={{ background: `linear-gradient(100deg, #1A2A36 0%, #1A2A36 42%, ${p.tint} 135%)` }}>
       <div className="relative z-10 flex w-[62%] flex-col items-start justify-center p-4">
         <span className="rounded bg-white px-1.5 py-[3px] text-[10px] font-bold uppercase leading-none tracking-wide text-nv-bg">{p.tag}</span>
@@ -239,7 +260,7 @@ function PromoCard({ p }: { p: Promo }) {
         <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-nv-text">{p.text}</p>
         <span className="mt-3 rounded-md border border-white/25 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors group-hover:border-white/50 group-hover:bg-white/10">{p.cta}</span>
       </div>
-      <img src={p.art} alt="" draggable={false} className="absolute right-0 top-1/2 h-[128px] max-w-[46%] -translate-y-1/2 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.5)] transition-transform duration-300 group-hover:scale-105" />
+      <img src={p.art} alt="" draggable={false} className="absolute right-0 top-1/2 h-[80%] max-w-[46%] -translate-y-1/2 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.5)] transition-transform duration-300 group-hover:scale-105" />
     </button>
   );
 }
@@ -327,7 +348,7 @@ export default function HomeLobby({ lobby, section, onSection, markets, onPlayMa
       {!section && !query && promos.length > 0 && (
         <Scroller className="nv-promos gap-3">
           {promos.map(p => (
-            <div key={p.id} className="snap-start">
+            <div key={p.id} className={`h-[164px] snap-start sm:h-[176px] ${p.kind === 'image' ? 'nv-promo-img' : ''}`}>
               <PromoCard p={p} />
             </div>
           ))}
