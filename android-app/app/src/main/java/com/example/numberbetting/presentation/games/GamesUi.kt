@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -259,56 +265,128 @@ fun StatusPill(open: Boolean) {
 val GoldGradient = Brush.horizontalGradient(listOf(Color(0xFFF0DDB8), Color(0xFFE0C9A0), Color(0xFFC9A87C)))
 val RoseGradient = Brush.horizontalGradient(listOf(Color(0xFFF5EDE2), Color(0xFFE8CDB8), Color(0xFFE0B7A0)))
 
-/** Amount chips (₹10 … ₹1,000) plus a custom amount field. */
+/**
+ * Bet amount box: type any whole-rupee amount, ½ and 2× buttons, quick amounts (10 … 5K) and Max.
+ * The amount always stays inside [minBet, maxBet]; 2× and Max also stay inside the balance when it is given.
+ */
 @Composable
-fun AmountPicker(amount: Int, onChange: (Int) -> Unit, minBet: Int, maxBet: Int, accent: Brush = GoldGradient) {
-    var custom by remember { mutableStateOf("") }
-    Column {
+fun AmountPicker(
+    amount: Int,
+    onChange: (Int) -> Unit,
+    minBet: Int,
+    maxBet: Int,
+    accent: Brush = GoldGradient,
+    balance: Double? = null,
+    enabled: Boolean = true,
+    label: String = "Amount",
+    fieldBg: Color = GameColors.Deep,
+    borderColor: Color = GameColors.Border,
+    accentText: Color = GameColors.Deep
+) {
+    val focusManager = LocalFocusManager.current
+    var text by remember { mutableStateOf(amount.toString()) }
+    var focused by remember { mutableStateOf(false) }
+    LaunchedEffect(amount, focused) { if (!focused) text = amount.toString() }
+    val cap = maxOf(minBet, minOf(maxBet, balance?.toInt() ?: maxBet))
+    fun set(v: Int) {
+        val c = v.coerceIn(minBet, maxBet)
+        onChange(c)
+        text = c.toString()
+    }
+    val over = balance != null && amount > balance + 0.001
+    val shape = RoundedCornerShape(10.dp)
+    Column(modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else 0.6f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = Color(0xFFB1BAD3), fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            if (balance != null) Text(inr(balance), color = GameColors.Muted, fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(6.dp))
         Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .clip(shape)
+                .background(Color.White.copy(alpha = 0.06f))
+                .border(1.dp, if (over) GameColors.ErrorText else borderColor, shape),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            listOf(10, 50, 100, 500, 1000).filter { it in minBet..maxBet }.forEach { a ->
-                val selected = amount == a && custom.isEmpty()
+            Row(
+                modifier = Modifier.weight(1f).fillMaxHeight().background(fieldBg).padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("₹", color = GameColors.Muted, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(6.dp))
+                BasicTextField(
+                    value = text,
+                    enabled = enabled,
+                    onValueChange = { v ->
+                        val d = v.filter { it.isDigit() }.take(7)
+                        text = d
+                        d.toIntOrNull()?.let { if (it in minBet..maxBet) onChange(it) }
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                    cursorBrush = SolidColor(GameColors.Gold),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { set(text.toIntOrNull() ?: minBet); focusManager.clearFocus() }),
+                    modifier = Modifier.weight(1f).onFocusChanged { f ->
+                        if (focused && !f.isFocused) set(text.toIntOrNull() ?: minBet)
+                        focused = f.isFocused
+                    }
+                )
+            }
+            AmountKey("½", enabled) { set(amount / 2) }
+            Box(Modifier.width(1.dp).height(22.dp).background(Color.White.copy(alpha = 0.15f)))
+            AmountKey("2×", enabled) { set(minOf(amount * 2, maxOf(cap, amount))) }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
+            listOf(10, 50, 100, 500, 1000, 5000).forEach { a ->
+                val ok = enabled && a in minBet..maxBet
+                val sel = amount == a
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .then(if (selected) Modifier.background(accent) else Modifier.background(GameColors.Surface).border(1.dp, GameColors.Border, RoundedCornerShape(50)))
-                        .clickable { custom = ""; onChange(a) }
-                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                        .weight(1f)
+                        .height(34.dp)
+                        .alpha(if (ok) 1f else 0.35f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .then(if (sel) Modifier.background(accent) else Modifier.background(fieldBg).border(1.dp, borderColor, RoundedCornerShape(8.dp)))
+                        .clickable(enabled = ok) { set(a) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(inr(a.toDouble()), color = if (selected) GameColors.Deep else Color(0xFFD1D5DB), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(if (a >= 1000) "${a / 1000}K" else "$a", color = if (sel) accentText else Color(0xFFD1D5DB), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
             Box(
                 modifier = Modifier
-                    .width(96.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(GameColors.Deep)
-                    .border(1.dp, if (custom.isNotEmpty()) GameColors.Gold else GameColors.Border, RoundedCornerShape(50))
-                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                    .weight(1f)
+                    .height(34.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(fieldBg)
+                    .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                    .clickable(enabled = enabled) { set(cap) },
+                contentAlignment = Alignment.Center
             ) {
-                BasicTextField(
-                    value = custom,
-                    onValueChange = { v ->
-                        val clean = v.filter { it.isDigit() }.take(6)
-                        custom = clean
-                        clean.toIntOrNull()?.let { onChange(it) }
-                    },
-                    singleLine = true,
-                    textStyle = TextStyle(color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold),
-                    cursorBrush = SolidColor(GameColors.Gold),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    decorationBox = { inner ->
-                        if (custom.isEmpty()) Text("Custom ₹", color = Color(0xFF6B7280), fontSize = 12.sp)
-                        inner()
-                    }
-                )
+                Text("Max", color = Color(0xFFD1D5DB), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
         Spacer(Modifier.height(6.dp))
-        Text("${inr(minBet.toDouble())} min · ${inr(maxBet.toDouble())} max per pick", color = Color(0xFF6B7280), fontSize = 10.sp)
+        Text(
+            if (over) "Not enough balance for ${inr(amount.toDouble())}" else "Min ${inr(minBet.toDouble())} · Max ${inr(maxBet.toDouble())}",
+            color = if (over) GameColors.ErrorText else Color(0xFF6B7280),
+            fontSize = 10.sp,
+            fontWeight = if (over) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun AmountKey(label: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.width(48.dp).fillMaxHeight().clickable(enabled = enabled) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 

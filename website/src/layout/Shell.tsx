@@ -3,7 +3,7 @@ import {
   LayoutGrid, Sparkles, Crown, Gem, Plane, Flame, Coins, Palette, Hash, Spade,
   ReceiptText, ChartColumn, Wallet, ArrowDownToLine, ArrowUpFromLine, Bell,
   Gift, BookOpen, Headphones, Smartphone, LogOut, Menu, X, UserRound, Plus,
-  House, MessageCircle, ShieldCheck, Zap, PanelLeftClose
+  House, MessageCircle, ShieldCheck, Zap, PanelLeftClose, Dices, Bomb
 } from 'lucide-react';
 import type { TradingGame } from '../games/api';
 
@@ -17,6 +17,7 @@ export type ShellActions = {
   home: () => void;
   section: (s: Exclude<HomeSection, null>) => void;
   jet: () => void;
+  instant: (g: 'dice' | 'mines') => void;
   trading: (g: TradingGame) => void;
   myBets: () => void;
   charts: () => void;
@@ -122,6 +123,8 @@ function navGroups(a: ShellActions, tab: WebTab, section: HomeSection): Item[][]
     ],
     [
       { key: 'jet', label: '99x Jet', icon: Plane, onClick: a.jet },
+      { key: 'mines', label: 'Mines', icon: Bomb, onClick: () => a.instant('mines') },
+      { key: 'dice', label: 'Dice', icon: Dices, onClick: () => a.instant('dice') },
       { key: 'dragontiger', label: 'Dragon Tiger', icon: Flame, onClick: () => a.trading('dragontiger') },
       { key: 'toss', label: 'Toss', icon: Coins, onClick: () => a.trading('toss') },
       { key: 'colour', label: 'Colour Trading', icon: Palette, onClick: () => a.trading('colour') },
@@ -291,6 +294,8 @@ export function SiteFooter({ a }: { a: ShellActions }) {
               <button className={link} onClick={() => a.section('matka')}>Matka</button>
               <button className={link} onClick={() => a.section('matka99')}>99x Matka</button>
               <button className={link} onClick={a.jet}>99x Jet</button>
+              <button className={link} onClick={() => a.instant('mines')}>Mines</button>
+              <button className={link} onClick={() => a.instant('dice')}>Dice</button>
               <button className={link} onClick={() => a.trading('dragontiger')}>Dragon Tiger</button>
               <button className={link} onClick={() => a.section('originals')}>All Originals</button>
             </div>

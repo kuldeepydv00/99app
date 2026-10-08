@@ -205,6 +205,14 @@ fun GameBoxes(
             info = BoxInfo(jet.first, if (jet.second) "Live" else if (lobby == null) "Live" else "Paused", jet.second, jet.third),
             rose = false, onClick = onOpenJet
         )
+        fun instantInfo(g: String): BoxInfo {
+            if (lobby == null) return BoxInfo("Loading…", "Live", false)
+            val x = lobby.optJSONObject("instant")?.optJSONObject(g) ?: return BoxInfo("Instant play", "Live", true)
+            return if (x.optBoolean("enabled", true)) BoxInfo("Instant play · max profit ${inr(x.optDouble("maxProfit", 50000.0))} per bet", "Live", true)
+                   else BoxInfo("Paused for now", "Paused", false, false)
+        }
+        GameBox(image = R.drawable.banner_mines, title = "Play Mines", info = instantInfo("mines"), rose = false, onClick = { onOpenTrading("mines") })
+        GameBox(image = R.drawable.banner_dice, title = "Play Dice", info = instantInfo("dice"), rose = false, onClick = { onOpenTrading("dice") })
         GameBox(image = R.drawable.banner_dragontiger, title = "Play Dragon Tiger", info = tradingInfo("dragontiger"), rose = false, onClick = { onOpenTrading("dragontiger") })
         GameBox(image = R.drawable.banner_toss, title = "Play Toss", info = tradingInfo("toss"), rose = false, onClick = { onOpenTrading("toss") })
         GameBox(image = R.drawable.banner_number, title = "Play Number Trading", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })

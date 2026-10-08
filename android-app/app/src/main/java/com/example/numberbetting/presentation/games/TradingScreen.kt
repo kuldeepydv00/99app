@@ -303,7 +303,7 @@ fun TradingScreen(
                 }
 
                 Spacer(Modifier.height(16.dp))
-                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet)
+                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet, balance = balance, label = "Amount per pick")
 
                 if (roundBets.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))

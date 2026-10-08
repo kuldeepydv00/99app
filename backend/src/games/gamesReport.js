@@ -1,13 +1,13 @@
 // Cross-game reporting for the admin panel: one place that knows how to total
-// 99x Matka and the three trading games for a date range, a user, or the dashboard.
+// every new game (99x Matka, trading games, 99x Jet, Dice, Mines) for a date range, a user, or the dashboard.
 const { state } = require('./gamesStore');
 const wallet = require('./wallet');
 const engine = require('./tradingEngine');
 const matka99 = require('./matka99');
 const { getISTDateStr } = require('../utils/dateCycle');
 
-const GAME_KEYS = ['matka99', 'number', 'card', 'colour', 'dragontiger', 'toss', 'jet'];
-const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger', toss: 'Toss', jet: '99x Jet' };
+const GAME_KEYS = ['matka99', 'number', 'card', 'colour', 'dragontiger', 'toss', 'jet', 'dice', 'mines'];
+const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger', toss: 'Toss', jet: '99x Jet', dice: 'Dice', mines: 'Mines' };
 
 // The business date of a bet: 99x Matka uses its market date, trading uses the IST day it was placed.
 const betDate = b => (b.game === 'matka99' ? b.dateKey : engine.istDateOf(b.created_at));
@@ -73,7 +73,12 @@ function summary({ from, to } = {}) {
   const games = {};
   GAME_KEYS.forEach(g => {
     games[g] = { key: g, label: LABELS[g], ...finish(per[g]) };
-    if (g === 'jet') {
+    if (g === 'dice' || g === 'mines') {
+      const ic = (state.instant && state.instant.config && state.instant.config[g]) || {};
+      games[g].enabled = ic.enabled !== false; games[g].payout = null;
+      games[g].edgePct = Math.round((ic.edge || 0) * 10000) / 100;
+      games[g].maxProfit = ic.maxProfit;
+    } else if (g === 'jet') {
       const jc = (state.jet && state.jet.config) || {};
       games[g].enabled = jc.enabled !== false; games[g].payout = null;
       games[g].edgePct = Math.round((jc.edge || 0) * 10000) / 100;

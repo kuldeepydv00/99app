@@ -11,6 +11,7 @@ export type Lobby = {
   serverTime: number;
   trading: Record<TradingGame, { label: string; enabled: boolean; payout: number; tiePayout?: number; tieOneIn?: number; round: { roundId: string; start: number; lock: number; end: number; status: string }; lastResult: { result: string } | null }>;
   matka99: { payout: number; haroofPayout?: number; ruleLine?: string; rules?: string[]; markets: { key: string; name: string; open: string | null; close: string | null; resultTime: string | null; enabled: boolean; isOpen: boolean; lastResult: { number: string; date: string } | null; todayResult: string | null }[] };
+  instant?: Record<'dice' | 'mines', { label: string; enabled: boolean; edgePct: number; minBet: number; maxBet: number; maxProfit: number }>;
   jet?: { label: string; enabled: boolean; serverTime: number; growth: number; lastPoint: number | null; recent: number[];
     round: { id?: string; phase: string; bettingEndsAt?: number; flyAt?: number | null; point?: number | null } };
 };

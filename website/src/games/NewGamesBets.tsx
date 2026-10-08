@@ -3,9 +3,10 @@ import { gamesGet } from './api';
 import { inr, OptionTag } from './ui';
 
 type Bet = { id: string; game: string; option: string; amount: number; status: string; win_amount: number; result: string | number | null; created_at: string; roundId?: string; marketName?: string; dateKey?: string; cashout?: number | null };
-type Filter = 'all' | 'matka99' | 'jet' | 'dragontiger' | 'toss' | 'number' | 'card' | 'colour';
+type Filter = 'all' | 'matka99' | 'jet' | 'dice' | 'mines' | 'dragontiger' | 'toss' | 'number' | 'card' | 'colour';
 
-const LABEL: Record<string, string> = { matka99: '99x Matka', jet: '99x Jet', dragontiger: 'Dragon Tiger', toss: 'Toss', number: 'Number', card: 'Card', colour: 'Colour' };
+const LABEL: Record<string, string> = { matka99: '99x Matka', jet: '99x Jet', dice: 'Dice', mines: 'Mines', dragontiger: 'Dragon Tiger', toss: 'Toss', number: 'Number', card: 'Card', colour: 'Colour' };
+const INSTANT = (g: string) => g === 'dice' || g === 'mines';
 
 export default function NewGamesBets({ mobile }: { mobile: string }) {
   const [bets, setBets] = useState<Bet[] | null>(null);
@@ -23,7 +24,7 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
   return (
     <div className="space-y-3">
       <div className="g-noscroll flex gap-2 overflow-x-auto">
-        {(['all', 'matka99', 'jet', 'dragontiger', 'toss', 'number', 'card', 'colour'] as Filter[]).map(f => (
+        {(['all', 'matka99', 'jet', 'dice', 'mines', 'dragontiger', 'toss', 'number', 'card', 'colour'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${filter === f ? 'bg-[#C9A87C] text-slate-950' : 'border border-gray-800 bg-[#123A2C] text-gray-300'}`}>
             {f === 'all' ? 'All' : LABEL[f]}
@@ -37,18 +38,22 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
           {list.map(b => (
             <div key={b.id} className="flex items-center justify-between border-b border-gray-900 px-3 py-2.5 last:border-0">
               <div className="flex items-center gap-2.5">
-                {b.game === 'jet'
+                {INSTANT(b.game)
+                  ? <span className="rounded-md border border-[#2F4553] bg-[#0F212E] px-1.5 py-0.5 text-[11px] font-extrabold text-white">{b.game === 'dice' ? (b.result ?? '—') : 'MINES'}</span>
+                  : b.game === 'jet'
                   ? <span className="rounded-md border border-[#BFE0F5]/40 bg-[#0A0F0D] px-1.5 py-0.5 text-[11px] font-extrabold text-[#DCEFFB]">{b.status === 'won' && b.cashout ? `${b.cashout.toFixed(2)}x` : 'JET'}</span>
                   : /^[AB]\d$/.test(b.option)
                   ? <span className="rounded-md border border-[#E0B7A0]/50 bg-[#0A0F0D] px-1.5 py-0.5 text-[11px] font-extrabold text-[#F5EDE2]">{b.option[0] === 'A' ? 'Andar' : 'Bahar'} {b.option[1]}</span>
                   : <OptionTag game={b.game === 'matka99' ? 'number' : b.game} value={b.option} />}
                 <div>
                   <p className="text-xs font-bold text-white">{b.game === 'matka99' ? b.marketName : LABEL[b.game]} · {inr(b.amount)}</p>
-                  <p className="font-mono text-[10px] text-gray-500">{b.game === 'matka99' ? b.dateKey : b.roundId}</p>
+                  <p className="font-mono text-[10px] text-gray-500">{b.game === 'matka99' ? b.dateKey : INSTANT(b.game) ? b.option : b.roundId}</p>
                 </div>
               </div>
               {b.status === 'won'
                 ? <span className="text-xs font-extrabold text-[#3EE08A]">+{inr(b.win_amount)}</span>
+                : b.status === 'lost' && INSTANT(b.game)
+                  ? <span className="text-[10px] font-bold text-gray-500">{b.game === 'dice' ? `Rolled ${b.result}` : b.result}</span>
                 : b.status === 'lost' && b.game === 'jet'
                   ? <span className="text-[10px] font-bold text-gray-500">Blasted {Number(b.result || 0).toFixed(2)}x</span>
                 : b.status === 'lost'

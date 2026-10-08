@@ -11,7 +11,7 @@ import type { HomeSection } from './Shell';
 
 // Home lobby: promotions, search, category tabs, 99x Originals tiles and the Matka / 99x Matka markets.
 
-export type GameId = 'matka' | 'matka99' | 'jet' | TradingGame;
+export type GameId = 'matka' | 'matka99' | 'jet' | 'dice' | 'mines' | TradingGame;
 
 /** One Matka market, worked out by App from its schedule and today's result. */
 export type MarketView = {
@@ -32,6 +32,8 @@ type Game = { id: GameId; name: string; tile: string; tags: string };
 
 export const ORIGINALS: Game[] = [
   { id: 'jet', name: '99x Jet', tile: '/tiles/tile_jet.webp', tags: 'jet crash plane aviator fly' },
+  { id: 'mines', name: 'Mines', tile: '/tiles/tile_mines.webp', tags: 'mines mine gem bomb grid' },
+  { id: 'dice', name: 'Dice', tile: '/tiles/tile_dice.webp', tags: 'dice roll over under' },
   { id: 'dragontiger', name: 'Dragon Tiger', tile: '/tiles/tile_dragontiger.webp', tags: 'dragon tiger dt tie' },
   { id: 'toss', name: 'Toss', tile: '/tiles/tile_toss.webp', tags: 'toss coin head tail flip' },
   { id: 'colour', name: 'Colour Trading', tile: '/tiles/tile_colour.webp', tags: 'colour color red blue green trading' },
@@ -50,6 +52,11 @@ function gameStatus(id: GameId, lobby: Lobby | null, now: number, matkaOpen: num
     const ms = lobby.matka99.markets.filter(m => m.enabled);
     const open = ms.filter(m => m.isOpen).length;
     return { text: `${open} of ${ms.length} open`, live: open > 0 };
+  }
+  if (id === 'dice' || id === 'mines') {
+    const g = lobby.instant?.[id];
+    if (!g) return { text: 'Instant play', live: true };
+    return g.enabled ? { text: 'Instant play', live: true } : { text: 'Paused', live: false, disabled: true };
   }
   if (id === 'jet') {
     const j = lobby.jet;

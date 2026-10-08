@@ -96,3 +96,20 @@ exports.jetBets = (req, res) => send(res, () => ({ bets: jet.getAdminBets({
 }) }));
 exports.jetReport = (req, res) => send(res, () => ({ days: jet.getDailyReport(Math.min(parseInt(req.query.days, 10) || 14, 60)) }));
 exports.jetConfig = (req, res) => send(res, () => jet.updateConfig(req.body || {}, 'admin'));
+
+// ---------- Dice and Mines ----------
+const instant = require('../games/instantGames');
+const instantGame = (req, res) => {
+  if (!instant.LABELS[req.params.game]) { res.status(404).json({ success: false, message: 'Unknown game' }); return false; }
+  return true;
+};
+exports.instantOverview = (req, res) => { if (instantGame(req, res)) send(res, () => instant.getAdminOverview(req.params.game)); };
+exports.instantReport = (req, res) => { if (instantGame(req, res)) send(res, () => ({ days: instant.getDailyReport(req.params.game, Math.min(parseInt(req.query.days, 10) || 14, 90)) })); };
+exports.instantBets = (req, res) => {
+  if (!instantGame(req, res)) return;
+  send(res, () => ({ bets: instant.getAdminBets(req.params.game, {
+    mobile: req.query.mobile, status: req.query.status, date: dateParam(req.query.date),
+    limit: Math.min(parseInt(req.query.limit, 10) || 300, 5000)
+  }) }));
+};
+exports.instantConfig = (req, res) => { if (instantGame(req, res)) send(res, () => instant.updateConfig(req.params.game, req.body || {}, 'admin')); };

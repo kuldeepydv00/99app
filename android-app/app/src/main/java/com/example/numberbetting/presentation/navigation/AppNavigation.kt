@@ -704,6 +704,24 @@ fun AppNavigation() {
                         userBonus = bonus
                     }
                 )
+                "trading_dice" -> com.example.numberbetting.presentation.games.DiceScreen(
+                    mobile = currentUserPhone,
+                    balance = userBalance,
+                    onBack = { currentScreen = "game" },
+                    onBalances = { bal, bonus ->
+                        userBalance = bal
+                        userBonus = bonus
+                    }
+                )
+                "trading_mines" -> com.example.numberbetting.presentation.games.MinesScreen(
+                    mobile = currentUserPhone,
+                    balance = userBalance,
+                    onBack = { currentScreen = "game" },
+                    onBalances = { bal, bonus ->
+                        userBalance = bal
+                        userBonus = bonus
+                    }
+                )
                 "trading_toss" -> com.example.numberbetting.presentation.games.TossScreen(
                     mobile = currentUserPhone,
                     balance = userBalance,

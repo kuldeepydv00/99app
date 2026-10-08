@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TradingAdmin from './games/TradingAdmin';
 import JetAdmin from './games/JetAdmin';
+import InstantAdmin from './games/InstantAdmin';
 import GamesOverview from './games/GamesOverview';
 import UserGamesTab from './games/UserGamesTab';
 import DashboardGamesStrip from './games/DashboardGamesStrip';
@@ -285,10 +286,10 @@ export default function App() {
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
-    'matka99' | 'jetGame' | 'dragonTiger' | 'tossGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
+    'matka99' | 'jetGame' | 'diceGame' | 'minesGame' | 'dragonTiger' | 'tossGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'diceGame', 'minesGame', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -2246,6 +2247,8 @@ export default function App() {
               { id: 'gamesOverview', label: 'Games Overview', icon: '🎮', section: 'NEW GAMES' },
               { id: 'matka99', label: '99x Matka', icon: '💎' },
               { id: 'jetGame', label: '99x Jet', icon: '✈️' },
+              { id: 'minesGame', label: 'Mines', icon: '💣' },
+              { id: 'diceGame', label: 'Dice', icon: '🎲' },
               { id: 'dragonTiger', label: 'Dragon Tiger', icon: '🐉' },
               { id: 'tossGame', label: 'Toss', icon: '🪙' },
               { id: 'numberTrading', label: 'Number Trading', icon: '🔢' },
@@ -7085,6 +7088,8 @@ export default function App() {
             {activeTab === 'gamesOverview' && <GamesOverview onNavigate={(tab) => setActiveTab(tab as any)} onOpenUser={openUserByMobile} />}
             {activeTab === 'matka99' && <Matka99Admin onOpenUser={openUserByMobile} />}
             {activeTab === 'jetGame' && <JetAdmin onOpenUser={openUserByMobile} />}
+            {activeTab === 'diceGame' && <InstantAdmin key="dice" game="dice" onOpenUser={openUserByMobile} />}
+            {activeTab === 'minesGame' && <InstantAdmin key="mines" game="mines" onOpenUser={openUserByMobile} />}
             {activeTab === 'numberTrading' && <TradingAdmin key="number" game="number" onOpenUser={openUserByMobile} />}
             {activeTab === 'cardTrading' && <TradingAdmin key="card" game="card" onOpenUser={openUserByMobile} />}
             {activeTab === 'colourTrading' && <TradingAdmin key="colour" game="colour" onOpenUser={openUserByMobile} />}

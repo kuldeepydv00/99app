@@ -88,7 +88,7 @@ export function OptionTag({ game, value, size = 'sm' }: { game: string; value: s
     );
   }
   return (
-    <span className={`inline-flex items-center justify-center rounded-md border border-[#C9A87C]/50 bg-[#0A0F0D] font-mono font-extrabold text-[#F0DDB8] ${big ? 'w-11 h-11 text-lg' : 'px-1.5 py-0.5 text-xs'}`}>
+    <span className={`inline-flex items-center justify-center rounded-md border border-white/15 bg-black/30 font-mono font-extrabold text-white ${big ? 'w-11 h-11 text-lg' : 'px-1.5 py-0.5 text-xs'}`}>
       {value}
     </span>
   );

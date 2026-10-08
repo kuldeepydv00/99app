@@ -412,7 +412,7 @@ fun DragonTigerScreen(
                 }
 
                 Spacer(Modifier.height(16.dp))
-                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet)
+                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet, balance = balance, label = "Amount per pick")
 
                 // Bead road (oldest to newest, 6 per column)
                 if (results.isNotEmpty()) {

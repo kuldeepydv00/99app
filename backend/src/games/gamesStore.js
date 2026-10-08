@@ -1,4 +1,4 @@
-// Persistent store for the new games (99x Matka, Number / Card / Colour Trading, Dragon Tiger, Toss, 99x Jet).
+// Persistent store for the new games (99x Matka, Number / Card / Colour Trading, Dragon Tiger, Toss, 99x Jet, Dice, Mines).
 // Kept in its own file (gamesStore.json) so the existing dataStore.json is never touched.
 const fs = require('fs');
 const path = require('path');
@@ -50,6 +50,16 @@ function defaultState() {
       history: [],     // ended rounds, newest first (seed revealed)
       daily: {},       // IST date -> { rounds, voided }
       configLog: []    // setting changes, newest first
+    },
+    // Dice and Mines (instant games, provably fair). See instantGames.js.
+    instant: {
+      config: {
+        dice: { enabled: true, edge: 0.10, minBet: 10, maxBet: 10000, maxProfit: 50000 },
+        mines: { enabled: true, edge: 0.10, minBet: 10, maxBet: 10000, maxProfit: 50000 }
+      },
+      seeds: {},       // mobile -> { current: { server, hash, client, nonce }, previous: [...] }
+      active: {},      // mobile -> the Mines game in play
+      configLog: []    // setting changes, newest first
     }
   };
 }
@@ -90,6 +100,16 @@ function load() {
       if (state.jet.config.edge === 0.04 && !adminSetEdge) {
         state.jet.config.edge = 0.4;
         state.jet.configLog = [{ at: new Date().toISOString(), by: 'system', changes: { edge: { from: 0.04, to: 0.4 } } }, ...(state.jet.configLog || [])];
+      }
+    }
+    if (raw.instant) {
+      if (raw.instant.config) {
+        for (const g of Object.keys(state.instant.config)) {
+          if (raw.instant.config[g]) Object.assign(state.instant.config[g], raw.instant.config[g]);
+        }
+      }
+      for (const k of ['seeds', 'active', 'configLog']) {
+        if (raw.instant[k] !== undefined) state.instant[k] = raw.instant[k];
       }
     }
     // 99x payout is fixed by design

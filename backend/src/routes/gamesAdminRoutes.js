@@ -30,6 +30,11 @@ router.get('/jet/bets', c.jetBets);
 router.get('/jet/report', c.jetReport);
 router.post('/jet/config', c.jetConfig);
 
+router.get('/instant/:game/overview', c.instantOverview);
+router.get('/instant/:game/report', c.instantReport);
+router.get('/instant/:game/bets', c.instantBets);
+router.post('/instant/:game/config', c.instantConfig);
+
 router.get('/summary', c.summary);
 router.get('/user/:mobile/bets', c.userBets);
 

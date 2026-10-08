@@ -3,6 +3,8 @@ import { inr } from './common';
 const GAMES = [
   { key: 'matka99', icon: '💎', tab: 'matka99' },
   { key: 'jet', icon: '✈️', tab: 'jetGame' },
+  { key: 'mines', icon: '💣', tab: 'minesGame' },
+  { key: 'dice', icon: '🎲', tab: 'diceGame' },
   { key: 'dragontiger', icon: '🐉', tab: 'dragonTiger' },
   { key: 'toss', icon: '🪙', tab: 'tossGame' },
   { key: 'number', icon: '🔢', tab: 'numberTrading' },
@@ -22,7 +24,7 @@ export default function DashboardGamesStrip({ stats, onNavigate }: { stats: any;
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold text-[#212529]">🎮 New games in this period</h2>
-          <p className="text-[11px] text-gray-500">99x Matka, 99x Jet and Trading — already included in Total Betting and Winnings above ({inr(r.staked)} staked, {inr(r.paid)} paid).</p>
+          <p className="text-[11px] text-gray-500">99x Matka, 99x Jet, Mines, Dice and Trading — already included in Total Betting and Winnings above ({inr(r.staked)} staked, {inr(r.paid)} paid).</p>
         </div>
         <button onClick={() => onNavigate('gamesOverview')} className="rounded bg-[#007BFF] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0069D9]">Open Games Overview →</button>
       </div>

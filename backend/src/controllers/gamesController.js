@@ -2,6 +2,7 @@
 const engine = require('../games/tradingEngine');
 const matka99 = require('../games/matka99');
 const jet = require('../games/jetEngine');
+const instant = require('../games/instantGames');
 const { cleanMobile } = require('../games/wallet');
 
 const send = (res, fn) => {
@@ -35,7 +36,8 @@ const ownMobile = (req, res, mobile) => {
 exports.lobby = (req, res) => send(res, () => ({
   ...engine.getLobby(),
   matka99: matka99.getMarkets(),
-  jet: jet.getLobby()
+  jet: jet.getLobby(),
+  instant: instant.getLobby()
 }));
 
 exports.tradingState = (req, res) => {
@@ -61,7 +63,7 @@ exports.allMyBets = (req, res) => {
   const mobile = ownMobile(req, res, req.query.mobile);
   if (!mobile) return;
   send(res, () => ({
-    bets: [...engine.getMyBets('all', mobile, 200), ...matka99.getMyBets(mobile, 200), ...jet.getMyBets(mobile, 200).bets]
+    bets: [...engine.getMyBets('all', mobile, 200), ...matka99.getMyBets(mobile, 200), ...jet.getMyBets(mobile, 200).bets, ...instant.getMyBets(mobile, 200)]
       .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
       .slice(0, 300)
   }));
@@ -127,3 +129,57 @@ exports.jetCashout = (req, res) => {
   if (!mobile) return;
   send(res, () => jet.cashOut(mobile, req.body));
 };
+
+// ---------- Dice and Mines ----------
+exports.instantState = (req, res) => send(res, () => instant.getPublicState(req.params.game));
+
+exports.instantMyBets = (req, res) => {
+  const mobile = ownMobile(req, res, req.query.mobile);
+  if (!mobile) return;
+  const game = instant.LABELS[req.query.game] ? req.query.game : undefined;
+  send(res, () => ({ bets: instant.getMyBets(mobile, Math.min(parseInt(req.query.limit, 10) || 50, 200), game) }));
+};
+
+exports.diceBet = (req, res) => {
+  const mobile = ownMobile(req, res, req.body.mobile);
+  if (!mobile) return;
+  send(res, () => instant.playDice(mobile, req.body));
+};
+
+exports.minesActive = (req, res) => {
+  const mobile = ownMobile(req, res, req.query.mobile);
+  if (!mobile) return;
+  send(res, () => instant.getActiveMines(mobile));
+};
+
+exports.minesStart = (req, res) => {
+  const mobile = ownMobile(req, res, req.body.mobile);
+  if (!mobile) return;
+  send(res, () => instant.startMines(mobile, req.body));
+};
+
+exports.minesReveal = (req, res) => {
+  const mobile = ownMobile(req, res, req.body.mobile);
+  if (!mobile) return;
+  send(res, () => instant.revealMine(mobile, req.body));
+};
+
+exports.minesCashout = (req, res) => {
+  const mobile = ownMobile(req, res, req.body.mobile);
+  if (!mobile) return;
+  send(res, () => instant.cashOutMines(mobile));
+};
+
+exports.fairness = (req, res) => {
+  const mobile = ownMobile(req, res, req.query.mobile);
+  if (!mobile) return;
+  send(res, () => instant.getFairness(mobile));
+};
+
+exports.fairnessRotate = (req, res) => {
+  const mobile = ownMobile(req, res, req.body.mobile);
+  if (!mobile) return;
+  send(res, () => instant.rotateSeeds(mobile, req.body));
+};
+
+exports.fairnessVerify = (req, res) => send(res, () => instant.verify(req.body || {}));

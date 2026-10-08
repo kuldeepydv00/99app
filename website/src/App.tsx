@@ -14,6 +14,9 @@ import TradingPage from './games/TradingPage';
 import JetPage from './games/JetPage';
 import DragonTigerPage from './games/DragonTigerPage';
 import TossPage from './games/TossPage';
+import DicePage from './games/DicePage';
+import MinesPage from './games/MinesPage';
+import { BetAmount } from './games/kit';
 import type { Balances } from './games/TradingPage';
 import Matka99Page from './games/Matka99Page';
 import Matka99Chart from './games/Matka99Chart';
@@ -699,6 +702,7 @@ export default function App() {
   const [matka99Market, setMatka99Market] = useState<string | null>(null);
   const [tradingGame, setTradingGame] = useState<TradingGame | null>(null);
   const [jetOpen, setJetOpen] = useState(false);
+  const [instantGame, setInstantGame] = useState<null | 'dice' | 'mines'>(null);
   const [chartMode, setChartMode] = useState<'matka' | 'matka99'>('matka');
   // Home is a casino lobby; its tabs are Lobby (null), Originals, Matka and 99x Matka.
   const [homeSection, setHomeSection] = useState<HomeSection>(null);
@@ -1492,6 +1496,7 @@ export default function App() {
     home: () => { setSelectedGameForBetting(null); setActiveWebTab('home'); setHomeSection(null); toTop(); },
     section: (s) => { setSelectedGameForBetting(null); setActiveWebTab('home'); openHomeSection(s); },
     jet: () => setJetOpen(true),
+    instant: (g) => setInstantGame(g),
     trading: (g) => setTradingGame(g),
     myBets: () => { setSelectedGameForBetting(null); setActiveWebTab('mybets'); toTop(); },
     charts: () => { setSelectedGameForBetting(null); setActiveWebTab('charts'); toTop(); },
@@ -1509,6 +1514,7 @@ export default function App() {
   const openLobbyGame = (id: GameId) => {
     if (id === 'matka' || id === 'matka99') openHomeSection(id);
     else if (id === 'jet') setJetOpen(true);
+    else if (id === 'dice' || id === 'mines') setInstantGame(id);
     else setTradingGame(id);
   };
   const MATKA_MARKETS = ['Shiv Parwati', 'Delhi Bazar', 'Dubai Market', 'Shree Ganesh', 'Faridabad', 'Ghaziabad', 'Gali', 'Desawar'];
@@ -1541,7 +1547,8 @@ export default function App() {
     const dt = gamesLobby?.trading?.dragontiger;
     list.push(
       { id: 'p99', kind: 'card', tag: 'Fixed payout', title: '99x Matka', text: `Same 8 markets with a fixed ${gamesLobby?.matka99.payout ?? 99}x on Jodi. The lowest total bet wins.`, cta: 'Play now', art: '/tiles/promo_99x.webp', tint: '#8A1846', onClick: () => shellActions.section('matka99') },
-      { id: 'pdt', kind: 'card', tag: 'New game', title: 'Dragon Tiger', text: `One-minute rounds. Pays ${dt?.payout ?? 2}x, and a Tie pays ${dt?.tiePayout ?? 15}x.`, cta: 'Play now', art: '/tiles/promo_dt.webp', tint: '#8A1020', onClick: () => setTradingGame('dragontiger') },
+      { id: 'pmines', kind: 'card', tag: 'New game', title: 'Mines', text: 'Find the gems, dodge the mines. Cash out any time.', cta: 'Play now', art: '/tiles/promo_mines.webp', tint: '#0F6B4A', onClick: () => setInstantGame('mines') },
+      { id: 'pdt', kind: 'card', tag: 'Live game', title: 'Dragon Tiger', text: `One-minute rounds. Pays ${dt?.payout ?? 2}x, and a Tie pays ${dt?.tiePayout ?? 15}x.`, cta: 'Play now', art: '/tiles/promo_dt.webp', tint: '#8A1020', onClick: () => setTradingGame('dragontiger') },
       { id: 'pref', kind: 'card', tag: 'Promotion', title: 'Refer & Earn', text: 'Invite friends and earn commission on every bet they place, for life.', cta: 'Invite friends', art: '/tiles/promo_coin.webp', tint: '#8A5A06', onClick: () => setShowReferralModal(true) },
       { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: () => setJetOpen(true) },
       { id: 'papp', kind: 'card', tag: 'Android app', title: 'Get the 99x app', text: 'Faster play and instant result alerts on your phone.', cta: 'Download', art: '/app_logo.png', tint: '#0F6B4A', onClick: () => handleDownloadApk() }
@@ -2733,6 +2740,12 @@ export default function App() {
             onBalances={applyGameBalances}
           />
         )}
+        {instantGame === 'dice' && (
+          <DicePage mobile={user?.mobile || ''} balance={user?.balance || 0} onBack={() => setInstantGame(null)} onBalances={applyGameBalances} />
+        )}
+        {instantGame === 'mines' && (
+          <MinesPage mobile={user?.mobile || ''} balance={user?.balance || 0} onBack={() => setInstantGame(null)} onBalances={applyGameBalances} />
+        )}
         {tradingGame === 'dragontiger' && (
           <DragonTigerPage
             mobile={user?.mobile || ''}
@@ -2761,22 +2774,23 @@ export default function App() {
         )}
 
         {selectedGameForBetting && (
-          <div className="fixed inset-0 bg-[#06120C] text-white z-50 flex flex-col justify-between overflow-y-auto">
+          <div className="fixed inset-0 bg-nv-bg font-nv text-white antialiased z-50 flex flex-col justify-between overflow-y-auto">
             {/* Top Dark Header */}
             {/* Top Bar Header (100% Copy of Android App UI) */}
-            <div className="bg-[#0A0F0D] border-b border-gray-800/80 px-4 py-3 flex justify-between items-center sticky top-0 z-30 shadow-xl backdrop-blur-md">
+            <div className="bg-nv-side/95 border-b border-black/30 px-3 sm:px-6 h-14 flex justify-between items-center sticky top-0 z-30 shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur">
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => {
                     setSelectedGameForBetting(null);
                     setBetMessage('');
                   }}
-                  className="text-gray-300 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-md bg-nv-card text-nv-text hover:bg-nv-card2 hover:text-white"
+                  aria-label="Back"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-[18px] h-[18px]" />
                 </button>
                 <div>
-                  <h2 className="text-base font-black text-white tracking-wide">
+                  <h2 className="text-[15px] font-bold text-white">
                     {selectedGameForBetting}
                   </h2>
                   {bet99 && <p className="text-[10px] font-bold text-[#E0B7A0]">99x Matka · Jodi {gamesLobby?.matka99.payout || 99}x · Haroof {gamesLobby?.matka99.haroofPayout || 9.9}x</p>}
@@ -2786,15 +2800,15 @@ export default function App() {
               {/* Wallet Badge (Dark Gold / Emerald Pill) */}
               <button 
                 onClick={() => setShowDepositModal(true)} 
-                className="flex items-center gap-1.5 bg-[#153827] border border-amber-500/30 text-[#D9B98C] px-3 py-1 rounded-full text-xs font-mono font-bold shadow-md hover:border-amber-400"
+                className="flex items-stretch overflow-hidden rounded-md bg-nv-input ring-1 ring-nv-edge text-[13px] font-semibold tabular-nums text-white"
               >
-                <span>💳 ₹{user?.balance ? user.balance.toFixed(2) : '0.00'}</span>
-                <span className="bg-amber-500/20 text-amber-300 text-xs px-1 rounded font-bold">+</span>
+                <span className="px-3 py-2">₹{user?.balance ? user.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                <span className="flex items-center bg-nv-blue px-2.5 text-[15px] font-bold">+</span>
               </button>
             </div>
 
             {/* Sub-header Underline Category Selector (JODI | PASTE | CROSSING | HAROOF) */}
-            <div className="bg-[#0A0F0D] border-b border-gray-800/60 px-4 py-2 sticky top-[53px] z-20 flex justify-center gap-6 shadow-md">
+            <div className="bg-nv-side/95 border-b border-black/30 px-4 py-2 sticky top-14 z-20 flex justify-center gap-6 backdrop-blur">
               {(['Jodi', 'Paste', 'Crossing', 'Haruf'] as const).filter((t) => !(bet99 && t === 'Paste')).map((t) => {
                 const label = t === 'Haruf' ? 'HAROOF' : t.toUpperCase();
                 const isActive = betCategory === t;
@@ -2805,10 +2819,10 @@ export default function App() {
                       setBetCategory(t);
                       setJodiGrid({});
                     }}
-                    className={`text-xs font-black tracking-wider transition-all pb-1.5 ${
+                    className={`text-[12.5px] font-bold tracking-wider transition-all pb-1.5 ${
                       isActive 
-                        ? 'text-amber-400 border-b-2 border-amber-400' 
-                        : 'text-gray-400 hover:text-gray-200 border-b-2 border-transparent'
+                        ? 'text-white border-b-2 border-nv-blue2' 
+                        : 'text-nv-mute hover:text-white border-b-2 border-transparent'
                     }`}
                   >
                     {label}
@@ -2818,9 +2832,9 @@ export default function App() {
             </div>
 
             {/* Main Bidding Cards Area (100% Copy of Android App Dark Theme Grid) */}
-            <div className="p-3.5 flex-1 pb-32 max-w-md mx-auto w-full bg-[#0B1D14]">
+            <div className="p-3 sm:p-5 flex-1 pb-28 max-w-3xl mx-auto w-full">
               {bet99 && (
-                <div className="mb-3 rounded-xl border border-[#E0B7A0]/40 bg-gradient-to-br from-[#2A2320]/80 to-[#0A0F0D] p-3">
+                <div className="mb-3 rounded-md border border-[#E0B7A0]/40 bg-gradient-to-br from-[#2A2320]/80 to-[#0A0F0D] p-3">
                   <div className="flex items-center justify-between gap-2 text-[11px]">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-extrabold uppercase tracking-wide ${bet99Open ? 'bg-[#3EE08A]/15 text-[#3EE08A]' : 'bg-white/10 text-gray-300'}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${bet99Open ? 'animate-pulse bg-[#3EE08A]' : 'bg-gray-400'}`} />{bet99Open ? 'Betting open' : 'Closed'}
@@ -2828,12 +2842,12 @@ export default function App() {
                     <span className="text-gray-400">Close {bet99Market?.close || '—'} · Result {bet99Market?.resultTime || '—'}</span>
                   </div>
                   <p className="mt-2 text-[11px] font-semibold leading-snug text-gray-200">{gamesLobby?.matka99.ruleLine || 'Result at the market’s result time: the number with the lowest total bet wins. Ties are picked at random.'}</p>
-                  <button onClick={() => setShow99Rules(true)} className="mt-1 text-[11px] font-bold text-[#E0C9A0] underline hover:text-white">How it works</button>
+                  <button onClick={() => setShow99Rules(true)} className="mt-1 text-[11px] font-bold text-nv-blue2 hover:text-white">How it works</button>
                 </div>
               )}
               {betMessage && (
-                <div className={`p-3 rounded-xl text-xs font-bold mb-4 text-center ${
-                  betMessage.includes('successfully') ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/50' : 'bg-red-950/80 text-red-400 border border-red-500/50'
+                <div className={`p-3 rounded-md text-xs font-bold mb-4 text-center ${
+                  betMessage.includes('successfully') ? 'bg-emerald-950/80 text-nv-green border border-emerald-500/50' : 'bg-red-950/80 text-red-400 border border-red-500/50'
                 }`}>
                   {betMessage}
                 </div>
@@ -2841,12 +2855,12 @@ export default function App() {
 
               {/* Paste / Type Toggle Header Pill & Formats Badge (in Jodi & Paste modes; not on 99x Matka) */}
               {!bet99 && (betCategory === 'Jodi' || betCategory === 'Paste') && (
-                <div className="flex justify-between items-center bg-[#153324] p-2 rounded-xl mb-3 border border-gray-800">
-                  <div className="flex items-center gap-1.5 bg-[#0A0F0D] p-1 rounded-lg border border-gray-800">
+                <div className="flex justify-between items-center bg-nv-card p-2 rounded-md mb-3 border border-nv-line">
+                  <div className="flex items-center gap-1.5 bg-nv-input p-1 rounded-lg border border-nv-line">
                     <button
                       onClick={() => setBetCategory('Paste')}
                       className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                        betCategory === 'Paste' ? 'bg-[#1E8A6E] text-white shadow' : 'text-gray-400 hover:text-white'
+                        betCategory === 'Paste' ? 'bg-nv-blue text-white shadow' : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       Paste
@@ -2854,7 +2868,7 @@ export default function App() {
                     <button
                       onClick={() => setBetCategory('Jodi')}
                       className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                        betCategory === 'Jodi' ? 'bg-[#1E8A6E] text-white shadow' : 'text-gray-400 hover:text-white'
+                        betCategory === 'Jodi' ? 'bg-nv-blue text-white shadow' : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       Type
@@ -2863,7 +2877,7 @@ export default function App() {
 
                   <button
                     onClick={() => setShowFormatsModal(true)}
-                    className="bg-[#123A2C] hover:bg-[#1E5C46] border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1"
+                    className="bg-nv-card hover:bg-nv-card2 border border-nv-line text-nv-green px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1"
                   >
                     <span>Formats 1</span>
                     <span className="text-[10px]">▼</span>
@@ -2874,14 +2888,14 @@ export default function App() {
               {/* PASTE TAB: Smart Copy-Paste Betting Engine (Auto-Parser) matching media_1789228099608.png */}
               {betCategory === 'Paste' && !bet99 && (
                 <div className="space-y-3">
-                  <div className="bg-[#0D1512] border border-gray-800 p-3 rounded-2xl">
+                  <div className="bg-nv-panel border border-nv-line p-3 rounded-lg">
                     <div className="flex gap-2">
                       <textarea
                         rows={6}
                         placeholder={`Paste your bets string here...\n\nExamples:\n12 34 56 @50\n123456789 (50)\n10(50.10)`}
                         value={copyPasteInputText}
                         onChange={(e) => setCopyPasteInputText(e.target.value)}
-                        className="flex-1 bg-[#0A0F0D] border border-gray-800 rounded-xl p-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 resize-none"
+                        className="flex-1 bg-nv-input border border-nv-line rounded-md p-2.5 text-xs font-mono text-white focus:outline-none focus:border-nv-blue2 resize-none"
                       />
                       <div className="w-28 flex flex-col justify-between gap-1.5">
                         <button
@@ -2889,12 +2903,12 @@ export default function App() {
                             const parsed = parseCopyPasteText(copyPasteInputText, copyPasteWithPalat);
                             setCopyPasteParsedList(parsed);
                           }}
-                          className="w-full bg-[#1E8A6E] hover:bg-[#1A6E5F] text-white font-black py-2.5 rounded-xl text-xs uppercase shadow"
+                          className="w-full bg-nv-blue hover:bg-nv-blue2 text-white font-black py-2.5 rounded-md text-xs uppercase shadow"
                         >
                           DONE
                         </button>
                         
-                        <label className="flex items-center gap-1.5 bg-[#0A0F0D] border border-gray-800 p-1.5 rounded-lg cursor-pointer">
+                        <label className="flex items-center gap-1.5 bg-nv-input border border-nv-line p-1.5 rounded-lg cursor-pointer">
                           <input
                             type="checkbox"
                             checked={copyPasteWithPalat}
@@ -2909,7 +2923,7 @@ export default function App() {
                             setCopyPasteInputText('');
                             setCopyPasteParsedList([]);
                           }}
-                          className="w-full bg-[#E91E63] hover:bg-[#D81B60] text-white font-black py-2.5 rounded-xl text-xs uppercase shadow"
+                          className="w-full bg-[#E91E63] hover:bg-[#D81B60] text-white font-black py-2.5 rounded-md text-xs uppercase shadow"
                         >
                           CLEAR
                         </button>
@@ -2918,7 +2932,7 @@ export default function App() {
                   </div>
 
                   {/* Hindi Notice Card */}
-                  <div className="bg-[#163224] border border-[#2E5642] p-3.5 rounded-2xl space-y-2">
+                  <div className="bg-nv-card border border-[#2E5642] p-3.5 rounded-lg space-y-2">
                     <div className="text-[#D9B98C] font-black text-xs">📌 जरूरी सूचना:</div>
                     <p className="text-[#C9D6CE] text-[11px] leading-relaxed font-medium">
                       आपके दांव (bet) के पैसे सही तरीके से जुड़ें, इसके लिए नंबरों के आखिरी में अपनी पैसों की मात्रा (amount) नीचे दिए गए तरीकों में से किसी एक तरीके से जरूर लिखें:<br />
@@ -2934,14 +2948,14 @@ export default function App() {
 
                   {/* Summary Review Table */}
                   {copyPasteParsedList.length > 0 && (
-                    <div className="bg-[#0D1512] border border-emerald-500/50 p-3 rounded-2xl space-y-2">
+                    <div className="bg-nv-panel border border-emerald-500/50 p-3 rounded-lg space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-emerald-400 font-black text-xs">📋 GENERATED JODI BETS ({copyPasteParsedList.length})</span>
+                        <span className="text-nv-green font-black text-xs">📋 GENERATED JODI BETS ({copyPasteParsedList.length})</span>
                         <span className="text-[#D9B98C] font-black text-xs">
                           Total: ₹{copyPasteParsedList.reduce((sum, item) => sum + item.amount, 0)}
                         </span>
                       </div>
-                      <div className="border-b border-gray-800" />
+                      <div className="border-b border-nv-line" />
                       <div className="space-y-1 max-h-60 overflow-y-auto">
                         {copyPasteParsedList.map((item, idx) => (
                           <div key={idx} className="flex justify-between items-center py-1 text-xs">
@@ -2950,7 +2964,7 @@ export default function App() {
                               {item.isPalat && <span className="text-[10px] font-bold text-amber-400">(Palat)</span>}
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="font-black text-emerald-400">₹{item.amount}</span>
+                              <span className="font-black text-nv-green">₹{item.amount}</span>
                               <button
                                 onClick={() => setCopyPasteParsedList(copyPasteParsedList.filter((_, i) => i !== idx))}
                                 className="text-red-400 hover:text-red-300 font-bold px-1"
@@ -2973,13 +2987,13 @@ export default function App() {
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">JODI MATRIX (01 - 00)</span>
                     <button 
                       onClick={() => setJodiGrid({})} 
-                      className="text-[11px] text-amber-400 hover:text-amber-300 font-bold underline"
+                      className="text-[11px] text-nv-blue2 hover:text-white font-semibold"
                     >
                       Clear All
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
                     {Array.from({ length: 100 }).map((_, idx) => {
                       const numVal = (idx + 1) % 100;
                       const numStr = String(numVal).padStart(2, '0');
@@ -2987,12 +3001,12 @@ export default function App() {
                       return (
                         <div 
                           key={numStr}
-                          className={`rounded-xl border transition-all p-1.5 flex flex-col items-center justify-between min-h-[58px] ${
-                            val ? 'bg-emerald-950/60 border-emerald-500/80 shadow-lg shadow-emerald-950/50' : 'bg-[#0D1512] border-gray-800/90 hover:border-gray-700'
+                          className={`rounded-md border transition-all p-1.5 flex flex-col items-center justify-between min-h-[58px] ${
+                            val ? 'bg-nv-green/10 border-nv-green/70 shadow-lg' : 'bg-nv-panel border-nv-line hover:border-nv-edge'
                           }`}
                         >
-                          <span className={`text-xs font-mono font-black ${val ? 'text-emerald-400' : 'text-gray-200'}`}>{numStr}</span>
-                          <div className="w-full mt-1 flex items-center justify-center bg-[#0A0F0D] rounded-lg border border-gray-800 px-1 py-0.5">
+                          <span className={`text-xs font-mono font-black ${val ? 'text-nv-green' : 'text-white'}`}>{numStr}</span>
+                          <div className="w-full mt-1 flex items-center justify-center bg-nv-input rounded-md border border-nv-edge px-1 py-0.5">
                             <span className="text-[9px] text-gray-400 font-bold mr-0.5">₹</span>
                             <input
                               type="number"
@@ -3014,7 +3028,7 @@ export default function App() {
                                   setJodiGrid({ ...jodiGrid, [numStr]: cleanVal });
                                 }
                               }}
-                              className={`w-full text-center text-[11px] font-mono font-bold focus:outline-none bg-transparent ${val ? 'text-emerald-300' : 'text-white'}`}
+                              className={`w-full text-center text-[11px] font-mono font-bold focus:outline-none bg-transparent ${val ? 'text-nv-green' : 'text-white'}`}
                             />
                           </div>
                         </div>
@@ -3034,13 +3048,13 @@ export default function App() {
                         setCrossingDigits('');
                         setJodiGrid({});
                       }} 
-                      className="text-[11px] text-amber-400 hover:text-amber-300 font-bold underline"
+                      className="text-[11px] text-nv-blue2 hover:text-white font-semibold"
                     >
                       Clear All
                     </button>
                   </div>
 
-                  <div className="bg-[#0D1512] p-4 rounded-2xl border border-gray-800 space-y-4 mb-4">
+                  <div className="bg-nv-panel p-4 rounded-lg border border-nv-line space-y-4 mb-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-300 uppercase mb-1.5">Enter Crossing Digits (e.g. 1234)</label>
                       <input
@@ -3069,12 +3083,12 @@ export default function App() {
                             setJodiGrid({});
                           }
                         }}
-                        className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
+                        className="w-full bg-nv-input border border-nv-edge rounded-md p-3 text-sm text-white font-mono focus:outline-none focus:border-nv-blue2"
                       />
                     </div>
 
                     {/* JODA ADD TOGGLE SWITCH */}
-                    <div className="flex justify-between items-center bg-[#0A0F0D] p-3 rounded-xl border border-gray-700">
+                    <div className="flex justify-between items-center bg-nv-input p-3 rounded-md border border-nv-edge">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-white uppercase">Joda Add</span>
                         <span className="text-[10px] text-gray-400">Include double digit pairs (11, 22, etc.)</span>
@@ -3098,7 +3112,7 @@ export default function App() {
                           }
                         }}
                         className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
-                          crossingWithJoda ? 'bg-[#2ECC8F]' : 'bg-gray-700'
+                          crossingWithJoda ? 'bg-nv-blue' : 'bg-gray-700'
                         }`}
                       >
                         <div
@@ -3109,59 +3123,29 @@ export default function App() {
                       </button>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-gray-300 uppercase mb-1.5">Amount Per Pair (₹)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Enter amount (min ₹1)"
-                        value={crossingAmount}
-                        onKeyDown={(e) => {
-                          if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
-                        }}
-                        onChange={(e) => {
-                          const amt = e.target.value.replace(/[^0-9]/g, '');
-                          setCrossingAmount(amt);
-                          if (crossingDigits.length >= 2 && amt && parseInt(amt) > 0) {
-                            const newGrid: Record<string, string> = {};
-                            const chars = crossingDigits.split('');
-                            chars.forEach(d1 => {
-                              chars.forEach(d2 => {
-                                if (!crossingWithJoda && d1 === d2) return;
-                                newGrid[`${d1}${d2}`] = amt;
-                              });
+                    <BetAmount
+                      label="Amount per pair"
+                      value={parseInt(crossingAmount || '10', 10) || 10}
+                      min={1}
+                      max={50000}
+                      balance={user?.balance || 0}
+                      note="Every pair gets this amount"
+                      onChange={(v) => {
+                        const amt = String(v);
+                        setCrossingAmount(amt);
+                        if (crossingDigits.length >= 2) {
+                          const newGrid: Record<string, string> = {};
+                          const chars = crossingDigits.split('');
+                          chars.forEach(d1 => {
+                            chars.forEach(d2 => {
+                              if (!crossingWithJoda && d1 === d2) return;
+                              newGrid[`${d1}${d2}`] = amt;
                             });
-                            setJodiGrid(newGrid);
-                          }
-                        }}
-                        className="w-full bg-[#0A0F0D] border border-gray-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-[#2ECC8F]"
-                      />
-                      <div className="flex gap-2 mt-2">
-                        {['10', '50', '100', '500'].map((amt) => (
-                          <button
-                            type="button"
-                            key={amt}
-                            onClick={() => {
-                              setCrossingAmount(amt);
-                              if (crossingDigits.length >= 2) {
-                                const newGrid: Record<string, string> = {};
-                                const chars = crossingDigits.split('');
-                                chars.forEach(d1 => {
-                                  chars.forEach(d2 => {
-                                    if (!crossingWithJoda && d1 === d2) return;
-                                    newGrid[`${d1}${d2}`] = amt;
-                                  });
-                                });
-                                setJodiGrid(newGrid);
-                              }
-                            }}
-                            className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-1.5 rounded-lg text-[10px]"
-                          >
-                            ₹{amt}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                          });
+                          setJodiGrid(newGrid);
+                        }
+                      }}
+                    />
                   </div>
 
                   {/* Display Generated Pair Cards */}
@@ -3169,16 +3153,16 @@ export default function App() {
                     <div>
                       <div className="flex justify-between items-center mb-2 text-xs">
                         <span className="font-bold text-gray-400 uppercase">GENERATED PAIRS ({Object.keys(jodiGrid).length})</span>
-                        <span className="font-mono text-emerald-400 font-bold">Total: ₹{Object.values(jodiGrid).reduce((sum, v) => sum + (parseInt(v) || 0), 0)}</span>
+                        <span className="font-mono text-nv-green font-bold">Total: ₹{Object.values(jodiGrid).reduce((sum, v) => sum + (parseInt(v) || 0), 0)}</span>
                       </div>
                       <div className="grid grid-cols-5 gap-2">
                         {Object.entries(jodiGrid).map(([pair, val]) => (
                           <div 
                             key={pair}
-                            className="bg-emerald-950/60 border border-emerald-500/80 rounded-xl p-2 text-center shadow-md flex flex-col items-center justify-between min-h-[58px]"
+                            className="bg-nv-green/10 border border-nv-green/70 rounded-md p-2 text-center shadow-md flex flex-col items-center justify-between min-h-[58px]"
                           >
-                            <span className="text-xs font-mono font-black text-emerald-400">{pair}</span>
-                            <span className="text-[10px] font-mono font-bold text-emerald-300">₹{val}</span>
+                            <span className="text-xs font-mono font-black text-nv-green">{pair}</span>
+                            <span className="text-[10px] font-mono font-bold text-nv-green">₹{val}</span>
                           </div>
                         ))}
                       </div>
@@ -3192,13 +3176,13 @@ export default function App() {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">HAROOF BIDDING (A0-A9 & B0-B9)</span>
-                    <button onClick={() => setJodiGrid({})} className="text-[11px] text-amber-400 hover:text-amber-300 font-bold underline">Clear All</button>
+                    <button onClick={() => setJodiGrid({})} className="text-[11px] text-nv-blue2 hover:text-white font-semibold">Clear All</button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* ANDER Column */}
-                    <div className="bg-[#0D1512] border border-gray-800/90 rounded-2xl overflow-hidden p-2">
-                      <div className="bg-[#0A0F0D] py-2 px-3 text-center border-b border-gray-800 rounded-xl mb-2">
+                    <div className="bg-nv-panel border border-nv-line rounded-lg overflow-hidden p-2">
+                      <div className="bg-nv-input py-2 px-3 text-center border-b border-nv-line rounded-md mb-2">
                         <h4 className="text-xs font-black text-white tracking-wider uppercase">ANDER</h4>
                       </div>
                       <div className="space-y-1.5">
@@ -3208,12 +3192,12 @@ export default function App() {
                           return (
                             <div 
                               key={key}
-                              className={`flex items-center justify-between p-1.5 rounded-xl border transition-all ${
-                                val ? 'bg-emerald-950/60 border-emerald-500/80' : 'bg-[#0A0F0D]/70 border-gray-800'
+                              className={`flex items-center justify-between p-1.5 rounded-md border transition-all ${
+                                val ? 'bg-nv-green/10 border-nv-green/70' : 'bg-nv-input/70 border-nv-line'
                               }`}
                             >
                               <span className="text-xs font-black font-mono text-white px-2">{key}</span>
-                              <div className="flex items-center bg-[#0D1512] rounded-lg border border-gray-700/80 px-2 py-1 w-20">
+                              <div className="flex items-center bg-nv-panel rounded-lg border border-nv-edge/80 px-2 py-1 w-20">
                                 <span className="text-[10px] text-gray-400 font-bold mr-1">₹</span>
                                 <input
                                   type="number"
@@ -3232,7 +3216,7 @@ export default function App() {
                                       setJodiGrid({ ...jodiGrid, [key]: cleanVal });
                                     }
                                   }}
-                                  className={`w-full text-center text-xs font-mono font-bold focus:outline-none bg-transparent ${val ? 'text-emerald-300' : 'text-white'}`}
+                                  className={`w-full text-center text-xs font-mono font-bold focus:outline-none bg-transparent ${val ? 'text-nv-green' : 'text-white'}`}
                                 />
                               </div>
                             </div>
@@ -3242,8 +3226,8 @@ export default function App() {
                     </div>
 
                     {/* BAHAR Column */}
-                    <div className="bg-[#0D1512] border border-gray-800/90 rounded-2xl overflow-hidden p-2">
-                      <div className="bg-[#0A0F0D] py-2 px-3 text-center border-b border-gray-800 rounded-xl mb-2">
+                    <div className="bg-nv-panel border border-nv-line rounded-lg overflow-hidden p-2">
+                      <div className="bg-nv-input py-2 px-3 text-center border-b border-nv-line rounded-md mb-2">
                         <h4 className="text-xs font-black text-white tracking-wider uppercase">BAHAR</h4>
                       </div>
                       <div className="space-y-1.5">
@@ -3253,12 +3237,12 @@ export default function App() {
                           return (
                             <div 
                               key={key}
-                              className={`flex items-center justify-between p-1.5 rounded-xl border transition-all ${
-                                val ? 'bg-emerald-950/60 border-emerald-500/80' : 'bg-[#0A0F0D]/70 border-gray-800'
+                              className={`flex items-center justify-between p-1.5 rounded-md border transition-all ${
+                                val ? 'bg-nv-green/10 border-nv-green/70' : 'bg-nv-input/70 border-nv-line'
                               }`}
                             >
                               <span className="text-xs font-black font-mono text-white px-2">{key}</span>
-                              <div className="flex items-center bg-[#0D1512] rounded-lg border border-gray-700/80 px-2 py-1 w-20">
+                              <div className="flex items-center bg-nv-panel rounded-lg border border-nv-edge/80 px-2 py-1 w-20">
                                 <span className="text-[10px] text-gray-400 font-bold mr-1">₹</span>
                                 <input
                                   type="number"
@@ -3277,7 +3261,7 @@ export default function App() {
                                       setJodiGrid({ ...jodiGrid, [key]: cleanVal });
                                     }
                                   }}
-                                  className={`w-full text-center text-xs font-mono font-bold focus:outline-none bg-transparent ${val ? 'text-emerald-300' : 'text-white'}`}
+                                  className={`w-full text-center text-xs font-mono font-bold focus:outline-none bg-transparent ${val ? 'text-nv-green' : 'text-white'}`}
                                 />
                               </div>
                             </div>
@@ -3288,14 +3272,14 @@ export default function App() {
                   </div>
 
                   {/* Quick Haroof Bar (A, B, Digits, Amount, DONE) */}
-                  <div className="mt-3 bg-[#0D1512] border border-gray-800 rounded-2xl p-2 flex gap-1.5 items-center">
+                  <div className="mt-3 bg-nv-panel border border-nv-line rounded-lg p-2 flex gap-1.5 items-center">
                     <button
                       type="button"
                       onClick={() => setHarufQuickASelected(!harufQuickASelected)}
-                      className={`h-10 px-3 rounded-xl font-black text-xs border transition-all ${
+                      className={`h-10 px-3 rounded-md font-black text-xs border transition-all ${
                         harufQuickASelected 
-                          ? 'bg-[#1E8A6E] text-white border-emerald-500' 
-                          : 'bg-[#0A0F0D] text-gray-400 border-gray-700/80'
+                          ? 'bg-nv-blue text-white border-emerald-500' 
+                          : 'bg-nv-input text-gray-400 border-nv-edge/80'
                       }`}
                     >
                       A
@@ -3303,10 +3287,10 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setHarufQuickBSelected(!harufQuickBSelected)}
-                      className={`h-10 px-3 rounded-xl font-black text-xs border transition-all ${
+                      className={`h-10 px-3 rounded-md font-black text-xs border transition-all ${
                         harufQuickBSelected 
-                          ? 'bg-[#1E8A6E] text-white border-emerald-500' 
-                          : 'bg-[#0A0F0D] text-gray-400 border-gray-700/80'
+                          ? 'bg-nv-blue text-white border-emerald-500' 
+                          : 'bg-nv-input text-gray-400 border-nv-edge/80'
                       }`}
                     >
                       B
@@ -3316,14 +3300,14 @@ export default function App() {
                       placeholder="Haroof"
                       value={harufQuickDigits}
                       onChange={(e) => setHarufQuickDigits(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="h-10 w-24 bg-[#0A0F0D] border border-gray-700/80 rounded-xl px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 text-center"
+                      className="h-10 w-24 bg-nv-input border border-nv-edge/80 rounded-md px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-nv-blue2 text-center"
                     />
                     <input
                       type="number"
                       placeholder="Amount"
                       value={harufQuickAmount}
                       onChange={(e) => setHarufQuickAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="h-10 w-24 bg-[#0A0F0D] border border-gray-700/80 rounded-xl px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 text-center"
+                      className="h-10 w-24 bg-nv-input border border-nv-edge/80 rounded-md px-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-nv-blue2 text-center"
                     />
                     <button
                       type="button"
@@ -3361,7 +3345,7 @@ export default function App() {
                         setHarufQuickAmount('');
                         setBetMessage('');
                       }}
-                      className="flex-1 h-10 bg-[#1E8A6E] hover:bg-[#1A6E5F] text-white font-black text-xs uppercase rounded-xl tracking-wider shadow"
+                      className="flex-1 h-10 bg-nv-blue hover:bg-nv-blue2 text-white font-black text-xs uppercase rounded-md tracking-wider shadow"
                     >
                       DONE
                     </button>
@@ -3373,7 +3357,7 @@ export default function App() {
             {/* Formats Modal Popup */}
             {showFormatsModal && (
               <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-[#0A0F0D] border border-amber-500/30 rounded-2xl max-w-sm w-full p-4 space-y-4">
+                <div className="bg-nv-input border border-amber-500/30 rounded-lg max-w-sm w-full p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-amber-400 font-black text-sm">💡 Supported Copy-Paste Formats</h3>
                     <button onClick={() => setShowFormatsModal(false)} className="text-gray-400 hover:text-white font-bold">✕</button>
@@ -3387,15 +3371,15 @@ export default function App() {
                       { ex: '12 34 into 50', desc: 'Jodis 12, 34 for ₹50 each' },
                       { ex: '10(50.10)', desc: 'Jodi 10 for ₹50, Palat 01 for ₹10' }
                     ].map((f, i) => (
-                      <div key={i} className="flex justify-between items-center py-1.5 border-b border-gray-800">
-                        <span className="font-mono font-bold text-emerald-400 text-[11px]">{f.ex}</span>
+                      <div key={i} className="flex justify-between items-center py-1.5 border-b border-nv-line">
+                        <span className="font-mono font-bold text-nv-green text-[11px]">{f.ex}</span>
                         <span className="text-gray-300 text-[11px]">{f.desc}</span>
                       </div>
                     ))}
                   </div>
                   <button
                     onClick={() => setShowFormatsModal(false)}
-                    className="w-full bg-[#1E8A6E] text-white font-bold py-2.5 rounded-xl text-xs uppercase"
+                    className="w-full bg-nv-blue text-white font-bold py-2.5 rounded-md text-xs uppercase"
                   >
                     OK, Got It
                   </button>
@@ -3405,20 +3389,21 @@ export default function App() {
 
             {bet99 && show99Rules && (
               <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60" onClick={() => setShow99Rules(false)}>
-                <div className="w-full max-w-md rounded-t-3xl border-t border-[#E0B7A0]/40 bg-[#0C1712] p-5 pb-8" onClick={e => e.stopPropagation()}>
+                <div className="w-full max-w-md rounded-t-3xl border-t border-[#E0B7A0]/40 bg-nv-panel p-5 pb-8" onClick={e => e.stopPropagation()}>
                   <h3 className="text-base font-black text-white">How 99x Matka works</h3>
                   <ul className="mt-3 space-y-2.5 text-xs leading-relaxed text-gray-300">
                     {(gamesLobby?.matka99.rules || []).map((line, i) => (
                       <li key={i} className="flex gap-2"><span className="text-[#E0B7A0]">•</span><span>{line}</span></li>
                     ))}
                   </ul>
-                  <button onClick={() => setShow99Rules(false)} className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#F0DDB8] to-[#C9A87C] py-3 text-sm font-black text-[#0A0F0D]">Got it</button>
+                  <button onClick={() => setShow99Rules(false)} className="mt-4 w-full rounded-md bg-gradient-to-r from-[#F0DDB8] to-[#C9A87C] py-3 text-sm font-black text-[#0A0F0D]">Got it</button>
                 </div>
               </div>
             )}
 
             {/* Bottom Sticky Dark Action Bar */}
-            <div className="fixed bottom-[74px] left-1/2 -translate-x-1/2 w-full max-w-md bg-[#0A0F0D] border-t border-gray-800/90 p-3 flex gap-3 items-center z-40 shadow-2xl backdrop-blur-md">
+            <div className="fixed bottom-0 inset-x-0 bg-nv-side/95 border-t border-black/40 px-3 pt-3 flex gap-3 items-center z-40 shadow-[0_-6px_18px_rgba(0,0,0,0.35)] backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+              <div className="mx-auto flex w-full max-w-3xl gap-3 items-center">
               {(bet99 ? bet99Open : isGameBettingOpen(selectedGameForBetting, gameSchedules[selectedGameForBetting])) ? (
                 <>
                   <button 
@@ -3430,16 +3415,16 @@ export default function App() {
                         setJodiGrid({});
                       }
                     }}
-                    className="bg-red-500/10 border border-red-500/30 text-red-400 font-bold px-3.5 py-3 rounded-xl text-xs flex items-center gap-1 hover:bg-red-500/20"
+                    className="bg-nv-red/10 ring-1 ring-nv-red/40 text-nv-red font-semibold px-3.5 h-12 rounded-md text-[13px] flex items-center gap-1 hover:bg-nv-red/20"
                   >
                     <span>🗑️</span> {betCategory === 'Paste' ? copyPasteParsedList.length : Object.keys(jodiGrid).length}
                   </button>
 
                   <button
                     onClick={handlePlaceBet}
-                    className="flex-1 bg-[#2ECC8F] hover:bg-[#29B876] text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="flex-1 bg-nv-blue hover:bg-nv-blue2 text-white font-bold h-12 rounded-md text-[15px] shadow-[0_4px_12px_rgba(0,0,0,0.25)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                   >
-                    <span>PLACE BET</span>
+                    <span>Place Bet</span>
                     <span>•</span>
                     <span className="font-mono">
                       ₹{betCategory === 'Paste' 
@@ -3449,94 +3434,16 @@ export default function App() {
                   </button>
                 </>
               ) : (
-                <div className="flex-1 bg-[#123A2C] border border-amber-500/40 text-[#E0C9A0] font-bold py-3.5 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-inner">
+                <div className="flex-1 bg-nv-card ring-1 ring-nv-edge text-nv-text font-semibold h-12 px-4 rounded-md text-[12.5px] text-center flex items-center justify-center gap-2">
                   <span>⏳</span>
                   <span>{bet99
                     ? `Betting CLOSED for ${bet99.name} · ${bet99Market?.todayResult ? `Result ${bet99Market.todayResult}` : `Result at ${bet99Market?.resultTime || '—'}`}`
                     : `Betting CLOSED for ${selectedGameForBetting} ${declaredResults[selectedGameForBetting] ? `(Winner: ${declaredResults[selectedGameForBetting]})` : '(Result Pending)'}`}</span>
                 </div>
               )}
-            </div>
-
-            {/* 100% Pixel-Perfect Luxury Gold Capsule 5-Icon Bottom Navigation Bar (Matching Mockup media_1789564447949.png) */}
-            <div className="fixed bottom-3 left-0 right-0 w-full z-50 pointer-events-none px-3">
-              <div className="max-w-md mx-auto relative pointer-events-auto rounded-full bg-gradient-to-r from-[#F0DDB8] via-[#C9A87C] to-[#F0DDB8] p-[1.5px] shadow-[0_0_25px_rgba(212,175,55,0.4),0_10px_30px_rgba(0,0,0,0.9)]">
-                <div className="w-full h-full rounded-full bg-gradient-to-b from-[#0D1815] via-[#050605] to-[#040604] px-2 py-1.5 flex justify-around items-center relative overflow-visible backdrop-blur-xl">
-                  
-                  {/* HOME TAB */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setActiveWebTab('home'); setHomeSection(null);
-                    }}
-                    className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">HOME</span>
-                  </button>
-
-                  {/* CHART TAB */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setActiveWebTab('charts');
-                    }}
-                    className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M4 9h4v11H4zm6-5h4v16h-4zm6 8h4v8h-4z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">CHART</span>
-                  </button>
-
-                  {/* CENTER ELEVATED FLOATING GOLD CROWN BUTTON FOR MY BET */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setActiveWebTab('mybets');
-                    }}
-                    className="relative -top-4 w-13 h-13 rounded-full bg-gradient-to-tr from-[#F0DDB8] via-[#C9A87C] to-[#8A6D47] p-[2px] shadow-[0_0_25px_rgba(212,175,55,0.8),0_4px_15px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 z-20"
-                  >
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#123A2C] to-[#060B08] flex flex-col items-center justify-center border border-[#F0DDB8]/60 shadow-inner">
-                      <svg className="w-5 h-5 fill-[#E0C9A0] filter drop-shadow-[0_0_6px_rgba(245,215,127,0.8)]" viewBox="0 0 24 24">
-                        <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
-                      </svg>
-                      <span className="text-[7.5px] font-black text-[#E0C9A0] tracking-tighter leading-none mt-0.5">MY BET</span>
-                    </div>
-                  </button>
-
-                  {/* CHAT TAB */}
-                  <a 
-                    href={`https://wa.me/${whatsappNumber}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">CHAT</span>
-                  </a>
-
-                  {/* REFER TAB */}
-                  <button 
-                    onClick={() => {
-                      setSelectedGameForBetting(null);
-                      setShowReferralModal(true);
-                    }}
-                    className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4V8h16v11z"/>
-                    </svg>
-                    <span className="text-[9px] font-black uppercase tracking-wider">REFER</span>
-                  </button>
-
-                </div>
               </div>
             </div>
+
           </div>
         )}
 

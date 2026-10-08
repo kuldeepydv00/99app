@@ -285,7 +285,7 @@ fun Matka99BettingScreen(
                 }
 
                 Spacer(Modifier.height(16.dp))
-                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet, accent = RoseGradient)
+                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet, accent = RoseGradient, balance = balance, label = "Amount per pick")
 
                 if (myBets.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))

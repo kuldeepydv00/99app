@@ -379,7 +379,7 @@ fun TossScreen(
                 }
 
                 Spacer(Modifier.height(16.dp))
-                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet)
+                AmountPicker(amount = amount, onChange = { amount = it }, minBet = minBet, maxBet = maxBet, balance = balance, label = "Amount per pick")
 
                 // History (oldest to newest, 6 per column)
                 if (results.isNotEmpty()) {

@@ -10,6 +10,9 @@
   --color-nv-side: #0B141C;    /* sidebar, top bar, bottom bar */
   --color-nv-card: #17242F;    /* cards, nav groups */
   --color-nv-card2: #213443;   /* hover, active tab */
+  --color-nv-panel: #1A2C38;   /* game bet panel */
+  --color-nv-input: #0F212E;   /* inputs, game area */
+  --color-nv-edge: #2F4553;    /* input borders, game tiles */
   --color-nv-line: #2A3C4B;    /* borders */
   --color-nv-text: #B1BAD3;    /* secondary text */
   --color-nv-mute: #8DA2B5;    /* muted text */

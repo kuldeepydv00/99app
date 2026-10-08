@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Info } from 'lucide-react';
 import { gamesGet, gamesPost, API_BASE } from './api';
-import { inr, Sheet } from './ui';
+import { inr } from './ui';
+import { GameScreen, GameBox, BetAmount, Field, PlayButton, GameFooter, NvModal, RulesList, Segmented, rupees } from './kit';
 import type { Balances } from './TradingPage';
 
 // ---------- types (mirror backend/src/games/jetEngine.js) ----------
@@ -27,7 +27,7 @@ type MyBet = { id: string; roundId: string; slot: number; amount: number; auto: 
 
 const multAt = (growth: number, ms: number) => (ms <= 0 ? 1 : Math.floor(Math.exp(growth * ms) * 100 + 1e-9) / 100);
 const fmtX = (x: number | null | undefined) => (x == null ? '—' : `${x.toFixed(2)}x`);
-const pointColour = (p: number) => (p >= 10 ? 'text-[#F0C36A] border-[#F0C36A]/50 bg-[#F0C36A]/10' : p >= 2 ? 'text-[#3EE08A] border-[#3EE08A]/40 bg-[#3EE08A]/10' : 'text-gray-300 border-gray-700 bg-white/5');
+const pointColour = (p: number) => (p >= 10 ? 'bg-nv-gold text-[#2A1B08]' : p >= 2 ? 'bg-nv-green text-[#05210F]' : 'bg-nv-edge text-white');
 
 
 // ---------- live connection: server-sent events, polling as a fallback ----------
@@ -147,7 +147,7 @@ function Flight({ round, config, serverNow }: { round: JRound; config: JConfig; 
   const bettingFrac = config.bettingSec > 0 ? Math.min(1, bettingLeft / (config.bettingSec * 1000)) : 0;
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-[#C9A87C]/25 bg-[radial-gradient(ellipse_at_70%_80%,#163A52_0%,#0B2233_45%,#05101A_100%)] ${round.phase === 'ended' ? 'g-jet-shake' : ''}`}>
+    <div className={`relative overflow-hidden rounded-lg bg-[radial-gradient(ellipse_at_70%_80%,#163A5A_0%,#0F2A40_45%,#0F212E_100%)] ${round.phase === 'ended' ? 'g-jet-shake' : ''}`}>
       <div className="pointer-events-none absolute -bottom-1/2 -left-1/4 h-[200%] w-[150%] opacity-60 g-jet-rays"
         style={{ background: 'repeating-conic-gradient(from 0deg at 50% 50%, rgba(240,221,184,.06) 0deg 5deg, transparent 5deg 14deg)' }} />
       <svg viewBox={`0 0 ${W} ${H}`} className="relative block w-full" role="img" aria-label="Flight">
@@ -256,59 +256,35 @@ function BetPanel({ slot, st, active, now, mobile, balance, onDone, onError }: {
     button = { label: `BET ${inr(amount)}`, sub: bettingOpen ? undefined : 'next round', cls: 'from-[#3EE08A] to-[#1E9C68] text-[#04140C] shadow-[#3EE08A]/25', onClick: place };
   }
 
-  const step = (d: number) => setAmount(a => Math.min(cfg.maxBet, Math.max(cfg.minBet, a + d)));
-
+  const tone: 'blue' | 'green' | 'grey' = canCashOut ? 'green' : canCancel ? 'grey' : button.disabled ? 'grey' : 'blue';
   return (
-    <div className="rounded-2xl border border-[#1E5C46] bg-[#0C1712] p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex rounded-full border border-gray-800 bg-[#0A0F0D] p-0.5">
-          {(['bet', 'auto'] as const).map(mm => (
-            <button key={mm} disabled={locked} onClick={() => setMode(mm)}
-              className={`rounded-full px-3 py-1 text-[11px] font-extrabold transition-all ${mode === mm ? 'bg-[#1E8A6E] text-white' : 'text-gray-400 hover:text-white'} disabled:opacity-60`}>
-              {mm === 'bet' ? 'Bet' : 'Auto'}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-3 rounded-md bg-nv-input/40 p-3 ring-1 ring-nv-edge">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12.5px] font-bold text-white">Bet {slot}</span>
         {won
-          ? <span className="text-[11px] font-extrabold text-[#3EE08A]">Won {inr(active!.win)} at {fmtX(active!.cashout)}</span>
+          ? <span className="text-[11.5px] font-semibold text-nv-green">Won {rupees(active!.win)} at {fmtX(active!.cashout)}</span>
           : active && active.status === 'lost' && inRound
-            ? <span className="text-[11px] font-bold text-gray-500">Lost {inr(active.amount)}</span>
-            : <span className="text-[10px] font-bold text-gray-500">Bet {slot}</span>}
+            ? <span className="text-[11.5px] font-semibold text-nv-mute">Lost {rupees(active.amount, 0)}</span>
+            : <div className="w-36"><Segmented options={[{ value: 'bet', label: 'Manual' }, { value: 'auto', label: 'Auto' }]} value={mode} onChange={setMode} disabled={locked} /></div>}
       </div>
-      <div className="flex gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-center rounded-full border border-gray-700 bg-[#0A0F0D]">
-            <button disabled={locked} onClick={() => step(-10)} className="h-9 w-9 shrink-0 text-lg font-bold text-gray-300 disabled:opacity-40">−</button>
-            <input inputMode="numeric" disabled={locked} value={amount}
-              onChange={e => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '') || '0', 10); setAmount(Math.min(cfg.maxBet, v)); }}
-              onBlur={() => setAmount(a => Math.max(cfg.minBet, a))}
-              className="w-full min-w-0 bg-transparent text-center font-mono text-sm font-extrabold text-white focus:outline-none disabled:opacity-60" />
-            <button disabled={locked} onClick={() => step(10)} className="h-9 w-9 shrink-0 text-lg font-bold text-gray-300 disabled:opacity-40">+</button>
-          </div>
-          <div className="grid grid-cols-4 gap-1">
-            {[10, 50, 100, 500].filter(v => v >= cfg.minBet && v <= cfg.maxBet).map(v => (
-              <button key={v} disabled={locked} onClick={() => setAmount(v)}
-                className={`rounded-md py-1 text-[10px] font-bold ${amount === v ? 'bg-[#C9A87C] text-[#0A0F0D]' : 'bg-white/5 text-gray-300'} disabled:opacity-50`}>₹{v}</button>
-            ))}
-          </div>
-          {mode === 'auto' && (
-            <label className="flex items-center justify-between gap-2 text-[11px] font-bold text-gray-400">
-              Auto cash-out
-              <span className="flex items-center rounded-md border border-gray-700 bg-[#0A0F0D] px-2">
-                <input inputMode="decimal" disabled={locked} value={auto} onChange={e => setAuto(e.target.value.replace(/[^0-9.]/g, ''))}
-                  className="w-14 bg-transparent py-1 text-right font-mono text-xs font-extrabold text-white focus:outline-none disabled:opacity-60" />
-                <span className="text-gray-500">x</span>
-              </span>
-            </label>
+      <BetAmount value={amount} onChange={setAmount} min={cfg.minBet} max={cfg.maxBet} balance={balance} disabled={locked} />
+      {mode === 'auto' && (
+        <Field label="Cash out at">
+          <label className="flex h-11 items-center gap-2 rounded-md bg-nv-input px-3 ring-1 ring-nv-edge focus-within:ring-nv-blue2">
+            <input inputMode="decimal" disabled={locked} value={auto} onChange={e => setAuto(e.target.value.replace(/[^0-9.]/g, ''))}
+              className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-semibold tabular-nums text-white focus:outline-none disabled:opacity-60" />
+            <span className="text-[13px] font-semibold text-nv-mute">×</span>
+          </label>
+        </Field>
+      )}
+      <PlayButton tone={tone} onClick={() => button.onClick?.()} busy={busy} disabled={button.disabled}>
+        <span className="flex flex-col items-center leading-tight">
+          <span>{button.label === `BET ${inr(amount)}` ? `Bet ${rupees(amount, 0)}` : button.label.charAt(0) + button.label.slice(1).toLowerCase()}</span>
+          {(button.sub || (pending && active!.auto)) && (
+            <span className="text-[11px] font-semibold opacity-85">{button.sub}{pending && active!.auto ? `${button.sub ? ' · ' : ''}auto at ${fmtX(active!.auto)}` : ''}</span>
           )}
-        </div>
-        <button onClick={button.onClick} disabled={busy || button.disabled}
-          className={`flex w-[44%] shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-b px-2 py-3 shadow-lg transition-transform active:scale-[0.97] disabled:opacity-60 ${button.cls}`}>
-          <span className="text-sm font-black tracking-wider">{busy ? '…' : button.label}</span>
-          {button.sub && <span className="mt-0.5 font-mono text-[12px] font-extrabold tabular-nums opacity-90">{button.sub}</span>}
-          {pending && active!.auto && <span className="mt-0.5 text-[10px] font-bold opacity-80">auto at {fmtX(active!.auto)}</span>}
-        </button>
-      </div>
+        </span>
+      </PlayButton>
     </div>
   );
 }
@@ -366,10 +342,9 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
 
   if (!st) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[#06120C] text-white">
-        <p className="text-sm text-gray-400">{error || 'Loading 99x Jet…'}</p>
-        <button onClick={onBack} className="text-xs font-bold text-[#E0C9A0]">← Back</button>
-      </div>
+      <GameScreen title="99x Jet" balance={balance} onBack={onBack}>
+        <p className="py-24 text-center text-[13px] text-nv-mute">{error || 'Loading 99x Jet…'}</p>
+      </GameScreen>
     );
   }
 
@@ -380,102 +355,85 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-[#06120C] text-white">
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-800/80 bg-[#0A0F0D]/95 px-4 py-3 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="rounded-full p-1 text-gray-300 hover:bg-white/5 hover:text-white" aria-label="Back"><ArrowLeft className="h-5 w-5" /></button>
-          <div>
-            <h2 className="text-base font-black tracking-wide">99x Jet</h2>
-            <p className="text-[10px] font-semibold text-[#E0C9A0]">Crash game · up to {st.config.maxPoint}x</p>
+    <GameScreen title="99x Jet" kicker={`Crash game · up to ${st.config.maxPoint}x`} balance={balance} onBack={onBack}>
+      <GameBox
+        panel={(
+          <>
+            <BetPanel slot={1} st={st} active={slotActive[1]} now={now} mobile={mobile} balance={balance} onDone={handleDone} onError={t => setMsg({ ok: false, text: t })} />
+            <BetPanel slot={2} st={st} active={slotActive[2]} now={now} mobile={mobile} balance={balance} onDone={handleDone} onError={t => setMsg({ ok: false, text: t })} />
+            <p className="text-center text-[11px] text-nv-dim">
+              Max win {rupees(st.config.maxWin, 0)} per bet · {st.config.edgePct}% house edge
+            </p>
+          </>
+        )}
+        stage={(
+          <div className="flex h-full flex-col gap-3 p-3 sm:p-4">
+            <div className="nv-noscroll flex gap-1.5 overflow-x-auto">
+              {st.history.length === 0 && <span className="text-[12px] text-nv-mute">No rounds yet</span>}
+              {st.history.map(h => (
+                <span key={h.id} className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold tabular-nums ${pointColour(h.point)}`}>{h.point.toFixed(2)}x</span>
+              ))}
+            </div>
+            <Flight round={st.round} config={st.config} serverNow={serverNow} />
+            <div className="flex items-center justify-between gap-2 text-[11px] text-nv-dim">
+              <span className="truncate font-mono">{st.round.id || '—'}</span>
+              <span>{st.live.players} playing · {rupees(st.live.staked, 0)} bet</span>
+            </div>
+            {msg && (
+              <p className={`rounded-md px-3 py-2 text-center text-[12.5px] font-semibold ${msg.ok ? 'bg-nv-green/10 text-nv-green' : 'bg-nv-red/10 text-nv-red'}`}>{msg.text}</p>
+            )}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowRules(true)} className="rounded-full border border-gray-700 p-1.5 text-gray-300 hover:text-white" aria-label="How it works"><Info className="h-4 w-4" /></button>
-          <span className="rounded-full border border-[#C9A87C]/40 bg-[#0C241B] px-3 py-1 text-xs font-extrabold tabular-nums text-[#F0DDB8]">{inr(balance)}</span>
-        </div>
-      </div>
+        )}
+        footer={<GameFooter name="Jet" onRules={() => setShowRules(true)} />}
+      />
 
-      <div className="mx-auto w-full max-w-md flex-1 space-y-3 px-4 pb-16 pt-3">
-        {/* last blast points */}
-        <div className="g-noscroll flex gap-1.5 overflow-x-auto">
-          {st.history.length === 0 && <span className="text-[11px] text-gray-500">No rounds yet</span>}
-          {st.history.map(h => (
-            <span key={h.id}
-              className={`shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-extrabold tabular-nums ${pointColour(h.point)}`}>
-              {h.point.toFixed(2)}x
-            </span>
+      {/* live bets / my bets */}
+      <div className="mt-4 overflow-hidden rounded-lg bg-nv-panel ring-1 ring-white/[0.04]">
+        <div className="flex gap-1 border-b border-black/30 p-2">
+          {(['all', 'mine'] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`nv-tap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${tab === t ? 'bg-nv-card2 text-white' : 'text-nv-text hover:text-white'}`}>
+              {t === 'all' ? `All bets · ${st.live.count}` : 'My bets'}
+            </button>
           ))}
         </div>
-
-        <Flight round={st.round} config={st.config} serverNow={serverNow} />
-
-        <div className="flex items-center justify-between text-[10px] text-gray-500">
-          <span className="truncate font-mono">{st.round.id || '—'}</span>
+        <div className="grid grid-cols-4 px-4 py-2 text-[12px] font-semibold text-nv-mute">
+          <span>{tab === 'all' ? 'Player' : 'Round'}</span><span className="text-right">Bet</span><span className="text-right">Cash out</span><span className="text-right">Win</span>
         </div>
-
-        {msg && (
-          <div className={`rounded-xl border px-3 py-2 text-center text-xs font-bold ${msg.ok ? 'border-[#3EE08A]/40 bg-[#3EE08A]/10 text-[#3EE08A]' : 'border-red-500/40 bg-red-500/10 text-red-300'}`}>{msg.text}</div>
-        )}
-
-        <BetPanel slot={1} st={st} active={slotActive[1]} now={now} mobile={mobile} balance={balance} onDone={handleDone} onError={t => setMsg({ ok: false, text: t })} />
-        <BetPanel slot={2} st={st} active={slotActive[2]} now={now} mobile={mobile} balance={balance} onDone={handleDone} onError={t => setMsg({ ok: false, text: t })} />
-        <p className="text-center text-[10px] text-gray-500">
-          {inr(st.config.minBet)}–{inr(st.config.maxBet)} per bet · max win {inr(st.config.maxWin)} per bet · {st.config.edgePct}% house edge
-        </p>
-
-        {/* live bets / my bets */}
-        <div className="overflow-hidden rounded-2xl border border-gray-800 bg-[#0A0F0D]">
-          <div className="flex border-b border-gray-800">
-            {(['all', 'mine'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`flex-1 py-2.5 text-[11px] font-extrabold ${tab === t ? 'text-[#F0DDB8]' : 'text-gray-500'}`}>
-                {t === 'all' ? `All bets · ${st.live.count}` : 'My bets'}
-              </button>
+        {tab === 'all' ? (
+          <div>
+            {st.live.bets.length === 0 && <p className="px-4 pb-6 pt-2 text-center text-[13px] text-nv-mute">No bets in this round yet.</p>}
+            {st.live.bets.map((b, i) => (
+              <div key={i} className={`grid grid-cols-4 items-center px-4 py-2 text-[12.5px] ${i % 2 ? 'bg-nv-input/40' : ''}`}>
+                <span className="truncate font-mono text-nv-text">{b.name}</span>
+                <span className="text-right tabular-nums text-white">{rupees(b.amount, 0)}</span>
+                <span className={`text-right font-semibold tabular-nums ${b.status === 'won' ? 'text-nv-green' : 'text-nv-dim'}`}>
+                  {b.status === 'won' ? fmtX(b.cashout) : b.status === 'lost' ? 'lost' : st.round.phase === 'flying' ? 'flying' : '—'}
+                </span>
+                <span className={`text-right font-semibold tabular-nums ${b.status === 'won' ? 'text-nv-green' : 'text-nv-dim'}`}>{b.status === 'won' ? rupees(b.win) : '—'}</span>
+              </div>
             ))}
           </div>
-          {tab === 'all' ? (
-            <div>
-              <div className="flex justify-between px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                <span>{st.live.players} players</span><span>{inr(st.live.staked)} staked</span>
+        ) : (
+          <div>
+            {myBets.length === 0 && <p className="px-4 pb-6 pt-2 text-center text-[13px] text-nv-mute">{mobile ? 'No 99x Jet bets yet.' : 'Log in to see your bets.'}</p>}
+            {myBets.slice(0, 30).map((b, i) => (
+              <div key={b.id} className={`grid grid-cols-4 items-center px-4 py-2 text-[12.5px] ${i % 2 ? 'bg-nv-input/40' : ''}`}>
+                <span className="truncate font-mono text-nv-mute">{b.roundId}</span>
+                <span className="text-right tabular-nums text-white">{rupees(b.amount, 0)}</span>
+                <span className="text-right font-semibold tabular-nums text-nv-text">
+                  {b.status === 'won' ? fmtX(b.cashout) : b.status === 'lost' ? `✕ ${fmtX(b.result)}` : b.status === 'refunded' ? 'refunded' : 'open'}
+                </span>
+                <span className={`text-right font-semibold tabular-nums ${b.status === 'won' ? 'text-nv-green' : 'text-nv-dim'}`}>{b.status === 'won' ? `+${rupees(b.win_amount)}` : '—'}</span>
               </div>
-              {st.live.bets.length === 0 && <p className="px-3 pb-4 pt-2 text-center text-[11px] text-gray-500">No bets in this round yet.</p>}
-              {st.live.bets.map((b, i) => (
-                <div key={i} className={`grid grid-cols-4 items-center px-3 py-1.5 text-[11px] ${b.status === 'won' ? 'bg-[#3EE08A]/5' : ''}`}>
-                  <span className="truncate font-mono text-gray-300">{b.name}</span>
-                  <span className="text-right font-bold tabular-nums text-white">{inr(b.amount)}</span>
-                  <span className={`text-right font-mono font-bold ${b.status === 'won' ? 'text-[#3EE08A]' : b.status === 'lost' ? 'text-gray-600' : 'text-gray-400'}`}>
-                    {b.status === 'won' ? fmtX(b.cashout) : b.status === 'lost' ? 'lost' : st.round.phase === 'flying' ? 'flying' : '—'}
-                  </span>
-                  <span className={`text-right font-extrabold tabular-nums ${b.status === 'won' ? 'text-[#3EE08A]' : 'text-gray-600'}`}>{b.status === 'won' ? inr(b.win) : '—'}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div>
-              {myBets.length === 0 && <p className="px-3 py-4 text-center text-[11px] text-gray-500">{mobile ? 'No 99x Jet bets yet.' : 'Log in to see your bets.'}</p>}
-              {myBets.slice(0, 30).map(b => (
-                <div key={b.id} className="grid grid-cols-4 items-center border-b border-gray-900 px-3 py-1.5 text-[11px] last:border-0">
-                  <span className="truncate font-mono text-gray-500">{b.roundId}</span>
-                  <span className="text-right font-bold tabular-nums text-white">{inr(b.amount)}</span>
-                  <span className="text-right font-mono font-bold text-gray-400">
-                    {b.status === 'won' ? fmtX(b.cashout) : b.status === 'lost' ? `✕ ${fmtX(b.result)}` : b.status === 'refunded' ? 'refunded' : 'open'}
-                  </span>
-                  <span className={`text-right font-extrabold tabular-nums ${b.status === 'won' ? 'text-[#3EE08A]' : 'text-gray-600'}`}>{b.status === 'won' ? `+${inr(b.win_amount)}` : '—'}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Sheet open={showRules} onClose={() => setShowRules(false)} title="How 99x Jet works">
-        <ul className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-          {st.rules.map((line, i) => (
-            <li key={i} className="flex gap-2 text-[12px] leading-snug text-gray-300"><span className="text-[#E0C9A0]">•</span>{line}</li>
-          ))}
-        </ul>
-      </Sheet>
-
-    </div>
+      <NvModal open={showRules} onClose={() => setShowRules(false)} title="How 99x Jet works">
+        <RulesList lines={st.rules} />
+      </NvModal>
+    </GameScreen>
   );
 }

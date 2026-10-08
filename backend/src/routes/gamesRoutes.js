@@ -23,8 +23,17 @@ const jetCashoutLimiter = createRateLimiter({
   message: 'Too many requests. Please wait a moment and try again.'
 });
 
+// Dice is one request per bet and Mines one per tile, so these allow more requests.
+const instantLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 1500,
+  message: 'Too many bets too quickly. Please wait a moment and try again.'
+});
+
 // Public
 router.get('/lobby', c.lobby);
+router.get('/instant/:game/state', c.instantState);
+router.post('/fairness/verify', instantLimiter, c.fairnessVerify);
 router.get('/jet/state', c.jetState);
 router.get('/jet/stream', c.jetStream);
 router.get('/jet/round/:id', c.jetRound);
@@ -42,5 +51,13 @@ router.get('/jet/my-bets', protectUser, c.jetMyBets);
 router.post('/jet/bet', protectUser, jetBetLimiter, c.jetBet);
 router.post('/jet/cancel', protectUser, jetBetLimiter, c.jetCancel);
 router.post('/jet/cashout', protectUser, jetCashoutLimiter, c.jetCashout);
+router.get('/instant/my-bets', protectUser, c.instantMyBets);
+router.post('/dice/bet', protectUser, instantLimiter, c.diceBet);
+router.get('/mines/active', protectUser, c.minesActive);
+router.post('/mines/start', protectUser, instantLimiter, c.minesStart);
+router.post('/mines/reveal', protectUser, instantLimiter, c.minesReveal);
+router.post('/mines/cashout', protectUser, instantLimiter, c.minesCashout);
+router.get('/fairness', protectUser, c.fairness);
+router.post('/fairness/rotate', protectUser, c.fairnessRotate);
 
 module.exports = router;
