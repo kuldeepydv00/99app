@@ -614,6 +614,15 @@ fun AppNavigation() {
         }
     }
 
+    // Live players: tell the server where this player is (real players only; counts below the admin cut-off stay hidden)
+    val liveWhere: String = when {
+        currentScreen == "betting" -> "matka:$selectedGameTitle"
+        currentScreen == "matka99_betting" -> "matka99:$selectedMatka99Market"
+        currentScreen.startsWith("trading_") -> currentScreen.removePrefix("trading_")
+        else -> "lobby"
+    }
+    com.example.numberbetting.presentation.games.LivePresence(liveWhere)
+
     // Main App Flow with Drawer
     ModalNavigationDrawer(
         drawerState = drawerState,

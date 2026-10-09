@@ -184,7 +184,7 @@ export default function TossPage({ mobile, balance, onBack, onBalances }: {
   }));
 
   return (
-    <GameScreen title="Toss" kicker={`Head / Tail pay ${st.payout}x`} balance={balance} onBack={onBack}>
+    <GameScreen title="Toss" kicker={`Head / Tail pay ${st.payout}x`} balance={balance} onBack={onBack} live={{ key: 'toss' }}>
       <TossStyle />
       <PausedNote show={!st.enabled} />
       <GameBox

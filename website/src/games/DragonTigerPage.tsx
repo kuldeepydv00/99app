@@ -207,7 +207,7 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
   }));
 
   return (
-    <GameScreen title="Dragon Tiger" kicker={`Dragon / Tiger ${st.payout}x · Tie ${st.tiePayout}x`} balance={balance} onBack={onBack}>
+    <GameScreen title="Dragon Tiger" kicker={`Dragon / Tiger ${st.payout}x · Tie ${st.tiePayout}x`} balance={balance} onBack={onBack} live={{ key: 'dragontiger' }}>
       <style>{DT_ART_CSS + DT_PAGE_CSS}</style>
       <PausedNote show={!st.enabled} />
       <GameBox

@@ -102,7 +102,7 @@ export default function DicePage({ mobile, balance, onBack, onBalances }: {
   const numInput = 'h-full w-full min-w-0 flex-1 bg-transparent text-[13px] font-semibold tabular-nums text-white focus:outline-none sm:text-[14px]';
 
   return (
-    <GameScreen title="Dice" balance={balance} onBack={onBack}>
+    <GameScreen title="Dice" balance={balance} onBack={onBack} live={{ key: 'dice' }}>
       <PausedNote show={!cfg.enabled} />
       <GameBox
         panel={(

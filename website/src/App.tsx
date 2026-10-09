@@ -17,6 +17,7 @@ import TossPage from './games/TossPage';
 import DicePage from './games/DicePage';
 import MinesPage from './games/MinesPage';
 import { BetAmount } from './games/kit';
+import { useLivePresence, LiveCount, LiveBets } from './games/live';
 import type { Balances } from './games/TradingPage';
 import Matka99Page from './games/Matka99Page';
 import Matka99Chart from './games/Matka99Chart';
@@ -728,6 +729,15 @@ export default function App() {
   };
   const openHomeSection = (sec: Exclude<HomeSection, null>) => { setHomeSection(sec); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
   const closeHomeSection = () => { setHomeSection(null); try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
+  // Live players: tell the server where this player is (a game, a market or the lobby); counts are real players only
+  const liveWhere = instantGame ? instantGame
+    : jetOpen ? 'jet'
+    : tradingGame ? tradingGame
+    : bet99 ? `matka99:${bet99.key}`
+    : matka99Market ? `matka99:${matka99Market}`
+    : selectedGameForBetting ? `matka:${selectedGameForBetting}`
+    : 'lobby';
+  useLivePresence(user ? liveWhere : null, view === 'webapp');
   const [betsMode, setBetsMode] = useState<'matka' | 'new'>('matka');
   const applyGameBalances = (b: Balances) => {
     setUser(prev => {
@@ -2794,6 +2804,7 @@ export default function App() {
                     {selectedGameForBetting}
                   </h2>
                   {bet99 && <p className="text-[10px] font-bold text-[#E0B7A0]">99x Matka · Jodi {gamesLobby?.matka99.payout || 99}x · Haroof {gamesLobby?.matka99.haroofPayout || 9.9}x</p>}
+                  <LiveCount k={bet99 ? `matka99:${bet99.key}` : `matka:${selectedGameForBetting}`} className="text-[11px] font-semibold" />
                 </div>
               </div>
 
@@ -3352,6 +3363,9 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              <LiveBets className="mt-6" game={bet99 ? 'matka99' : 'matka'} market={bet99 ? bet99.key : selectedGameForBetting}
+                title={`Live bets · ${selectedGameForBetting}`} />
             </div>
 
             {/* Formats Modal Popup */}

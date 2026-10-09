@@ -135,7 +135,7 @@ fun Matka99Section(lobby: JSONObject?, onOpen: (String) -> Unit) {
         MarketTile(
             icon = "99x",
             name = m.optString("name"),
-            sub = if (isOpen) "Pays ${formatPayout(payout)}x" else "Opens ${shortTime(m.optString("open"))}",
+            sub = if (isOpen) (LivePlayers.label("matka99:$key") ?: "Pays ${formatPayout(payout)}x") else "Opens ${shortTime(m.optString("open"))}",
             state = if (isOpen) TileState.Open("Closes ${shortTime(m.optString("close"))}") else TileState.Closed(today, shortTime(rt)),
             onClick = { onOpen(key) },
             modifier = tileModifier,
@@ -183,25 +183,26 @@ fun GameBoxes(
 
     Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
         Text("All games", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-        Text("Tap a game to play", color = Color(0xFF6B7280), fontSize = 11.sp)
+        if (LivePlayers.enabled && LivePlayers.total != null) LiveTotal()
+        else Text("Tap a game to play", color = Color(0xFF6B7280), fontSize = 11.sp)
     }
     Spacer(Modifier.height(12.dp))
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         GameBox(
-            image = R.drawable.banner_matka, title = "Play Matka",
+            image = R.drawable.banner_matka, title = "Play Matka", liveKey = "matka",
             info = BoxInfo("$matkaOpen of $matkaTotal markets open · results daily", if (matkaOpen > 0) "Live" else "Closed", matkaOpen > 0),
             rose = false, onClick = onOpenMatka
         )
         GameBox(
-            image = R.drawable.banner_matka99, title = "Play 99x Matka",
+            image = R.drawable.banner_matka99, title = "Play 99x Matka", liveKey = "matka99",
             info = if (lobby == null) BoxInfo("Loading…", "Live", false)
                    else BoxInfo("$m99Open of $m99Total open · lowest-bet number wins · pays ${m99Pays}x", if (m99Open > 0) "Live" else "Closed", m99Open > 0),
             rose = true, onClick = onOpenMatka99
         )
         val jet = jetLobbyStatus(lobby, now)
         GameBox(
-            image = R.drawable.banner_jet, title = "Play 99x Jet",
+            image = R.drawable.banner_jet, title = "Play 99x Jet", liveKey = "jet",
             info = BoxInfo(jet.first, if (jet.second) "Live" else if (lobby == null) "Live" else "Paused", jet.second, jet.third),
             rose = false, onClick = onOpenJet
         )
@@ -211,18 +212,18 @@ fun GameBoxes(
             return if (x.optBoolean("enabled", true)) BoxInfo("Instant play · max profit ${inr(x.optDouble("maxProfit", 50000.0))} per bet", "Live", true)
                    else BoxInfo("Paused for now", "Paused", false, false)
         }
-        GameBox(image = R.drawable.banner_mines, title = "Play Mines", info = instantInfo("mines"), rose = false, onClick = { onOpenTrading("mines") })
-        GameBox(image = R.drawable.banner_dice, title = "Play Dice", info = instantInfo("dice"), rose = false, onClick = { onOpenTrading("dice") })
-        GameBox(image = R.drawable.banner_dragontiger, title = "Play Dragon Tiger", info = tradingInfo("dragontiger"), rose = false, onClick = { onOpenTrading("dragontiger") })
-        GameBox(image = R.drawable.banner_toss, title = "Play Toss", info = tradingInfo("toss"), rose = false, onClick = { onOpenTrading("toss") })
-        GameBox(image = R.drawable.banner_number, title = "Play Number Trading", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })
-        GameBox(image = R.drawable.banner_card, title = "Play Card Trading", info = tradingInfo("card"), rose = false, onClick = { onOpenTrading("card") })
-        GameBox(image = R.drawable.banner_colour, title = "Play Colour Trading", info = tradingInfo("colour"), rose = false, onClick = { onOpenTrading("colour") })
+        GameBox(image = R.drawable.banner_mines, title = "Play Mines", liveKey = "mines", info = instantInfo("mines"), rose = false, onClick = { onOpenTrading("mines") })
+        GameBox(image = R.drawable.banner_dice, title = "Play Dice", liveKey = "dice", info = instantInfo("dice"), rose = false, onClick = { onOpenTrading("dice") })
+        GameBox(image = R.drawable.banner_dragontiger, title = "Play Dragon Tiger", liveKey = "dragontiger", info = tradingInfo("dragontiger"), rose = false, onClick = { onOpenTrading("dragontiger") })
+        GameBox(image = R.drawable.banner_toss, title = "Play Toss", liveKey = "toss", info = tradingInfo("toss"), rose = false, onClick = { onOpenTrading("toss") })
+        GameBox(image = R.drawable.banner_number, title = "Play Number Trading", liveKey = "number", info = tradingInfo("number"), rose = false, onClick = { onOpenTrading("number") })
+        GameBox(image = R.drawable.banner_card, title = "Play Card Trading", liveKey = "card", info = tradingInfo("card"), rose = false, onClick = { onOpenTrading("card") })
+        GameBox(image = R.drawable.banner_colour, title = "Play Colour Trading", liveKey = "colour", info = tradingInfo("colour"), rose = false, onClick = { onOpenTrading("colour") })
     }
 }
 
 @Composable
-private fun GameBox(image: Int, title: String, info: BoxInfo, rose: Boolean, onClick: () -> Unit) {
+private fun GameBox(image: Int, title: String, info: BoxInfo, rose: Boolean, liveKey: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     Column(
         modifier = Modifier
@@ -233,12 +234,15 @@ private fun GameBox(image: Int, title: String, info: BoxInfo, rose: Boolean, onC
             .border(1.dp, GameColors.Gold.copy(alpha = 0.25f), shape)
             .clickable(enabled = info.enabled) { onClick() }
     ) {
-        Image(
-            painter = painterResource(image),
-            contentDescription = title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxWidth().aspectRatio(30f / 17f).background(GameColors.Deep)
-        )
+        Box {
+            Image(
+                painter = painterResource(image),
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(30f / 17f).background(GameColors.Deep)
+            )
+            if (info.enabled) LivePill(liveKey, modifier = Modifier.align(Alignment.TopStart).padding(10.dp), showLive = info.live)
+        }
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically

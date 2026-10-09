@@ -150,7 +150,7 @@ export default function TradingPage({ game, mobile, balance, onBack, onBalances 
   const pickLabel = selected.length === 0 ? PICK_HINT[game] : `${selected.length} pick${selected.length === 1 ? '' : 's'} × ${rupees(amount, 0)}`;
 
   return (
-    <GameScreen title={TITLE[game]} kicker={`Pays ${st.payout}x · 99x Originals`} balance={balance} onBack={onBack}>
+    <GameScreen title={TITLE[game]} kicker={`Pays ${st.payout}x · 99x Originals`} balance={balance} onBack={onBack} live={{ key: game }}>
       <PausedNote show={!st.enabled} />
       <GameBox
         panel={(

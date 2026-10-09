@@ -169,7 +169,7 @@ export default function MinesPage({ mobile, balance, onBack, onBalances }: {
   };
 
   return (
-    <GameScreen title="Mines" balance={balance} onBack={onBack}>
+    <GameScreen title="Mines" balance={balance} onBack={onBack} live={{ key: 'mines' }}>
       <PausedNote show={!cfg.enabled} />
       <GameBox
         panel={(

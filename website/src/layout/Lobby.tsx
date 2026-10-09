@@ -8,6 +8,7 @@ import type { TradingGame } from '../games/api';
 import { clock, useServerNow } from '../games/ui';
 import { shortTime } from '../games/MarketTile';
 import type { HomeSection } from './Shell';
+import { LiveCount, LiveTotal, LiveBets } from '../games/live';
 
 // Home lobby: promotions, search, category tabs, 99x Originals tiles and the Matka / 99x Matka markets.
 
@@ -161,7 +162,9 @@ function GameTile({ g, st, onClick, eager }: { g: Game; st: Status; onClick: () 
     <button onClick={onClick} disabled={st.disabled} aria-label={`Play ${g.name}`} className="nv-tap group block w-full text-left disabled:opacity-60">
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-nv-card shadow-[0_6px_16px_rgba(0,0,0,0.35)] ring-1 ring-white/5 transition-transform duration-200 ease-out group-hover:-translate-y-1.5 group-active:scale-[0.97]">
         <img src={g.tile} alt={g.name} loading={eager ? 'eager' : 'lazy'} draggable={false} className="h-full w-full object-cover" />
-        {st.disabled && <span className="absolute left-1/2 top-2 -translate-x-1/2 rounded bg-black/75 px-2 py-0.5 text-[10px] font-semibold text-white">Paused</span>}
+        {st.disabled
+          ? <span className="absolute left-1/2 top-2 -translate-x-1/2 rounded bg-black/75 px-2 py-0.5 text-[10px] font-semibold text-white">Paused</span>
+          : <LiveCount k={g.id} variant="pill" className="absolute left-1.5 top-1.5" showLive={st.live} />}
       </div>
       <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium tabular-nums text-nv-mute sm:text-[12px]">
         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${st.live ? 'bg-nv-green shadow-[0_0_6px_#1FD65F]' : 'bg-nv-dim'}`} />
@@ -181,21 +184,22 @@ function StatusPill({ kind, text }: { kind: 'open' | 'soon' | 'closed'; text: st
   );
 }
 
-function MarketCard({ name, badge, hue, time, pill, result, resultAt, open, onClick }: {
+function MarketCard({ name, badge, hue, time, pill, result, resultAt, open, onClick, liveKey }: {
   name: string; badge: string; hue: string; time: string; pill: { kind: 'open' | 'soon' | 'closed'; text: string };
-  result: string | null; resultAt: string; open: boolean; onClick: () => void;
+  result: string | null; resultAt: string; open: boolean; onClick: () => void; liveKey: string;
 }) {
   return (
     <button onClick={onClick} className="nv-tap group flex min-w-0 flex-col rounded-lg bg-nv-card p-3 text-left ring-1 ring-white/[0.03] transition-colors hover:bg-nv-card2">
       <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
         <span className="flex h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-md text-[12px] font-bold text-white shadow-inner"
           style={{ background: `linear-gradient(135deg, ${hue}, ${hue}80)` }}>{badge}</span>
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-semibold text-white">{name}</span>
           <span className="block truncate text-[11px] text-nv-mute">{time}</span>
+          <LiveCount k={liveKey} className="mt-0.5 text-[11px] font-semibold" showLive={open} />
         </span>
       </div>
-      <div className="mt-2.5 flex min-w-0 items-center justify-between gap-1.5">
+      <div className="mt-auto flex min-w-0 items-center justify-between gap-1.5 pt-2.5">
         <StatusPill {...pill} />
         {result
           ? <span className="truncate text-[11px] text-nv-mute">Result <b className="ml-0.5 font-bold tabular-nums text-white">{result}</b></span>
@@ -221,7 +225,7 @@ function MatkaGrid({ markets, onPlay, limit }: { markets: MarketView[]; onPlay: 
           <MarketCard key={m.name} name={m.name} badge={initials(m.name)} hue={HUES[i % HUES.length]}
             time={m.open ? `Closes ${shortTime(m.closeAt)}` : `Opens ${shortTime(m.openAt)}`}
             pill={m.open ? (soon ? { kind: 'soon', text: `${m.minsLeft}m left` } : { kind: 'open', text: 'Open' }) : { kind: 'closed', text: 'Closed' }}
-            result={m.result} resultAt={shortTime(m.resultAt)} open={m.open} onClick={() => onPlay(m.name)} />
+            result={m.result} resultAt={shortTime(m.resultAt)} open={m.open} onClick={() => onPlay(m.name)} liveKey={`matka:${m.name}`} />
         );
       })}
     </div>
@@ -239,7 +243,7 @@ function Matka99Grid({ lobby, onOpen, limit }: { lobby: Lobby | null; onOpen: (k
         <MarketCard key={m.key} name={m.name} badge="99x" hue="#E0457B"
           time={m.isOpen ? `Closes ${shortTime(m.close)}` : `Opens ${shortTime(m.open)}`}
           pill={m.isOpen ? { kind: 'open', text: 'Open' } : { kind: 'closed', text: 'Closed' }}
-          result={m.todayResult || null} resultAt={shortTime(m.resultTime || m.close)} open={m.isOpen} onClick={() => onOpen(m.key)} />
+          result={m.todayResult || null} resultAt={shortTime(m.resultTime || m.close)} open={m.isOpen} onClick={() => onOpen(m.key)} liveKey={`matka99:${m.key}`} />
       ))}
     </div>
   );
@@ -330,7 +334,7 @@ export default function HomeLobby({ lobby, section, onSection, markets, onPlayMa
                 <MarketCard key={m.key} name={m.name} badge="99x" hue="#E0457B"
                   time={m.isOpen ? `Closes ${shortTime(m.close)}` : `Opens ${shortTime(m.open)}`}
                   pill={m.isOpen ? { kind: 'open', text: 'Open' } : { kind: 'closed', text: 'Closed' }}
-                  result={m.todayResult || null} resultAt={shortTime(m.resultTime || m.close)} open={m.isOpen} onClick={() => onOpenMatka99(m.key)} />
+                  result={m.todayResult || null} resultAt={shortTime(m.resultTime || m.close)} open={m.isOpen} onClick={() => onOpenMatka99(m.key)} liveKey={`matka99:${m.key}`} />
               ))}
             </div>
           </section>
@@ -398,7 +402,7 @@ export default function HomeLobby({ lobby, section, onSection, markets, onPlayMa
           {!section && (
             <>
               <section>
-                <SectionHead icon={Sparkles} title="99x Originals" sub="instant games, live every minute" onAll={() => onSection('originals')} />
+                <SectionHead icon={Sparkles} title="99x Originals" sub="instant games, live every minute" onAll={() => onSection('originals')} right={<LiveTotal />} />
                 <Scroller className="nv-tiles gap-2.5 pt-2" arrowsTop="42%">
                   {ORIGINALS.map((g, i) => (
                     <div key={g.id} className="snap-start">
@@ -408,20 +412,21 @@ export default function HomeLobby({ lobby, section, onSection, markets, onPlayMa
                 </Scroller>
               </section>
               <section>
-                <SectionHead icon={Crown} title="Matka" sub={`${matkaOpen} of ${markets.length} markets open`} onAll={() => onSection('matka')} />
+                <SectionHead icon={Crown} title="Matka" sub={`${matkaOpen} of ${markets.length} markets open`} onAll={() => onSection('matka')} right={<LiveCount k="matka" className="text-[12px] font-semibold" showLive={false} />} />
                 <MatkaGrid markets={markets} onPlay={onPlayMarket} />
               </section>
               <section>
-                <SectionHead icon={Gem} title="99x Matka" sub={`fixed ${lobby?.matka99.payout ?? 99}x payout`} onAll={() => onSection('matka99')} />
+                <SectionHead icon={Gem} title="99x Matka" sub={`fixed ${lobby?.matka99.payout ?? 99}x payout`} onAll={() => onSection('matka99')} right={<LiveCount k="matka99" className="text-[12px] font-semibold" showLive={false} />} />
                 <Matka99Grid lobby={lobby} onOpen={onOpenMatka99} limit={4} />
               </section>
+              <LiveBets title="Live bets" />
             </>
           )}
 
           {/* ORIGINALS */}
           {section === 'originals' && (
             <section>
-              <SectionHead icon={Sparkles} title="99x Originals" sub={`${ORIGINALS.length} games`} />
+              <SectionHead icon={Sparkles} title="99x Originals" sub={`${ORIGINALS.length} games`} right={<LiveTotal />} />
               <div className="grid grid-cols-3 gap-x-2.5 gap-y-4 pt-1.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
                 {ORIGINALS.map(tile)}
               </div>
@@ -431,9 +436,10 @@ export default function HomeLobby({ lobby, section, onSection, markets, onPlayMa
           {/* MATKA */}
           {section === 'matka' && (
             <section>
-              <SectionHead icon={Crown} title="Matka" sub="tap a market to play" />
+              <SectionHead icon={Crown} title="Matka" sub="tap a market to play" right={<LiveCount k="matka" className="text-[12px] font-semibold" showLive={false} />} />
               <p className="-mt-1 mb-4 text-[12px] text-nv-mute sm:hidden">{matkaOpen} of {markets.length} markets open · results daily</p>
               <MatkaGrid markets={markets} onPlay={onPlayMarket} />
+              <LiveBets className="mt-6" game="matka" title="Live bets · Matka" />
             </section>
           )}
 
@@ -442,15 +448,19 @@ export default function HomeLobby({ lobby, section, onSection, markets, onPlayMa
             <section>
               <SectionHead icon={Gem} title="99x Matka" sub={`${m99Open} of ${m99All} open`}
                 right={(
+                  <>
+                  <LiveCount k="matka99" className="mr-1 text-[12px] font-semibold" showLive={false} />
                   <button onClick={onMatka99Chart} className="nv-tap inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-semibold text-nv-text transition-colors hover:bg-nv-card2 hover:text-white">
                     <ChartColumn className="h-4 w-4" />Chart
                   </button>
+                  </>
                 )} />
               <div className="mb-4 rounded-lg bg-nv-card px-3.5 py-3 text-[12px] leading-relaxed text-nv-text ring-1 ring-white/[0.03]">
                 <span className="block font-semibold text-white">Jodi pays {lobby?.matka99.payout ?? 99}x · Haroof pays {lobby?.matka99.haroofPayout ?? 9.9}x</span>
                 <span className="block text-nv-mute">{lobby?.matka99.ruleLine || 'The number with the lowest total bet wins.'}</span>
               </div>
               <Matka99Grid lobby={lobby} onOpen={onOpenMatka99} />
+              <LiveBets className="mt-6" game="matka99" title="Live bets · 99x Matka" />
             </section>
           )}
         </>

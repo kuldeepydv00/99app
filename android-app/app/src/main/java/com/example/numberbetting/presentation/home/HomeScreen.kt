@@ -48,6 +48,8 @@ import com.example.numberbetting.presentation.games.MarketTile
 import com.example.numberbetting.presentation.games.TileGrid
 import com.example.numberbetting.presentation.games.TileState
 import com.example.numberbetting.presentation.games.shortTime
+import com.example.numberbetting.presentation.games.LivePlayers
+import com.example.numberbetting.presentation.games.LiveBetsSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
@@ -424,27 +426,11 @@ fun HomeScreen(
                                 val isOpen = GameScheduleManager.getGameState(gameName, declaredResults) == GameScheduleManager.GameState.OPEN
                                 val remainingMins = if (isOpen) GameScheduleManager.getRemainingMinutesToClose(gameName) else 0
                                 val isUrgent = remainingMins in 1..30
-                                val playerCount = livePlayers[gameName]
-                                    ?: livePlayers[if (gameName == "Shree Ganesh") "Shri Ganesh" else if (gameName == "Shri Ganesh") "Shree Ganesh" else if (gameName == "Desawar") "Disawer" else if (gameName == "Disawer") "Desawar" else gameName]
-                                    ?: when (gameName) {
-                                        "Shiv Parwati" -> 487556
-                                        "Delhi Bazar" -> 614919
-                                        "Dubai Market" -> 452810
-                                        "Shree Ganesh" -> 392152
-                                        "Faridabad" -> 345825
-                                        "Ghaziabad" -> 298700
-                                        "Gali" -> 512400
-                                        "Desawar" -> 684200
-                                        else -> 500000
-                                    }
-                                val playerCountFormatted = remember(playerCount) {
-                                    java.text.NumberFormat.getNumberInstance(java.util.Locale("en", "IN")).format(playerCount)
-                                }
                                 val winningNum = declaredResults[gameName]
                                 MarketTile(
                                     icon = getGameIconEmoji(gameName),
                                     name = gameName,
-                                    sub = if (isOpen) "$playerCountFormatted playing" else "Opens ${shortTime(sched?.openTimeStr)}",
+                                    sub = if (isOpen) (LivePlayers.label("matka:$gameName") ?: "Live now") else "Opens ${shortTime(sched?.openTimeStr)}",
                                     state = when {
                                         isOpen && isUrgent -> TileState.Urgent("$remainingMins min left")
                                         isOpen -> TileState.Open("Closes ${shortTime(sched?.closeTimeStr)}")
@@ -495,6 +481,15 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(14.dp))
                         Matka99Section(gamesLobby, onNavigateToMatka99)
                     }
+                }
+
+                // Live bets: real bets from players (mobiles masked)
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    LiveBetsSection(
+                        game = when (homeSection) { "matka" -> "matka"; "matka99" -> "matka99"; else -> null },
+                        title = when (homeSection) { "matka" -> "Live bets · Matka"; "matka99" -> "Live bets · 99x Matka"; else -> "Live bets" }
+                    )
                 }
 
                 // Bottom Scroll Padding item

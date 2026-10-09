@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.numberbetting.domain.GameScheduleManager
 import com.example.numberbetting.presentation.games.GamesApi
 import com.example.numberbetting.presentation.games.shortTime
+import com.example.numberbetting.presentation.games.LiveBadge
+import com.example.numberbetting.presentation.games.LiveBetsButton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -711,10 +713,13 @@ fun BettingScreen(
                                 maxLines = 1
                             )
                         }
+                        LiveBadge(if (is99) "matka99:${matka99Key ?: ""}" else "matka:$gameTitle", fontSize = 10.sp)
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                LiveBetsButton(game = if (is99) "matka99" else "matka", market = if (is99) matka99Key else gameTitle, title = "Live bets · $displayTitle")
+                Spacer(modifier = Modifier.width(8.dp))
 
                 // Balance Badge (100% Copy of Website Gold Badge)
                 Row(

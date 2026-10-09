@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, Info, ShieldCheck, Wallet, X } from 'lucide-react';
+import { LiveCount, LiveBets } from './live';
 
 // Casino game kit (navy theme, Stake-style): full-screen game page, bet panel + game area,
 // the bet amount box, buttons, fields, the footer bar under a game, a modal and a bets table.
@@ -9,9 +10,11 @@ export const rupees = (n: number | null | undefined, dp = 2) =>
   `₹${(Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 export const short = (n: number) => (n >= 1000 ? `${n % 1000 === 0 ? n / 1000 : (n / 1000).toFixed(1)}K` : String(n));
 
-/** Full-screen game page: top bar (back, title, balance) and a centred content column. */
-export function GameScreen({ title, kicker = '99x Originals', balance, onBack, children, tone }: {
-  title: string; kicker?: string; balance: number; onBack: () => void; children: ReactNode; tone?: string;
+export type LiveSpot = { key: string; game?: string; market?: string; feed?: boolean };
+
+/** Full-screen game page: top bar (back, title, live players, balance), the content, then the live bets feed. */
+export function GameScreen({ title, kicker = '99x Originals', balance, onBack, children, tone, live }: {
+  title: string; kicker?: string; balance: number; onBack: () => void; children: ReactNode; tone?: string; live?: LiveSpot;
 }) {
   return (
     <div className="nv-fade fixed inset-0 z-50 overflow-y-auto bg-nv-bg font-nv text-white antialiased" style={tone ? { boxShadow: `inset 0 0 0 0 ${tone}` } : undefined}>
@@ -23,14 +26,20 @@ export function GameScreen({ title, kicker = '99x Originals', balance, onBack, c
           </button>
           <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-[15px] font-bold text-white">{title}</p>
-            <p className="truncate text-[11px] font-medium text-nv-mute">{kicker}</p>
+            <p className="flex min-w-0 items-center gap-2 text-[11px] font-medium text-nv-mute">
+              {live && <LiveCount k={live.key} className="shrink-0 font-semibold" />}
+              <span className="truncate">{kicker}</span>
+            </p>
           </div>
           <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-nv-input px-3 py-2 text-[13px] font-semibold tabular-nums text-white ring-1 ring-nv-edge">
             <Wallet className="h-4 w-4 text-nv-mute" />{rupees(balance)}
           </span>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-[1200px] px-3 pb-16 pt-3 sm:px-6 sm:pt-5">{children}</div>
+      <div className="mx-auto w-full max-w-[1200px] px-3 pb-16 pt-3 sm:px-6 sm:pt-5">
+        {children}
+        {live && live.feed !== false && <LiveBets className="mt-4" game={live.game ?? live.key} market={live.market} title={`Live bets · ${title}`} />}
+      </div>
     </div>
   );
 }

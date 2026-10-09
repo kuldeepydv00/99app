@@ -355,7 +355,7 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
   };
 
   return (
-    <GameScreen title="99x Jet" kicker={`Crash game · up to ${st.config.maxPoint}x`} balance={balance} onBack={onBack}>
+    <GameScreen title="99x Jet" kicker={`Crash game · up to ${st.config.maxPoint}x`} balance={balance} onBack={onBack} live={{ key: 'jet' }}>
       <GameBox
         panel={(
           <>

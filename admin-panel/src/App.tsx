@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import TradingAdmin from './games/TradingAdmin';
 import JetAdmin from './games/JetAdmin';
 import InstantAdmin from './games/InstantAdmin';
+import LiveAdmin from './games/LiveAdmin';
 import GamesOverview from './games/GamesOverview';
 import UserGamesTab from './games/UserGamesTab';
 import DashboardGamesStrip from './games/DashboardGamesStrip';
@@ -286,10 +287,10 @@ export default function App() {
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
     'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
-    'matka99' | 'jetGame' | 'diceGame' | 'minesGame' | 'dragonTiger' | 'tossGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
+    'matka99' | 'jetGame' | 'diceGame' | 'minesGame' | 'livePlayers' | 'dragonTiger' | 'tossGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'diceGame', 'minesGame', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'diceGame', 'minesGame', 'livePlayers', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -2245,6 +2246,7 @@ export default function App() {
               { id: 'referral', label: 'Refer & Earn', icon: '🎁' },
               { id: 'gameLedger', label: 'Game Ledger', icon: '📘' },
               { id: 'gamesOverview', label: 'Games Overview', icon: '🎮', section: 'NEW GAMES' },
+              { id: 'livePlayers', label: 'Live Players', icon: '🟢' },
               { id: 'matka99', label: '99x Matka', icon: '💎' },
               { id: 'jetGame', label: '99x Jet', icon: '✈️' },
               { id: 'minesGame', label: 'Mines', icon: '💣' },
@@ -6937,6 +6939,11 @@ export default function App() {
                   )}
                 </div>
 
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+                  <b>Not shown to players any more.</b> The website and the app now show real live players instead of these numbers.
+                  See who is online, and what players see, in <button onClick={() => setActiveTab('livePlayers')} className="font-bold text-[#007BFF] hover:underline">NEW GAMES → Live Players</button>.
+                </div>
+
                 {/* AUTOMATIC SYSTEM TOGGLE */}
                 <div className="bg-white p-4 rounded-lg border border-[#DEE2E6] shadow-sm">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -7088,6 +7095,7 @@ export default function App() {
             {activeTab === 'gamesOverview' && <GamesOverview onNavigate={(tab) => setActiveTab(tab as any)} onOpenUser={openUserByMobile} />}
             {activeTab === 'matka99' && <Matka99Admin onOpenUser={openUserByMobile} />}
             {activeTab === 'jetGame' && <JetAdmin onOpenUser={openUserByMobile} />}
+            {activeTab === 'livePlayers' && <LiveAdmin onOpenUser={openUserByMobile} />}
             {activeTab === 'diceGame' && <InstantAdmin key="dice" game="dice" onOpenUser={openUserByMobile} />}
             {activeTab === 'minesGame' && <InstantAdmin key="mines" game="mines" onOpenUser={openUserByMobile} />}
             {activeTab === 'numberTrading' && <TradingAdmin key="number" game="number" onOpenUser={openUserByMobile} />}

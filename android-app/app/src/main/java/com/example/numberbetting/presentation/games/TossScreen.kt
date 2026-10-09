@@ -239,6 +239,7 @@ fun TossScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Toss", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
                     Text("Head / Tail pay ${formatPayout(payout)}x", color = GameColors.GoldLight, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    LiveBadge("toss", fontSize = 10.sp)
                 }
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(GameColors.Surface).border(1.dp, GameColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 5.dp)
@@ -411,6 +412,8 @@ fun TossScreen(
                         pastBets.forEach { b -> MyBetRow(TOSS_GAME, b, b.optString("roundId").substringAfter("-")) }
                     }
                 }
+                Spacer(Modifier.height(16.dp))
+                LiveBetsSection(game = "toss", title = "Live bets · Toss")
                 Spacer(Modifier.height(180.dp))
             }
         }

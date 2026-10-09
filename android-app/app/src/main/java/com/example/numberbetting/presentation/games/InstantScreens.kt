@@ -104,7 +104,7 @@ private fun jsonList(arr: JSONArray?): List<JSONObject> = if (arr == null) empty
 private fun stringList(arr: JSONArray?): List<String> = if (arr == null) emptyList() else (0 until arr.length()).map { arr.getString(it) }
 
 @Composable
-private fun InstantHeader(title: String, sub: String, balance: Double, onBack: () -> Unit) {
+private fun InstantHeader(title: String, sub: String, balance: Double, onBack: () -> Unit, liveKey: String? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().background(Nv.Side).padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -112,7 +112,10 @@ private fun InstantHeader(title: String, sub: String, balance: Double, onBack: (
         IconButton(onClick = onBack) { Text("←", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold) }
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            Text(sub, color = Nv.Mute, fontSize = 11.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (liveKey != null) { LiveBadge(liveKey, fontSize = 11.sp); Spacer(Modifier.width(8.dp)) }
+                Text(sub, color = Nv.Mute, fontSize = 11.sp)
+            }
         }
         Box(
             modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Nv.Input).border(1.dp, Nv.Edge, RoundedCornerShape(8.dp))
@@ -348,7 +351,7 @@ fun DiceScreen(mobile: String, balance: Double, onBack: () -> Unit, onBalances: 
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Nv.Bg)) {
-        InstantHeader("Dice", "99x Originals", balance, onBack)
+        InstantHeader("Dice", "99x Originals", balance, onBack, liveKey = "dice")
         val c = cfg
         if (c == null) {
             Text(loadError ?: "Loading Dice…", color = Nv.Mute, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 80.dp))
@@ -490,6 +493,8 @@ fun DiceScreen(mobile: String, balance: Double, onBack: () -> Unit, onBalances: 
             BetsList(bets) { b ->
                 "${b.optString("result")} · ${if (b.optString("mode") == "under") "under" else "over"} ${String.format(Locale.US, "%.2f", b.optDouble("target"))}"
             }
+            Spacer(Modifier.height(16.dp))
+            LiveBetsSection(game = "dice", title = "Live bets · Dice")
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -582,7 +587,7 @@ fun MinesScreen(mobile: String, balance: Double, onBack: () -> Unit, onBalances:
     fun minesOf(g: JSONObject?): List<Int> { val a = g?.optJSONArray("minesAt") ?: return emptyList(); return (0 until a.length()).map { a.getInt(it) } }
 
     Column(modifier = Modifier.fillMaxSize().background(Nv.Bg)) {
-        InstantHeader("Mines", "99x Originals", balance, onBack)
+        InstantHeader("Mines", "99x Originals", balance, onBack, liveKey = "mines")
         val c = cfg
         if (c == null) {
             Text(loadError ?: "Loading Mines…", color = Nv.Mute, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 80.dp))
@@ -762,6 +767,8 @@ fun MinesScreen(mobile: String, balance: Double, onBack: () -> Unit, onBalances:
                 val n = b.optInt("mines"); val p = b.optJSONArray("picks")?.length() ?: 0
                 "$n mine${if (n == 1) "" else "s"} · " + (if (b.optString("status") == "pending") "in play" else "$p gem${if (p == 1) "" else "s"}")
             }
+            Spacer(Modifier.height(16.dp))
+            LiveBetsSection(game = "mines", title = "Live bets · Mines")
             Spacer(Modifier.height(24.dp))
         }
     }

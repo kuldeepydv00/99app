@@ -35,6 +35,9 @@ router.get('/instant/:game/report', c.instantReport);
 router.get('/instant/:game/bets', c.instantBets);
 router.post('/instant/:game/config', c.instantConfig);
 
+router.get('/live', c.liveOverview);
+router.post('/live/config', c.liveConfig);
+
 router.get('/summary', c.summary);
 router.get('/user/:mobile/bets', c.userBets);
 

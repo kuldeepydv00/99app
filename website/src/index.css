@@ -132,6 +132,9 @@
 @media (min-width: 1024px) { .nv-tiles > * { width: calc((100% - 60px) / 7); } }
 @media (min-width: 1280px) { .nv-promos > * { width: calc((100% - 24px) / 3); } }
 .nv-promos > .nv-promo-img { width: auto; } /* admin posters keep their own shape */
+/* live bets feed rows: game + payout on phones; game, player, time, bet, multiplier, payout from 640px */
+.nv-feed { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; }
+@media (min-width: 640px) { .nv-feed { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 76px 96px 76px minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) {
   .nv-drawer, .nv-fade { animation: none !important; }
 }

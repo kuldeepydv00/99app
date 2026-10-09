@@ -1,4 +1,5 @@
-// Persistent store for the new games (99x Matka, Number / Card / Colour Trading, Dragon Tiger, Toss, 99x Jet, Dice, Mines).
+// Persistent store for the new games (99x Matka, Number / Card / Colour Trading, Dragon Tiger, Toss, 99x Jet, Dice, Mines)
+// and the live players settings.
 // Kept in its own file (gamesStore.json) so the existing dataStore.json is never touched.
 const fs = require('fs');
 const path = require('path');
@@ -60,6 +61,12 @@ function defaultState() {
       seeds: {},       // mobile -> { current: { server, hash, client, nonce }, previous: [...] }
       active: {},      // mobile -> the Mines game in play
       configLog: []    // setting changes, newest first
+    },
+    // Live players (real presence counts) and the live bets feed. See livePlayers.js.
+    live: {
+      config: { enabled: true, minShow: 5, feed: true },
+      peaks: {},       // IST date -> { total, at } busiest moment of the day
+      configLog: []    // setting changes, newest first
     }
   };
 }
@@ -111,6 +118,11 @@ function load() {
       for (const k of ['seeds', 'active', 'configLog']) {
         if (raw.instant[k] !== undefined) state.instant[k] = raw.instant[k];
       }
+    }
+    if (raw.live) {
+      if (raw.live.config) Object.assign(state.live.config, raw.live.config);
+      if (raw.live.peaks && typeof raw.live.peaks === 'object') state.live.peaks = raw.live.peaks;
+      if (Array.isArray(raw.live.configLog)) state.live.configLog = raw.live.configLog;
     }
     // 99x payout is fixed by design
     state.matka99.config.payout = 99;

@@ -204,6 +204,7 @@ fun TradingScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(titleOf(game), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
                     Text("Pays ${formatPayout(payout)}x", color = GameColors.GoldLight, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    LiveBadge(game, fontSize = 10.sp)
                 }
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(GameColors.Surface).border(1.dp, GameColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 5.dp)
@@ -351,6 +352,8 @@ fun TradingScreen(
                         pastBets.forEach { b -> MyBetRow(game, b, b.optString("roundId").substringAfter("-")) }
                     }
                 }
+                Spacer(Modifier.height(16.dp))
+                LiveBetsSection(game = game, title = "Live bets · ${titleOf(game)}")
                 Spacer(Modifier.height(170.dp))
             }
         }

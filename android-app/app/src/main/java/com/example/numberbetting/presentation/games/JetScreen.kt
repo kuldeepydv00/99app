@@ -318,6 +318,7 @@ fun JetScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text("99x Jet", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
                     Text("Crash game · up to ${cfg.optInt("maxPoint", 2000)}x", color = GameColors.GoldLight, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    LiveBadge("jet", fontSize = 10.sp)
                 }
                 Text("ⓘ", color = GameColors.Muted, fontSize = 18.sp, modifier = Modifier.clickable { showRules = true }.padding(horizontal = 10.dp))
                 Box(
@@ -416,6 +417,8 @@ fun JetScreen(
                     }
                     Spacer(Modifier.height(6.dp))
                 }
+                Spacer(Modifier.height(16.dp))
+                LiveBetsSection(game = "jet", title = "Live bets · 99x Jet")
                 Spacer(Modifier.height(24.dp))
             }
         }

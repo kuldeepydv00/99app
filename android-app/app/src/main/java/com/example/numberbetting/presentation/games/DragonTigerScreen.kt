@@ -227,6 +227,7 @@ fun DragonTigerScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Dragon Tiger", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
                     Text("Dragon / Tiger ${formatPayout(payout)}x · Tie ${formatPayout(tiePayout)}x", color = GameColors.GoldLight, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    LiveBadge("dragontiger", fontSize = 10.sp)
                 }
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(GameColors.Surface).border(1.dp, GameColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 5.dp)
@@ -444,6 +445,8 @@ fun DragonTigerScreen(
                         pastBets.forEach { b -> MyBetRow(DT_GAME, b, b.optString("roundId").substringAfter("-")) }
                     }
                 }
+                Spacer(Modifier.height(16.dp))
+                LiveBetsSection(game = "dragontiger", title = "Live bets · Dragon Tiger")
                 Spacer(Modifier.height(180.dp))
             }
         }

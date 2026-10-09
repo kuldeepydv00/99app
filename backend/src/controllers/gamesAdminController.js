@@ -113,3 +113,8 @@ exports.instantBets = (req, res) => {
   }) }));
 };
 exports.instantConfig = (req, res) => { if (instantGame(req, res)) send(res, () => instant.updateConfig(req.params.game, req.body || {}, 'admin')); };
+
+// Live players: who is online where, the busiest moment of each day, the feed, and the settings.
+const live = require('../games/livePlayers');
+exports.liveOverview = (req, res) => send(res, () => live.getAdminLive());
+exports.liveConfig = (req, res) => send(res, () => live.updateConfig(req.body || {}, 'admin'));

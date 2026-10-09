@@ -3,6 +3,7 @@ const engine = require('../games/tradingEngine');
 const matka99 = require('../games/matka99');
 const jet = require('../games/jetEngine');
 const instant = require('../games/instantGames');
+const live = require('../games/livePlayers');
 const { cleanMobile } = require('../games/wallet');
 
 const send = (res, fn) => {
@@ -183,3 +184,10 @@ exports.fairnessRotate = (req, res) => {
 };
 
 exports.fairnessVerify = (req, res) => send(res, () => instant.verify(req.body || {}));
+
+// Live players: real counts per game / market (numbers below the admin cut-off are hidden),
+// and the live bets feed with masked mobiles.
+exports.liveCounts = (req, res) => send(res, () => live.publicCounts());
+exports.livePing = (req, res) => send(res, () => live.ping(req.authMobile, (req.body || {}).where, (req.body || {}).platform));
+exports.liveLeave = (req, res) => send(res, () => live.leave(req.authMobile));
+exports.liveFeed = (req, res) => send(res, () => live.getFeed(req.query.game, req.query.market));

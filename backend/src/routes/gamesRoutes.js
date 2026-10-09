@@ -30,7 +30,16 @@ const instantLimiter = createRateLimiter({
   message: 'Too many bets too quickly. Please wait a moment and try again.'
 });
 
+// Live players ping every ~15 s; many players can share one IP (mobile networks), so this is loose.
+const livePingLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 3000,
+  message: 'Too many requests. Please wait a moment and try again.'
+});
+
 // Public
+router.get('/live', c.liveCounts);
+router.get('/live/feed', c.liveFeed);
 router.get('/lobby', c.lobby);
 router.get('/instant/:game/state', c.instantState);
 router.post('/fairness/verify', instantLimiter, c.fairnessVerify);
@@ -59,5 +68,7 @@ router.post('/mines/reveal', protectUser, instantLimiter, c.minesReveal);
 router.post('/mines/cashout', protectUser, instantLimiter, c.minesCashout);
 router.get('/fairness', protectUser, c.fairness);
 router.post('/fairness/rotate', protectUser, c.fairnessRotate);
+router.post('/live/ping', protectUser, livePingLimiter, c.livePing);
+router.post('/live/leave', protectUser, livePingLimiter, c.liveLeave);
 
 module.exports = router;
