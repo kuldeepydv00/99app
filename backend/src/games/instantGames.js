@@ -10,7 +10,7 @@
 // House edge (admin setting, default 10%): every payout is (1 - edge) x the fair odds, so on average the house
 // keeps `edge` of all money bet. Single bets can still win; the max-profit limit caps how much one bet can win.
 const crypto = require('crypto');
-const { state, saveNow } = require('./gamesStore');
+const { state, saveNow, markDirty } = require('./gamesStore');
 const wallet = require('./wallet');
 const { GameError, istDateOf } = require('./tradingEngine');
 
@@ -302,6 +302,17 @@ function getActiveMines(mobile) {
 }
 
 // ---------- fairness ----------
+// A deleted account: forget its seeds and any Mines game in play. The caller removes the bets.
+function forgetPlayer(mobile) {
+  const clean = wallet.cleanMobile(mobile);
+  const s = store();
+  const had = !!(s.seeds[clean] || s.active[clean]);
+  delete s.seeds[clean];
+  delete s.active[clean];
+  if (had) markDirty();
+  return had;
+}
+
 function getFairness(mobile) {
   const clean = wallet.cleanMobile(mobile);
   const p = seedsOf(clean);
@@ -419,6 +430,21 @@ function aggregate(list) {
   };
 }
 
+// "All time" also counts days older than 60 days, whose bets were deleted (their daily totals are kept).
+function withArchived(agg, game) {
+  const old = require('../utils/betRetention').totals([game]).allTime;
+  if (!old.bets && !old.refunded) return agg;
+  const staked = wallet.round2(agg.staked + old.staked);
+  const paid = wallet.round2(agg.paid + old.paid);
+  const settledStake = staked - agg.openStake;
+  return {
+    ...agg, bets: agg.bets + old.bets, players: agg.players + old.players, staked, paid,
+    profit: wallet.round2(settledStake - paid), expectedProfit: wallet.round2(agg.expectedProfit + old.expected),
+    wins: agg.wins + old.wins,
+    actualEdgePct: settledStake > 0 ? Math.round((settledStake - paid) / settledStake * 10000) / 100 : null
+  };
+}
+
 function betsOf(game, fromMs, toMs) {
   return state.bets.filter(b => b.game === game && (() => {
     const t = new Date(b.created_at).getTime();
@@ -435,7 +461,7 @@ function getAdminOverview(game) {
     today: aggregate(all.filter(b => new Date(b.created_at).getTime() >= today)),
     days7: aggregate(all.filter(b => new Date(b.created_at).getTime() >= today - 6 * 86400000)),
     days30: aggregate(all.filter(b => new Date(b.created_at).getTime() >= today - 29 * 86400000)),
-    allTime: aggregate(all)
+    allTime: withArchived(aggregate(all), game)
   };
   // biggest single-bet results (for the admin to see risk)
   const settled = all.filter(b => b.status === 'won' || b.status === 'lost');
@@ -501,5 +527,5 @@ module.exports = {
   playDice, startMines, revealMine, cashOutMines, getActiveMines,
   getFairness, rotateSeeds, verify,
   getPublicState, getLobby, getMyBets, rulesText, limits,
-  getAdminOverview, getDailyReport, getAdminBets, updateConfig, aggregate
+  getAdminOverview, getDailyReport, getAdminBets, updateConfig, aggregate, forgetPlayer
 };

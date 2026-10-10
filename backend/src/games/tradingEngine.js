@@ -284,7 +284,6 @@ function settleRound(game, r) {
 
 // ---------- ticker ----------
 const KEEP_MS = { number: 30 * 24 * HOUR, card: 30 * 24 * HOUR, colour: 3 * 24 * HOUR, dragontiger: 3 * 24 * HOUR, toss: 3 * 24 * HOUR };
-const BET_KEEP_MS = 40 * 24 * HOUR;
 let lastPrune = 0;
 
 function prune(t) {
@@ -295,10 +294,26 @@ function prune(t) {
       if ((r.status === 'settled' || r.status === 'cancelled') && r.end < t - KEEP_MS[game]) delete rounds[id];
     }
   }
-  const cutoff = t - BET_KEEP_MS;
-  const before = state.bets.length;
-  state.bets = state.bets.filter(b => b.status === 'pending' || new Date(b.created_at).getTime() >= cutoff);
-  if (state.bets.length !== before) markDirty();
+  // Old bets are deleted after 60 days by utils/betRetention.js (it keeps daily totals for the reports).
+}
+
+// A deleted account: take its open bets out of the round totals (and the player list), as if they
+// were never placed, so they don't count toward the lowest-total result. The caller removes the bets.
+function forgetPlayer(mobile) {
+  const clean = wallet.cleanMobile(mobile);
+  let n = 0;
+  for (const b of state.bets) {
+    if (b.mobile !== clean || b.status !== 'pending' || !GAMES[b.game]) continue;
+    const r = state.rounds[b.game] && state.rounds[b.game][b.roundId];
+    if (!r || r.status === 'settled' || r.status === 'cancelled') continue;
+    r.totals[b.option] = wallet.round2(Math.max(0, (r.totals[b.option] || 0) - b.amount));
+    r.betCount = Math.max(0, (r.betCount || 0) - 1);
+    r.totalStaked = wallet.round2(Math.max(0, (r.totalStaked || 0) - b.amount));
+    if (r.players) delete r.players[clean];
+    n += 1;
+  }
+  if (n) markDirty();
+  return n;
 }
 
 function tick() {
@@ -684,5 +699,5 @@ module.exports = {
   GAMES, CARD_OPTIONS, RULE_LINE, GameError, DT, TOSS, payoutFor, pickDtResult, drawDtCards, tieChanceOf,
   setClock, now, roundBounds, roundIdFor, ensureRound, tick, startTicker, stopTicker, settleRound,
   placeBets, getPublicState, getLobby, getMyBets,
-  getAdminOverview, getAdminRounds, getAdminBets, updateConfig, cancelRound, getDailyReport, istDateOf
+  getAdminOverview, getAdminRounds, getAdminBets, updateConfig, cancelRound, getDailyReport, istDateOf, forgetPlayer
 };

@@ -19,7 +19,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     try {
       const res = await fetch(`${base}${path}`, { ...init, headers: { ...authHeaders(), ...(init.headers || {}) } });
       const data = await res.json().catch(() => ({}));
-      if (res.status === 401) throw Object.assign(new Error('Please log in again to place bets.'), { final: true });
+      if (res.status === 401) {
+        // Account deleted or login ended: App.tsx logs this device out
+        if (data && (data.is_deleted || data.logout)) { try { window.dispatchEvent(new Event('99x-session-ended')); } catch { /* ignore */ } }
+        throw Object.assign(new Error('Please log in again to place bets.'), { final: true });
+      }
       if (!res.ok || data.success === false) throw Object.assign(new Error(data.message || `Request failed (${res.status})`), { final: true });
       return data as T;
     } catch (e: any) {

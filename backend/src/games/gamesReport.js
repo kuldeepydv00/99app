@@ -5,6 +5,7 @@ const wallet = require('./wallet');
 const engine = require('./tradingEngine');
 const matka99 = require('./matka99');
 const { getISTDateStr } = require('../utils/dateCycle');
+const retention = require('../utils/betRetention');
 
 const GAME_KEYS = ['matka99', 'number', 'card', 'colour', 'dragontiger', 'toss', 'jet', 'dice', 'mines'];
 const LABELS = { matka99: '99x Matka', number: 'Number Trading', card: 'Card Trading', colour: 'Colour Trading', dragontiger: 'Dragon Tiger', toss: 'Toss', jet: '99x Jet', dice: 'Dice', mines: 'Mines' };
@@ -21,7 +22,14 @@ function range(from, to) {
   return { from: a, to: b };
 }
 
-function emptyAgg() { return { bets: 0, players: new Set(), staked: 0, paid: 0, refunded: 0, pending: 0, pendingAmount: 0, wins: 0 }; }
+function emptyAgg() { return { bets: 0, players: new Set(), oldPlayers: 0, staked: 0, paid: 0, refunded: 0, pending: 0, pendingAmount: 0, wins: 0 }; }
+// Adds a day's totals kept by the 60-day clean-up (those bets themselves are deleted).
+function addArchived(agg, line) {
+  if (!line) return;
+  agg.bets += line.bets || 0; agg.oldPlayers += line.players || 0;
+  agg.staked += line.staked || 0; agg.paid += line.paid || 0;
+  agg.refunded += line.refunded || 0; agg.wins += line.wins || 0;
+}
 function addBet(agg, b) {
   if (b.status === 'refunded') { agg.refunded += b.amount; return; }
   agg.bets += 1; agg.players.add(b.mobile); agg.staked += b.amount;
@@ -30,7 +38,7 @@ function addBet(agg, b) {
 }
 function finish(agg) {
   return {
-    bets: agg.bets, players: agg.players.size, staked: wallet.round2(agg.staked), paid: wallet.round2(agg.paid),
+    bets: agg.bets, players: agg.players.size + (agg.oldPlayers || 0), staked: wallet.round2(agg.staked), paid: wallet.round2(agg.paid),
     net: wallet.round2(agg.staked - agg.paid), refunded: wallet.round2(agg.refunded),
     pending: agg.pending, pendingAmount: wallet.round2(agg.pendingAmount), wins: agg.wins
   };
@@ -67,6 +75,14 @@ function summary({ from, to } = {}) {
       daily[d][b.game].paid += b.win_amount || 0;
     }
     if (b.status === 'won') wins.push(b);
+  }
+  // Days older than 60 days: their bets are deleted, their daily totals are kept
+  const old = retention.totals(GAME_KEYS, r.from, r.to);
+  for (const [d, lines] of Object.entries(old.days)) {
+    for (const [g, line] of Object.entries(lines)) {
+      addArchived(per[g], line); addArchived(total, line);
+      if (daily[d]) { daily[d][g].staked += line.staked || 0; daily[d][g].paid += line.paid || 0; }
+    }
   }
 
   wins.sort((a, b) => (b.win_amount || 0) - (a.win_amount || 0));
@@ -155,6 +171,11 @@ function dashboardTotals(fromIso, toIso) {
     const d = betDate(b);
     if (d && d >= fromIso && d <= toIso) { addBet(rng, b); addBet(per[b.game], b); }
   }
+  // Days older than 60 days: their bets are deleted, their daily totals are kept
+  const old = retention.totals(GAME_KEYS, fromIso, toIso);
+  addArchived(all, old.allTime);
+  addArchived(rng, old.range);
+  for (const g of GAME_KEYS) addArchived(per[g], old.byGame[g].range);
   const byGame = {}; GAME_KEYS.forEach(g => { byGame[g] = { label: LABELS[g], ...finish(per[g]) }; });
   return { range: finish(rng), allTime: finish(all), byGame };
 }

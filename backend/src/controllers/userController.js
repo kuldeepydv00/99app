@@ -10,7 +10,8 @@ function tokenMobile(req) {
     const h = req.headers && req.headers.authorization;
     if (!h || !h.startsWith('Bearer ')) return '';
     const d = verifyToken(h.split(' ')[1]);
-    return d && d.mobile ? String(d.mobile).replace(/[^0-9]/g, '').slice(-10) : '';
+    if (!d || !d.mobile || require('../middleware/auth').sessionEnded(d)) return '';
+    return String(d.mobile).replace(/[^0-9]/g, '').slice(-10);
   } catch (e) { return ''; }
 }
 

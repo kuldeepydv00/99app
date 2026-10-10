@@ -151,6 +151,8 @@ require('./games/tradingEngine').startTicker();
 require('./games/matka99').startAutoResults();
 // 99x Jet: runs one crash round at a time (betting, flight, blast)
 require('./games/jetEngine').startJet();
+// Bets older than 60 days are deleted (daily totals kept for the admin reports); runs every 6 hours
+require('./utils/betRetention').start();
 app.use('/api/payment', require('./routes/paymentRoutes'));
 
 // EKQR Webhook direct alias routes for all possible callback paths

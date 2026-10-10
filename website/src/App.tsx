@@ -877,13 +877,13 @@ export default function App() {
       const activeMobile = user?.mobile || (currentSaved ? JSON.parse(currentSaved)?.mobile : null);
       if (activeMobile) {
         const uRes = await fetchApi(`/api/user/profile?mobile=${activeMobile}`);
-        if (uRes.ok) {
+        if (uRes.status === 401) {
+          // The account was deleted, or this login ended: log out everywhere on this device
+          endWebSession();
+        } else if (uRes.ok) {
           const uData = await uRes.json();
           if (uData.is_deleted || uData.message === 'No Authentication') {
-            setIsWebUserDeleted(true);
-            setIsWebUserBlocked(false);
-            setUser(null);
-            localStorage.removeItem('99x_web_user'); localStorage.removeItem('99x_web_token');
+            endWebSession();
           } else if (uData.is_blocked || uData.error === 'NO_INTERNET') {
             setIsWebUserBlocked(true);
             setIsWebUserDeleted(false);
@@ -1483,6 +1483,21 @@ export default function App() {
     }, 500);
   };
 
+  // Account deleted by the admin, or login ended: close every game, log out, show the notice
+  const endWebSession = () => {
+    setTradingGame(null); setJetOpen(false); setInstantGame(null); setBet99(null); setMatka99Market(null);
+    handleWebLogout();
+    setIsWebUserBlocked(false);
+    setIsWebUserDeleted(true);
+  };
+  const endWebSessionRef = useRef(endWebSession);
+  endWebSessionRef.current = endWebSession;
+  useEffect(() => {
+    const onEnded = () => { if (localStorage.getItem('99x_web_token')) endWebSessionRef.current(); };
+    window.addEventListener('99x-session-ended', onEnded);
+    return () => window.removeEventListener('99x-session-ended', onEnded);
+  }, []);
+
   // ---------- Casino layout: actions, Matka market cards, promotions ----------
   const handleWebLogout = () => {
     setUser(null);
@@ -1597,7 +1612,7 @@ export default function App() {
             </div>
             <h1 className="text-2xl font-black text-amber-400 mb-2">No Authentication</h1>
             <p className="text-slate-400 text-sm max-w-xs mb-6">
-              Your account session has expired or been reset. Please register to start fresh with a brand-new ID.
+              You have been logged out. Your account was deleted or your login has ended. Log in again with OTP to start fresh with a new account.
             </p>
             <button 
               onClick={() => { setIsWebUserDeleted(false); setView('auth'); setAuthStep('phone'); }} 

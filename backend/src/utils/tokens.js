@@ -7,7 +7,8 @@ function getSecret() {
 // Issued the moment a user completes real OTP verification. Encodes their mobile
 // number (the identity this whole app is keyed on) + role, nothing more.
 function signUserToken(mobile) {
-  return jwt.sign({ mobile, role: 'user' }, getSecret(), { expiresIn: '30d' });
+  // ims: issue time in ms, so a login made right after an account deletion is told apart from older ones
+  return jwt.sign({ mobile, role: 'user', ims: Date.now() }, getSecret(), { expiresIn: '30d' });
 }
 
 // Issued the moment an admin completes login + OTP verification.

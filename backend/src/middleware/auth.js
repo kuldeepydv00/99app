@@ -14,12 +14,31 @@ const protectUser = (req, res, next) => {
     if (!decoded || !decoded.mobile) {
       return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
     }
+    const ended = sessionEnded(decoded);
+    if (ended) return res.status(401).json(ended);
     req.authMobile = decoded.mobile;
     next();
   } catch (err) {
     return res.status(401).json({ success: false, message: 'Not authorized, token invalid or expired' });
   }
 };
+
+// A deleted account, or a login from before the account was deleted, is logged out.
+// The apps log out when they see is_deleted / message 'No Authentication'.
+function sessionEnded(decoded) {
+  const { deletedMobiles, sessionCutoffs } = require('../store');
+  const m = String(decoded.mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  const cutoff = sessionCutoffs && sessionCutoffs[m];
+  const deleted = Array.isArray(deletedMobiles) && deletedMobiles.includes(m);
+  const issued = Number(decoded.ims) || (Number(decoded.iat) || 0) * 1000;
+  const old = cutoff && issued <= cutoff;
+  if (!deleted && !old) return null;
+  return {
+    success: false, is_deleted: true, isDeleted: true, logout: true,
+    message: 'No Authentication',
+    detail: 'This account was deleted. Please log in again.'
+  };
+}
 
 // Requires a valid admin JWT (issued at admin login + OTP verification).
 const protectAdmin = (req, res, next) => {
@@ -38,4 +57,4 @@ const protectAdmin = (req, res, next) => {
   }
 };
 
-module.exports = { protectUser, protectAdmin };
+module.exports = { protectUser, protectAdmin, sessionEnded };

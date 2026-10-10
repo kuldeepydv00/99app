@@ -3396,15 +3396,17 @@ export default function App() {
                                 </button>
                                 <button
                                   onClick={async () => {
-                                    if (window.confirm(`Are you sure you want to permanently delete user "${u.name || u.mobile}"?`)) {
+                                    if (window.confirm(`Permanently delete user "${u.name || u.mobile}" (${u.mobile || ''})?\n\nThis deletes the account, balances, all bets (Matka and every game), deposits, withdrawals, wallet history and notifications sent to this user. It cannot be undone.\n\nThe user is logged out on every phone and browser. If they log in again with OTP they get a new, empty account.`)) {
                                       try {
-                                        const targetId = u.id || u._id || u.mobile;
-                                        const res = await fetch(`${API_BASE}/api/admin/users/${targetId}`, { method: 'DELETE' });
+                                        const targetId = u.mobile || u.id || u._id;
+                                        const res = await fetch(`${API_BASE}/api/admin/users/${encodeURIComponent(String(targetId))}`, { method: 'DELETE' });
                                         const data = await res.json();
                                         if (data.success) {
                                           setUsers(prev => prev.filter(x => (x.id !== u.id && (!u._id || x._id !== u._id) && (!u.mobile || x.mobile !== u.mobile))));
                                           await fetchLiveData();
-                                          alert('User deleted permanently.');
+                                          const r = data.removed || {};
+                                          const n = (v: unknown) => Number(v) || 0;
+                                          alert(`User deleted permanently and logged out.\n\nRemoved: ${n(r.matkaBets) + n(r.gameBets)} bets, ${n(r.deposits)} deposits, ${n(r.withdrawals)} withdrawals, ${n(r.walletHistory)} wallet history entries, ${n(r.notifications)} notifications.${n(r.referralLinks) ? `\n${n(r.referralLinks)} referred user(s) unlinked from this referral code.` : ''}`);
                                         } else {
                                           alert(data.message || 'Failed to delete user.');
                                         }

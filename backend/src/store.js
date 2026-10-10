@@ -20,65 +20,61 @@ let userWalletStore = {
 let memoryDeposits = [];
 let memoryWithdrawals = [];
 let memoryBets = [];
-let memoryGameLedger = [];
+const memoryGameLedger = [];
 let declaredResultsMap = {};
 let declaredResultsDateMap = {};
 let memoryResultsHistory = [];
 let blockedMobiles = [];
 let deletedMobiles = [];
+// Admin and result notifications (saved in the data file)
+const memoryNotifications = [];
+// mobile -> time (ms) the admin deleted that account. Login tokens issued before it are refused,
+// so every device that was logged in is logged out (see middleware/auth.js).
+const sessionCutoffs = {};
 
-const FORTY_DAYS_MS = 40 * 24 * 60 * 60 * 1000;
+// Bets are deleted after 60 days by utils/betRetention.js (daily totals are kept for the admin reports).
+// Kept so older callers still work; it does nothing now.
+function purgeOldBets() { return 0; }
 
-function purgeOldBets() {
-  const cutoff = Date.now() - FORTY_DAYS_MS;
-  for (let i = memoryBets.length - 1; i >= 0; i--) {
-    const b = memoryBets[i];
-    const bTime = b.created_at || b.createdAt ? new Date(b.created_at || b.createdAt).getTime() : Date.now();
-    if (!isNaN(bTime) && bTime < cutoff) {
-      memoryBets.splice(i, 1);
-    }
-  }
-}
+// Wallet history is kept (owner's choice, 9 Oct 2026); only bets are deleted after 60 days.
+// Kept so older callers still work; it does nothing now. (It used to replace the array, so the
+// admin ledger page and the delete-user clean-up stopped seeing new entries.)
+function purgeOldLedger() { return 0; }
 
-function purgeOldLedger() {
-  const cutoff = Date.now() - FORTY_DAYS_MS;
-  memoryGameLedger = memoryGameLedger.filter(item => {
-    const itemTime = item.date ? new Date(item.date).getTime() : Date.now();
-    return !isNaN(itemTime) && itemTime >= cutoff;
-  });
-}
+const ZERO_BAL = { wallet: '0.00', deposit: '0.00', winning: '0.00', commission: '0.00', bonus: '0.00', referral: '0.00' };
 
 function logLedgerTransaction(data) {
-  purgeOldLedger();
   const entry = {
     id: 'ldg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-    user: data.user || 'NasibAnsari',
-    email: data.email || 'na0193354@gmail.com',
-    phone: data.phone || '9007724336',
-    amount: data.amount !== undefined ? (typeof data.amount === 'number' ? (data.amount >= 0 ? `+${data.amount}` : `${data.amount}`) : data.amount) : '+0.5',
+    user: data.user || '',
+    email: data.email || '',
+    phone: data.phone || '',
+    amount: data.amount !== undefined ? (typeof data.amount === 'number' ? (data.amount >= 0 ? `+${data.amount}` : `${data.amount}`) : data.amount) : '0',
     date: data.date || new Date().toISOString().replace('T', ' ').slice(0, 19),
-    transactType: data.transactType || 'Commission',
-    oldBal: data.oldBal || {
-      wallet: '0.00',
-      deposit: '0.00',
-      winning: '0.00',
-      commission: '7.85',
-      bonus: '0.00',
-      referral: '99.10'
-    },
-    newBal: data.newBal || {
-      wallet: '0.00',
-      deposit: '0.00',
-      winning: '0.00',
-      commission: '8.60',
-      bonus: '0.00',
-      referral: '99.10'
-    },
+    transactType: data.transactType || 'Adjustment',
+    oldBal: data.oldBal || { ...ZERO_BAL },
+    newBal: data.newBal || { ...ZERO_BAL },
     gameType: data.gameType || '-'
   };
 
   memoryGameLedger.unshift(entry);
+  scheduleSave();
   return entry;
+}
+
+// Saves the data file a moment later (many changes in a row are written once).
+let saveTimer = null;
+function scheduleSave(delayMs = 2000) {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => { saveTimer = null; saveDiskStore(); }, delayMs);
+  if (saveTimer.unref) saveTimer.unref();
+}
+process.on('exit', () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveDiskStore(); } });
+
+// Logs out every device of this mobile: tokens issued before now stop working.
+function endSessions(mobile) {
+  const m = String(mobile || '').replace(/[^0-9]/g, '').slice(-10);
+  if (m.length === 10) sessionCutoffs[m] = Date.now();
 }
 
 let bannerConfig = {
@@ -392,6 +388,9 @@ function saveDiskStore() {
       bannersListStore,
       blockedMobiles,
       deletedMobiles,
+      memoryGameLedger,
+      memoryNotifications,
+      sessionCutoffs,
       livePlayersMap,
       autoPlayerConfig
     };
@@ -533,6 +532,9 @@ function loadDiskStore() {
       if (data.bannersListStore && Array.isArray(data.bannersListStore)) bannersListStore.length = 0, bannersListStore.push(...data.bannersListStore);
       if (data.blockedMobiles && Array.isArray(data.blockedMobiles)) blockedMobiles.length = 0, blockedMobiles.push(...data.blockedMobiles);
       if (data.deletedMobiles && Array.isArray(data.deletedMobiles)) deletedMobiles.length = 0, deletedMobiles.push(...data.deletedMobiles);
+      if (Array.isArray(data.memoryGameLedger)) memoryGameLedger.length = 0, memoryGameLedger.push(...data.memoryGameLedger);
+      if (Array.isArray(data.memoryNotifications)) memoryNotifications.length = 0, memoryNotifications.push(...data.memoryNotifications);
+      if (data.sessionCutoffs && typeof data.sessionCutoffs === 'object') Object.assign(sessionCutoffs, data.sessionCutoffs);
       if (data.livePlayersMap && typeof data.livePlayersMap === 'object') Object.assign(livePlayersMap, data.livePlayersMap);
       if (data.autoPlayerConfig && typeof data.autoPlayerConfig === 'object') Object.assign(autoPlayerConfig, data.autoPlayerConfig);
       // Deleted accounts never come back, even if an older copy of the file still lists them
@@ -561,8 +563,6 @@ loadDiskStore();
 // Start the automatic live-player-count ticker (no-ops internally if autoPlayerConfig.enabled is false)
 startLivePlayerTicker();
 
-let memoryNotifications = [];
-
 module.exports = {
   registeredUsers,
   userWalletStore,
@@ -581,6 +581,9 @@ module.exports = {
   settingsConfig,
   bannersListStore,
   saveDiskStore,
+  scheduleSave,
+  endSessions,
+  sessionCutoffs,
   logLedgerTransaction,
   purgeOldLedger,
   purgeOldBets,

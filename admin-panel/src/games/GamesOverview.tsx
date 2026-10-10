@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiGet, inr, istToday, istDateTime, usePolling, Card, Kpi, Pill, OptionLabel, PlayerCell, downloadCsv, ExportButton, matkaPick } from './common';
 import type { OpenUser } from './common';
+import RetentionCard from './RetentionCard';
 
 type GameKey = 'matka99' | 'jet' | 'mines' | 'dice' | 'dragontiger' | 'toss' | 'number' | 'card' | 'colour';
 const GAMES: { key: GameKey; tab: string; icon: string }[] = [
@@ -220,6 +221,8 @@ export default function GamesOverview({ onNavigate, onOpenUser }: { onNavigate: 
           </Card>
         </div>
       </div>
+
+      <RetentionCard />
     </div>
   );
 }

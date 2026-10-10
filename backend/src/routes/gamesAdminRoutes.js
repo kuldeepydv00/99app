@@ -36,6 +36,9 @@ router.get('/instant/:game/bets', c.instantBets);
 router.post('/instant/:game/config', c.instantConfig);
 
 router.get('/live', c.liveOverview);
+
+router.get('/retention', c.retentionStatus);
+router.post('/retention/run', c.retentionRun);
 router.post('/live/config', c.liveConfig);
 
 router.get('/summary', c.summary);

@@ -353,6 +353,18 @@ const getStats = async (req, res) => {
     const totalWinnings = winningBets.reduce((sum, b) => sum + (parseFloat(b.win_amount || (b.amount * 95)) || 0), 0);
     const todayWinnings = winningBets.filter(b => isTargetDate(b)).reduce((sum, b) => sum + (parseFloat(b.win_amount || (b.amount * 95)) || 0), 0);
 
+    // 5a. Matka bets older than 60 days are deleted; their daily totals are kept (utils/betRetention.js)
+    let oldMatka = null;
+    try {
+      oldMatka = require('../utils/betRetention').totals(['matka'], startISO, endISO);
+    } catch (arErr) {
+      console.error('[getStats old Matka totals]', arErr.message);
+    }
+    const matkaTotalBetting = totalBetting + (oldMatka ? oldMatka.allTime.staked : 0);
+    const matkaTodayBetting = todayBetting + (oldMatka ? oldMatka.range.staked : 0);
+    const matkaTotalWinnings = totalWinnings + (oldMatka ? oldMatka.allTime.paid : 0);
+    const matkaTodayWinnings = todayWinnings + (oldMatka ? oldMatka.range.paid : 0);
+
     // 5b. New games (99x Matka + Number/Card/Colour Trading) — added to the betting and winning totals
     let newGames = null;
     try {
@@ -426,11 +438,11 @@ const getStats = async (req, res) => {
       dailyNewUsers,
       totalDeposite,
       todayDeposite,
-      totalWinnings: parseFloat((totalWinnings + (newGames ? newGames.allTime.paid : 0)).toFixed(2)),
-      todayWinnings: parseFloat((todayWinnings + (newGames ? newGames.range.paid : 0)).toFixed(2)),
-      totalBetting: parseFloat((totalBetting + (newGames ? newGames.allTime.staked : 0)).toFixed(2)),
-      todayBetting: parseFloat((todayBetting + (newGames ? newGames.range.staked : 0)).toFixed(2)),
-      matka: { totalBetting, todayBetting, totalWinnings, todayWinnings },
+      totalWinnings: parseFloat((matkaTotalWinnings + (newGames ? newGames.allTime.paid : 0)).toFixed(2)),
+      todayWinnings: parseFloat((matkaTodayWinnings + (newGames ? newGames.range.paid : 0)).toFixed(2)),
+      totalBetting: parseFloat((matkaTotalBetting + (newGames ? newGames.allTime.staked : 0)).toFixed(2)),
+      todayBetting: parseFloat((matkaTodayBetting + (newGames ? newGames.range.staked : 0)).toFixed(2)),
+      matka: { totalBetting: matkaTotalBetting, todayBetting: matkaTodayBetting, totalWinnings: matkaTotalWinnings, todayWinnings: matkaTodayWinnings },
       newGames,
       totalWithdraws,
       todayWithdraws,
@@ -3609,121 +3621,13 @@ const deleteNotification = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { 
-      registeredUsers, 
-      memoryBets, 
-      memoryGameLedger, 
-      memoryDeposits, 
-      memoryWithdrawals, 
-      saveDiskStore 
-    } = require('../store');
-    
-    let deletedCount = 0;
-    const deletedMobiles = [];
-    const deletedIds = [];
-    // Match only by the user's id or exact mobile number. (Matching by name used to delete
-    // every account with the same name, and every record whose name merely contained it.)
-    const idIsMobile = /^\+?\d{10,13}$/.test(String(id || '').trim());
-    const idClean = idIsMobile ? String(id).replace(/[^0-9]/g, '').slice(-10) : '';
-
-    for (let i = registeredUsers.length - 1; i >= 0; i--) {
-      const u = registeredUsers[i];
-      const mobileClean = String(u.mobile || u.phone || '').replace(/[^0-9]/g, '').slice(-10);
-      if (
-        String(u._id) === String(id) || 
-        String(u.id) === String(id) || 
-        (mobileClean && idClean && mobileClean === idClean)
-      ) {
-        if (mobileClean) deletedMobiles.push(mobileClean);
-        for (const v of [u._id, u.id]) if (v) deletedIds.push(String(v));
-        registeredUsers.splice(i, 1);
-        deletedCount++;
-      }
-    }
-    if (idClean && idClean.length === 10 && !deletedMobiles.includes(idClean)) {
-      deletedMobiles.push(idClean);
-    }
-    if (deletedCount === 0 && deletedMobiles.length === 0) {
+    // Removes the account and everything that belongs to it (Matka and all new games, wallet
+    // history, deposits, withdrawals, MongoDB copies) and logs out every device. See utils/userPurge.js.
+    const result = await require('../utils/userPurge').purgeUser(req.params.id, { by: 'admin' });
+    if (!result.found) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-
-    // Clean up memoryBets for this user
-    for (let i = memoryBets.length - 1; i >= 0; i--) {
-      const b = memoryBets[i];
-      const bm = String(b.mobile || b.phone || b.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(bm)) {
-        memoryBets.splice(i, 1);
-      }
-    }
-
-    // Clean up memoryDeposits
-    for (let i = memoryDeposits.length - 1; i >= 0; i--) {
-      const d = memoryDeposits[i];
-      const dm = String(d.mobile || d.phone || d.userPhone || d.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(dm)) {
-        memoryDeposits.splice(i, 1);
-      }
-    }
-
-    // Clean up memoryWithdrawals
-    for (let i = memoryWithdrawals.length - 1; i >= 0; i--) {
-      const w = memoryWithdrawals[i];
-      const wm = String(w.mobile || w.phone || w.userPhone || w.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(wm)) {
-        memoryWithdrawals.splice(i, 1);
-      }
-    }
-
-    // Clean up memoryGameLedger
-    for (let i = memoryGameLedger.length - 1; i >= 0; i--) {
-      const l = memoryGameLedger[i];
-      const lm = String(l.phone || l.mobile || l.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (deletedMobiles.includes(lm)) {
-        memoryGameLedger.splice(i, 1);
-      }
-    }
-
-    try {
-      const { 
-        deletedMobiles: storeDeletedMobiles, 
-        userWalletStore
-      } = require('../store');
-
-      deletedMobiles.forEach(m => {
-        if (m) {
-          if (storeDeletedMobiles && !storeDeletedMobiles.includes(m)) storeDeletedMobiles.push(m);
-          if (userWalletStore && userWalletStore[m]) delete userWalletStore[m];
-        }
-      });
-    } catch (e) {}
-
-    saveDiskStore();
-    
-    // Delete permanently from MongoDB Atlas
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const orConditions = [];
-      deletedIds.filter(v => mongoose.Types.ObjectId.isValid(v) && /^[0-9a-f]{24}$/i.test(v)).forEach(v => {
-        orConditions.push({ _id: new mongoose.Types.ObjectId(v) });
-      });
-      deletedMobiles.forEach(m => {
-        orConditions.push({ mobile: new RegExp(m + "$") });
-        orConditions.push({ phone: new RegExp(m + "$") });
-        orConditions.push({ user: new RegExp(m + "$") });
-        orConditions.push({ user_id: new RegExp(m + "$") });
-      });
-      deletedIds.forEach(v => orConditions.push({ user_id: v }));
-
-      if (orConditions.length > 0) {
-        await mongoose.connection.db.collection('users').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('bets').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('transactions').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('depositrequests').deleteMany({ $or: orConditions }).catch(()=>{});
-        await mongoose.connection.db.collection('withdrawalrequests').deleteMany({ $or: orConditions }).catch(()=>{});
-      }
-    }
-    res.json({ success: true, message: `User and all related data deleted permanently` });
+    res.json({ success: true, message: 'User and all related data deleted permanently', removed: result.removed, mobiles: result.mobiles });
   } catch (e) {
     res.json({ success: false, message: e.message });
   }

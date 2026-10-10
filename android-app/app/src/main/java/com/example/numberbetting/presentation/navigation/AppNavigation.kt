@@ -304,6 +304,17 @@ fun AppNavigation() {
                             conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
                             AuthManager.getAuthToken(context)?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
                             conn.connectTimeout = 1500
+                            if (conn.responseCode == 401) {
+                                // Account deleted by the admin, or this login ended: log out on this phone
+                                val errText = try { conn.errorStream?.bufferedReader()?.readText() ?: "" } catch (_: Exception) { "" }
+                                if (errText.contains("is_deleted") || errText.contains("No Authentication")) {
+                                    withContext(Dispatchers.Main) {
+                                        isAccountDeleted = true
+                                        AuthManager.logout(context)
+                                    }
+                                    break
+                                }
+                            }
                             if (conn.responseCode == 200) {
                                 ApiConfig.cachedWorkingUrl = baseUrl
                                 val text = conn.inputStream.bufferedReader().readText()

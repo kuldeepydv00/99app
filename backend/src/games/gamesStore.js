@@ -1,5 +1,5 @@
 // Persistent store for the new games (99x Matka, Number / Card / Colour Trading, Dragon Tiger, Toss, 99x Jet, Dice, Mines)
-// and the live players settings.
+// the live players settings, and the daily totals kept by the 60-day bet cleanup.
 // Kept in its own file (gamesStore.json) so the existing dataStore.json is never touched.
 const fs = require('fs');
 const path = require('path');
@@ -67,16 +67,47 @@ function defaultState() {
       config: { enabled: true, minShow: 5, feed: true },
       peaks: {},       // IST date -> { total, at } busiest moment of the day
       configLog: []    // setting changes, newest first
+    },
+    // Daily totals of bets deleted by the 60-day cleanup (no player data). See utils/betRetention.js.
+    archive: {
+      days: {},          // IST date -> { gameKey: { bets, players, staked, paid, wins, refunded, expected } }
+      closedThrough: null, // every day up to and including this date has been archived
+      pendingLeft: [],   // ids of bets that were still pending when their day was archived
+      lastRun: null,     // { at, cutoff, matka, games, ... }
+      runs: []           // recent runs, newest first
     }
   };
 }
 
 const state = defaultState();
 
+// Reads the store; if the file is damaged, keeps a copy of it and falls back to the backup.
+function readFile() {
+  const text = fs.readFileSync(GAMES_STORE_FILE, 'utf-8');
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    const aside = `${GAMES_STORE_FILE}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    try { fs.copyFileSync(GAMES_STORE_FILE, aside); } catch (e) {}
+    console.error(`[Games Store] ${GAMES_STORE_FILE} is not valid JSON (${err.message}). A copy was kept at ${aside}.`);
+    const bak = GAMES_STORE_FILE + '.bak';
+    if (fs.existsSync(bak)) {
+      const data = JSON.parse(fs.readFileSync(bak, 'utf-8'));
+      console.error(`[Games Store] Loaded the backup ${bak} instead.`);
+      return data;
+    }
+    throw err;
+  }
+}
+
+// If the file exists but can't be read, saving is turned off so the bets on disk are never
+// replaced by an empty store. Fix or restore the file, then restart.
+let loadFailed = false;
+
 function load() {
   try {
     if (!fs.existsSync(GAMES_STORE_FILE)) return;
-    const raw = JSON.parse(fs.readFileSync(GAMES_STORE_FILE, 'utf-8'));
+    const raw = readFile();
     if (raw.config) {
       for (const g of Object.keys(state.config)) {
         if (raw.config[g]) Object.assign(state.config[g], raw.config[g]);
@@ -124,19 +155,34 @@ function load() {
       if (raw.live.peaks && typeof raw.live.peaks === 'object') state.live.peaks = raw.live.peaks;
       if (Array.isArray(raw.live.configLog)) state.live.configLog = raw.live.configLog;
     }
+    if (raw.archive && typeof raw.archive === 'object') {
+      if (raw.archive.days && typeof raw.archive.days === 'object') state.archive.days = raw.archive.days;
+      for (const k of ['closedThrough', 'lastRun']) if (raw.archive[k] !== undefined) state.archive[k] = raw.archive[k];
+      for (const k of ['pendingLeft', 'runs']) if (Array.isArray(raw.archive[k])) state.archive[k] = raw.archive[k];
+    }
     // 99x payout is fixed by design
     state.matka99.config.payout = 99;
     console.log(`[Games Store] Loaded ${state.bets.length} new-game bets from ${GAMES_STORE_FILE}`);
   } catch (err) {
-    console.error('[Games Store] Load error:', err.message);
+    loadFailed = true;
+    console.error('[Games Store] Load error:', err.message, '- saving is turned off so the file is not overwritten.');
   }
 }
 
 // Money-affecting writes (bets, settlements, config) call saveNow() immediately.
 // Housekeeping (new empty rounds, status flips) calls markDirty() and is flushed every 3s.
 let dirty = false;
+let lastBackupAt = 0;
 function saveNow() {
+  if (loadFailed) {
+    console.error(`[Games Store] Not saving: ${GAMES_STORE_FILE} could not be loaded at startup. Fix or restore it, then restart.`);
+    return;
+  }
   try {
+    // Keep a copy of the last good file (refreshed at most every 10 minutes)
+    if (Date.now() - lastBackupAt > 10 * 60 * 1000 && fs.existsSync(GAMES_STORE_FILE)) {
+      try { fs.copyFileSync(GAMES_STORE_FILE, GAMES_STORE_FILE + '.bak'); lastBackupAt = Date.now(); } catch (e) {}
+    }
     const tmp = GAMES_STORE_FILE + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(state), 'utf-8');
     fs.renameSync(tmp, GAMES_STORE_FILE);

@@ -61,9 +61,9 @@ const connectDB = async () => {
           const betId = dbB._id.toString();
           const dbMob = String(dbB.mobile || dbB.user || '').replace(/[^0-9]/g, '').slice(-10);
           const dbTime = dbB.created_at ? new Date(dbB.created_at).getTime() : (dbB.createdAt ? new Date(dbB.createdAt).getTime() : 0);
-          // Bets of deleted accounts, and bets older than the 40 days the app keeps, stay out
+          // Bets of deleted accounts, and bets past the 60 days the app keeps, stay out
           if (dbMob && isDeleted(dbMob)) return;
-          if (dbTime && dbTime < Date.now() - 40 * 24 * 60 * 60 * 1000) return;
+          if (dbTime && require('../utils/betRetention').isExpired(dbTime)) return;
 
           const existing = memoryBets.find(b => {
             if (String(b._id || b.id) === betId) return true;

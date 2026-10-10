@@ -118,3 +118,8 @@ exports.instantConfig = (req, res) => { if (instantGame(req, res)) send(res, () 
 const live = require('../games/livePlayers');
 exports.liveOverview = (req, res) => send(res, () => live.getAdminLive());
 exports.liveConfig = (req, res) => send(res, () => live.updateConfig(req.body || {}, 'admin'));
+
+// Bet history clean-up (60 days, daily totals kept): status and a manual run.
+const retention = require('../utils/betRetention');
+exports.retentionStatus = (req, res) => send(res, () => retention.status());
+exports.retentionRun = (req, res) => send(res, () => ({ run: retention.run({ by: 'admin' }), status: retention.status() }));

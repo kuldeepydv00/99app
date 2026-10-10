@@ -119,6 +119,26 @@ function rebuildIndex() {
   nextBets = state.bets.filter(b => b.game === 'jet' && b.roundId === nid && b.status === 'pending');
 }
 
+// A deleted account: drop its bets from the current and next round (open ones come off the round
+// totals, so they are never paid). The caller removes the bets from the store.
+function forgetPlayer(mobile) {
+  const clean = wallet.cleanMobile(mobile);
+  const r = state.jet.round;
+  let n = 0;
+  for (const b of liveBets) {
+    if (b.mobile !== clean) continue;
+    if (r && b.status === 'pending') removeFromRound(r, b);
+    n += 1;
+  }
+  liveBets = liveBets.filter(b => b.mobile !== clean);
+  const before = nextBets.length;
+  nextBets = nextBets.filter(b => b.mobile !== clean);
+  n += before - nextBets.length;
+  if (r && Array.isArray(r.players)) r.players = r.players.filter(m => m !== clean);
+  if (n) markDirty();
+  return n;
+}
+
 // ---------- rounds ----------
 function startRound(t) {
   const j = state.jet;
@@ -684,5 +704,5 @@ module.exports = {
   tick, startJet, stopJet, rebuildIndex, subscribe,
   placeBet, cancelBet, cashOut,
   getPublicState, getLobby, getMyBets, getRoundProof, fairnessInfo, rulesText, liveBetsPayload,
-  getAdminOverview, getAdminRounds, getAdminBets, getDailyReport, updateConfig, istDateOf
+  getAdminOverview, getAdminRounds, getAdminBets, getDailyReport, updateConfig, istDateOf, forgetPlayer
 };
