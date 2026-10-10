@@ -52,6 +52,7 @@ fun AppNavigation() {
     var currentScreen by remember { mutableStateOf("splash") }
     var selectedGameTitle by remember { mutableStateOf("Gali") }
     var showRulesDialog by remember { mutableStateOf(false) }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
     
     // User credentials state
     var currentUserName by remember { mutableStateOf(AuthManager.getUserName(context)) }
@@ -413,60 +414,8 @@ fun AppNavigation() {
                         }
                     }
 
-                    // Poll Server Notifications & Declared Results for Instant Push Alerts
-                    for (baseUrl in ApiConfig.getWorkingUrls()) {
-                        try {
-                            val url = URL("$baseUrl/api/notifications")
-                            val conn = url.openConnection() as HttpURLConnection
-                            conn.requestMethod = "GET"
-                            conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
-                            conn.connectTimeout = 1500
-                            if (conn.responseCode == 200) {
-                                val text = conn.inputStream.bufferedReader().readText()
-                                if (text.trim().startsWith("[")) {
-                                    val notifArr = JSONArray(text)
-                                    val prefs = context.getSharedPreferences("99x_notifications_store", Context.MODE_PRIVATE)
-                                    val isInitialized = prefs.getBoolean("is_initialized", false)
-                                    val seenSet = prefs.getStringSet("seen_ids", emptySet())?.toMutableSet() ?: mutableSetOf()
-
-                                    if (!isInitialized) {
-                                        // On initial launch, mark existing notifications as seen so we don't spam old notifications
-                                        for (idx in 0 until notifArr.length()) {
-                                            val nObj = notifArr.getJSONObject(idx)
-                                            val nId = nObj.optString("id", nObj.optString("_id", ""))
-                                            if (nId.isNotEmpty()) seenSet.add(nId)
-                                        }
-                                        prefs.edit().putStringSet("seen_ids", seenSet).putBoolean("is_initialized", true).apply()
-                                    } else {
-                                        // Trigger system push notifications for any new announcements
-                                        var hasNew = false
-                                        for (idx in 0 until notifArr.length()) {
-                                            val nObj = notifArr.getJSONObject(idx)
-                                            val nId = nObj.optString("id", nObj.optString("_id", ""))
-                                            val nTitle = nObj.optString("title", "🚀 Game Result Announced!")
-                                            val nBody = nObj.optString("body", "")
-
-                                            if (nId.isNotEmpty() && !seenSet.contains(nId)) {
-                                                seenSet.add(nId)
-                                                hasNew = true
-                                                val intNotifId = (Math.abs(nId.hashCode()) % 90000) + 1000
-                                                NotificationHelper.showNotification(
-                                                    context = context,
-                                                    notifId = intNotifId,
-                                                    title = nTitle,
-                                                    message = nBody
-                                                )
-                                            }
-                                        }
-                                        if (hasNew) {
-                                            prefs.edit().putStringSet("seen_ids", seenSet).apply()
-                                        }
-                                    }
-                                    break
-                                }
-                            }
-                        } catch (e: Exception) { }
-                    }
+                    // Notifications: the player's own messages + announcements, shown as phone notifications
+                    try { com.example.numberbetting.domain.NotificationPoller.pollAndNotify(context) } catch (e: Exception) { }
                 }
             } catch (e: Exception) { }
             delay(4000)
@@ -653,6 +602,9 @@ fun AppNavigation() {
                     },
                     onOpenRulesDialog = {
                         showRulesDialog = true
+                    },
+                    onOpenNotifications = {
+                        showNotificationsDialog = true
                     },
                     onLogout = {
                         AuthManager.clearUserSession(context)
@@ -1080,6 +1032,9 @@ fun AppNavigation() {
         }
 
         // Rules & Payout Rates Modal Dialog
+        if (showNotificationsDialog) {
+            com.example.numberbetting.presentation.games.NotificationsDialog(onDismiss = { showNotificationsDialog = false })
+        }
         if (showRulesDialog) {
             RulesAndRatesDialog(
                 onDismiss = { showRulesDialog = false }

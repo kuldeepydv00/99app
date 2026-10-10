@@ -31,6 +31,8 @@ const memoryNotifications = [];
 // mobile -> time (ms) the admin deleted that account. Login tokens issued before it are refused,
 // so every device that was logged in is logged out (see middleware/auth.js).
 const sessionCutoffs = {};
+// mobile -> time (ms) the player last opened their notifications (newer ones count as unread)
+const notificationSeen = {};
 
 // Bets are deleted after 60 days by utils/betRetention.js (daily totals are kept for the admin reports).
 // Kept so older callers still work; it does nothing now.
@@ -391,6 +393,7 @@ function saveDiskStore() {
       memoryGameLedger,
       memoryNotifications,
       sessionCutoffs,
+      notificationSeen,
       livePlayersMap,
       autoPlayerConfig
     };
@@ -535,6 +538,7 @@ function loadDiskStore() {
       if (Array.isArray(data.memoryGameLedger)) memoryGameLedger.length = 0, memoryGameLedger.push(...data.memoryGameLedger);
       if (Array.isArray(data.memoryNotifications)) memoryNotifications.length = 0, memoryNotifications.push(...data.memoryNotifications);
       if (data.sessionCutoffs && typeof data.sessionCutoffs === 'object') Object.assign(sessionCutoffs, data.sessionCutoffs);
+      if (data.notificationSeen && typeof data.notificationSeen === 'object') Object.assign(notificationSeen, data.notificationSeen);
       if (data.livePlayersMap && typeof data.livePlayersMap === 'object') Object.assign(livePlayersMap, data.livePlayersMap);
       if (data.autoPlayerConfig && typeof data.autoPlayerConfig === 'object') Object.assign(autoPlayerConfig, data.autoPlayerConfig);
       // Deleted accounts never come back, even if an older copy of the file still lists them
@@ -584,6 +588,7 @@ module.exports = {
   scheduleSave,
   endSessions,
   sessionCutoffs,
+  notificationSeen,
   logLedgerTransaction,
   purgeOldLedger,
   purgeOldBets,

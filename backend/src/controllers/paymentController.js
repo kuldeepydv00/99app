@@ -206,6 +206,12 @@ async function creditSuccessfulDeposit(clientTxnId, utr, gatewayTxnId, extraData
       });
     } catch (e) {}
 
+    require('../utils/notify').toUser(cleanMobile || dep.mobile, {
+      type: 'deposit', amount: numAmt, ref: String(dep._id || dep.id || clientTxnId || ''),
+      title: `₹${numAmt} added to your wallet`,
+      body: `Your UPI payment of ₹${numAmt} was received${dep.utr || utr ? ` (UTR ${dep.utr || utr})` : ''}.${userObj ? ` New balance: ₹${updatedNewBalance}.` : ''}`
+    });
+
     saveDiskStore();
     console.log(`[EKQR Deposit Success] Credited ₹${numAmt} to ${cleanMobile || dep.user}. New balance: ₹${updatedNewBalance}`);
     return { success: true, newBalance: updatedNewBalance, deposit: dep };

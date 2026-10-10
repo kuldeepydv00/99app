@@ -61,6 +61,7 @@ async function purgeUser(id, { by = 'admin' } = {}) {
     return t.length === 10 && mob.has(t);
   });
   for (const m of mob) {
+    if (store.notificationSeen) delete store.notificationSeen[m];
     if (store.userWalletStore && store.userWalletStore[m]) delete store.userWalletStore[m];
     if (store.userWalletStore && cleanMobile(store.userWalletStore.mobile) === m) {
       store.userWalletStore.balance = 0; store.userWalletStore.name = ''; store.userWalletStore.mobile = '';

@@ -753,6 +753,12 @@ const submitDeposit = async (req, res) => {
     console.error('[MongoDB Deposit Error]', e);
   }
 
+  require('../utils/notify').toUser(userMobileStr, {
+    type: 'deposit', amount: numAmount, ref: newDeposit._id,
+    title: `Deposit request of ₹${numAmount} received`,
+    body: `We received your deposit request${utrStr ? ` (UTR ${utrStr})` : ''}. The money will be added to your wallet after it is checked.`
+  });
+
   const { saveDiskStore } = require('../store');
   saveDiskStore();
   console.log(`[Deposit Submitted] ${newDeposit.user} requested ₹${newDeposit.amount} (UTR: ${newDeposit.utr})`);
@@ -888,6 +894,12 @@ const requestWithdrawal = async (req, res) => {
   } catch (e) {
     console.error('[MongoDB WithdrawalRequest Create Error]', e);
   }
+
+  require('../utils/notify').toUser(newWithdrawal.mobile, {
+    type: 'withdrawal', amount: numAmt, ref: newWithdrawal.id || newWithdrawal._id,
+    title: `Withdrawal request of ₹${numAmt} received`,
+    body: `₹${numAmt} is held from your wallet and will be sent to your account after approval.`
+  });
 
   const { saveDiskStore } = require('../store');
   saveDiskStore();

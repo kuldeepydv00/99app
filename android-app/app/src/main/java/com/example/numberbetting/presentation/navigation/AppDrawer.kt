@@ -33,6 +33,7 @@ fun AppDrawerContent(
     whatsappNumber: String = "917206561420",
     onNavigate: (String) -> Unit,
     onOpenRulesDialog: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
     onLogout: () -> Unit = {},
     onCloseDrawer: () -> Unit
 ) {
@@ -107,6 +108,15 @@ fun AppDrawerContent(
                 icon = "💳",
                 label = LanguageManager.getText("Personal Wallet", "व्यक्तिगत वॉलेट"),
                 onClick = { onNavigate("wallet") }
+            )
+
+            DrawerActionItem(
+                icon = "🔔",
+                label = LanguageManager.getText("Notifications", "सूचनाएं"),
+                onClick = {
+                    onCloseDrawer()
+                    onOpenNotifications()
+                }
             )
 
             DrawerActionItem(

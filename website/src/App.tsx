@@ -24,6 +24,7 @@ import Matka99Chart from './games/Matka99Chart';
 import NewGamesBets from './games/NewGamesBets';
 import type { TradingGame } from './games/api';
 import { gamesPost } from './games/api';
+import { useNotifications, NotificationsPanel, NotificationToast } from './layout/Notifications';
 
 const API_BASE_URLS = [
   typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com',
@@ -367,28 +368,10 @@ export default function App() {
     setIsTransferringCommission(false);
   };
 
-  const [notificationsList, setNotificationsList] = useState<any[]>([]);
+  // Notifications: the player's own messages (deposits, withdrawals, wins, refunds) + announcements
+  const notes = useNotifications(!!user);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const fetchWebsiteNotifications = async () => {
-    try {
-      const res = await fetchApi('/api/notifications');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setNotificationsList(data);
-          setUnreadCount(data.length);
-        }
-      }
-    } catch (e) {}
-  };
-
-  useEffect(() => {
-    fetchWebsiteNotifications();
-    const interval = setInterval(fetchWebsiteNotifications, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  const openNotifications = () => { setShowNotificationsModal(true); notes.markSeen(); };
 
   const [applyRefInput, setApplyRefInput] = useState('');
   const [applyRefStatus, setApplyRefStatus] = useState('');
@@ -1531,7 +1514,7 @@ export default function App() {
     refer: () => setShowReferralModal(true),
     rules: () => setShowRulesModal(true),
     profile: () => setShowProfileModal(true),
-    notifications: () => setShowNotificationsModal(true),
+    notifications: openNotifications,
     download: () => handleDownloadApk(),
     logout: handleWebLogout,
     supportUrl: `https://wa.me/${whatsappNumber}`
@@ -2083,7 +2066,7 @@ export default function App() {
                 name={user?.name} mobile={user?.mobile} balance={user?.balance || 0} />
             )}
             <div className={`flex min-h-screen flex-col lg:transition-[padding] lg:duration-200 ${navCollapsed ? 'lg:pl-[68px]' : 'lg:pl-60'}`}>
-              <TopBar a={shellActions} balance={user?.balance || 0} unread={notificationsList.length > 0} />
+              <TopBar a={shellActions} balance={user?.balance || 0} unread={notes.unread} />
               <main className={`mx-auto w-full flex-1 pt-4 sm:pt-6 ${activeWebTab === 'home' ? 'max-w-[1200px] px-4 sm:px-6' : 'max-w-2xl'}`}>
 
             {/* HOME: casino lobby (promotions, search, tabs, 99x Originals, Matka, 99x Matka) */}
@@ -3613,45 +3596,9 @@ export default function App() {
           </div>
         )}
 
-        {/* MODAL: PUSH NOTIFICATIONS DRAWER */}
-        {showNotificationsModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#123A2C] border border-[#1E5C46] rounded-2xl w-full max-w-sm p-5 shadow-2xl relative max-h-[80vh] flex flex-col">
-              <button 
-                onClick={() => setShowNotificationsModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-                <Bell className="w-5 h-5 text-amber-400" /> Notifications & Alerts
-              </h3>
-              <p className="text-xs text-gray-400 mb-4">Latest game results and broadcast announcements.</p>
-
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {notificationsList.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-gray-400">
-                    <p className="text-2xl mb-1">🔔</p>
-                    No notifications yet. Result announcements & admin updates will appear here!
-                  </div>
-                ) : (
-                  notificationsList.map((n, i) => (
-                    <div key={i} className="bg-[#0A0F0D] border border-[#1E5C46] rounded-xl p-3.5 space-y-1">
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className="text-xs font-bold text-amber-400">{n.title}</h4>
-                        <span className="text-[10px] text-gray-500 font-mono whitespace-nowrap">
-                          {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-200 leading-relaxed">{n.body}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Notifications panel + pop-up for a new message */}
+        {showNotificationsModal && <NotificationsPanel list={notes.list} loggedIn={!!user} onClose={() => setShowNotificationsModal(false)} />}
+        <NotificationToast note={notes.toast} onOpen={() => { notes.closeToast(); openNotifications(); }} onClose={notes.closeToast} />
 
         {/* MODAL: RULES & PAYOUT RATES */}
         {showRulesModal && (

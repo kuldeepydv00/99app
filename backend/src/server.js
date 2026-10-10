@@ -135,8 +135,9 @@ app.post('/api/payment-methods', protectAdmin, savePaymentMethod);
 app.delete('/api/payment-methods/:id', protectAdmin, deletePaymentMethod);
 app.post('/api/payment-methods/:id/toggle', protectAdmin, toggleActivePaymentMethod);
 
-app.get('/api/notifications', getNotifications);
-app.post('/api/send-notification', protectAdmin, sendCustomNotification);
+// Public list = broadcasts only (a player's own messages are at /api/user/notifications)
+app.get('/api/notifications', require('./controllers/notificationController').publicNotifications);
+app.post('/api/send-notification', protectAdmin, require('./controllers/notificationController').sendNotification);
 app.delete('/api/notifications/:id', protectAdmin, deleteNotification);
 
 app.use('/api/auth', require('./routes/authRoutes'));

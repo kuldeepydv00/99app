@@ -612,8 +612,10 @@ function cancelRound(game, roundId, reason) {
   const why = String(reason || '').trim().slice(0, 120) || 'Cancelled by admin';
 
   let count = 0, amount = 0;
+  const refunds = require('../utils/notify').perPlayer();
   for (const b of state.bets) {
     if (b.game !== game || b.roundId !== roundId || b.status !== 'pending') continue;
+    refunds.add(b.mobile, b.amount);
     const u = wallet.findUser(b.mobile);
     wallet.refundStake(u, b, `Refund: ${def.label} round ${roundId} cancelled`);
     b.status = 'refunded';
@@ -628,6 +630,7 @@ function cancelRound(game, roundId, reason) {
   r.refundedBets = count;
   r.refundedAmount = wallet.round2(amount);
   wallet.persistWallets();
+  refunds.send(x => ({ type: 'refund', amount: x.amount, title: `₹${x.amount} refunded to your wallet`, body: `${def.label} round ${roundId} was cancelled: ${why}. Your ${x.count} bet${x.count === 1 ? '' : 's'} came back to your wallet.` }));
   saveNow();
   console.log(`[${def.label}] ${roundId} cancelled by admin (${why}): refunded ₹${r.refundedAmount} on ${count} bets`);
   return { roundId, game, refundedBets: count, refundedAmount: r.refundedAmount, reason: why };

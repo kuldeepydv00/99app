@@ -77,7 +77,8 @@ router.get('/paymentMethods', getPaymentMethods);
 router.use(protectAdmin);
 
 router.get('/notifications', getNotifications);
-router.post('/send-notification', sendCustomNotification);
+// To all users, one user or several mobiles (see controllers/notificationController.js)
+router.post('/send-notification', require('../controllers/notificationController').sendNotification);
 router.delete('/notifications/:id', deleteNotification);
 
 router.get('/admins', getAdminAdmins);

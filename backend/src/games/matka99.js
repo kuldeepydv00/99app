@@ -287,13 +287,16 @@ function refundMarket(marketInput, dateInput, reason) {
   if (isDeclared(m.key, date)) throw new GameError(400, `${m.name} is already declared for ${date}. Undo the result first.`);
   const why = String(reason || '').trim().slice(0, 120) || 'Cancelled by admin';
   let count = 0, amount = 0;
+  const refunds = require('../utils/notify').perPlayer();
   for (const b of betsFor(m.key, date)) {
     if (b.status !== 'pending') continue;
+    refunds.add(b.mobile, b.amount);
     wallet.refundStake(wallet.findUser(b.mobile), b, `Refund: ${m.name} ${date} cancelled`);
     b.status = 'refunded'; b.refunded_at = new Date().toISOString(); b.refund_reason = why;
     count += 1; amount += b.amount;
   }
   if (count > 0) wallet.persistWallets();
+  refunds.send(r => ({ type: 'refund', amount: r.amount, title: `₹${r.amount} refunded to your wallet`, body: `${m.name} (99x Matka) for ${date} was cancelled: ${why}. Your ${r.count} bet${r.count === 1 ? '' : 's'} came back to your wallet.` }));
   saveNow();
   console.log(`[99x Matka] ${m.name} ${date} refunded by admin (${why}): ₹${wallet.round2(amount)} on ${count} bets`);
   return { market: m.name, key: m.key, date, refundedBets: count, refundedAmount: wallet.round2(amount), reason: why };
@@ -350,19 +353,26 @@ function declare(marketInput, dateKey, numberInput, { bypassWindowCheck = false,
   }
 
   let winners = 0, totalPaid = 0, anyCredit = false;
+  const wins = require('../utils/notify').perPlayer();
   for (const b of betsFor(m.key, p.date)) {
     if (b.status !== 'pending') continue;
     if (betWins(b, p.number)) {
       const win = wallet.round2(b.amount * b.multiplier);
       b.status = 'won'; b.win_amount = win; winners += 1; totalPaid += win;
       const u = wallet.findUser(b.mobile);
-      if (u) { wallet.creditWin(u, win, `Won ₹${win} on ${m.name} (${p.number})`, p.date); anyCredit = true; }
+      if (u) { wallet.creditWin(u, win, `Won ₹${win} on ${m.name} (${p.number})`, p.date); anyCredit = true; wins.add(b.mobile, win, b); }
     } else {
       b.status = 'lost'; b.win_amount = 0;
     }
     b.result = p.number;
     b.settled_at = new Date().toISOString();
   }
+
+  wins.send(w => ({
+    type: 'win', amount: w.amount,
+    title: `🎉 You won ₹${w.amount} in ${m.name} (99x Matka)`,
+    body: `Result ${p.number}. ${w.count} winning bet${w.count === 1 ? '' : 's'}. The money is in your winning balance.`
+  }));
 
   if (!state.matka99.results[p.date]) state.matka99.results[p.date] = {};
   state.matka99.results[p.date][m.key] = p.number;

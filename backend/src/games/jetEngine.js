@@ -260,8 +260,10 @@ function archive(r) {
 // Gives every open stake of a round back (server restart mid-flight, or the jet being switched off before take-off).
 function refundOpen(list, reason, t) {
   let count = 0, amount = 0;
+  const refunds = require('../utils/notify').perPlayer();
   for (const b of list) {
     if (b.status !== 'pending') continue;
+    refunds.add(b.mobile, b.amount);
     wallet.refundStake(wallet.findUser(b.mobile), b, `Refund: ${LABEL} ${b.roundId} — ${reason}`);
     b.status = 'refunded';
     b.refunded_at = new Date(t).toISOString();
@@ -269,6 +271,7 @@ function refundOpen(list, reason, t) {
     count += 1; amount += b.amount;
   }
   if (count) walletsDirty = true;
+  refunds.send(x => ({ type: 'refund', amount: x.amount, title: `₹${x.amount} refunded to your wallet`, body: `Your 99x Jet bet${x.count === 1 ? '' : 's'} came back to your wallet: ${reason}.` }));
   return { count, amount: wallet.round2(amount) };
 }
 

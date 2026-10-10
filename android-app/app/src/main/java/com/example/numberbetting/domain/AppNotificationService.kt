@@ -82,65 +82,12 @@ class AppNotificationService : Service() {
         serviceScope.launch {
             while (isActive) {
                 try {
-                    for (baseUrl in ApiConfig.getWorkingUrls()) {
-                        try {
-                            val url = URL("$baseUrl/api/notifications")
-                            val conn = url.openConnection() as HttpURLConnection
-                            conn.requestMethod = "GET"
-                            conn.setRequestProperty("Bypass-Tunnel-Reminder", "true")
-                            conn.connectTimeout = 3000
-                            conn.readTimeout = 3000
-
-                            if (conn.responseCode == 200) {
-                                val text = conn.inputStream.bufferedReader().readText()
-                                if (text.trim().startsWith("[")) {
-                                    val notifArr = JSONArray(text)
-                                    val prefs = getSharedPreferences("99x_notifications_store", Context.MODE_PRIVATE)
-                                    val isInitialized = prefs.getBoolean("is_initialized", false)
-                                    val seenSet = prefs.getStringSet("seen_ids", emptySet())?.toMutableSet() ?: mutableSetOf()
-
-                                    if (!isInitialized) {
-                                        for (idx in 0 until notifArr.length()) {
-                                            val nObj = notifArr.getJSONObject(idx)
-                                            val nId = nObj.optString("id", nObj.optString("_id", ""))
-                                            if (nId.isNotEmpty()) seenSet.add(nId)
-                                        }
-                                        prefs.edit().putStringSet("seen_ids", seenSet).putBoolean("is_initialized", true).apply()
-                                    } else {
-                                        var hasNew = false
-                                        for (idx in 0 until notifArr.length()) {
-                                            val nObj = notifArr.getJSONObject(idx)
-                                            val nId = nObj.optString("id", nObj.optString("_id", ""))
-                                            val nTitle = nObj.optString("title", "🚀 Game Result Announced!")
-                                            val nBody = nObj.optString("body", "")
-
-                                            if (nId.isNotEmpty() && !seenSet.contains(nId)) {
-                                                seenSet.add(nId)
-                                                hasNew = true
-                                                val intNotifId = (Math.abs(nId.hashCode()) % 90000) + 1000
-                                                NotificationHelper.showNotification(
-                                                    context = applicationContext,
-                                                    notifId = intNotifId,
-                                                    title = nTitle,
-                                                    message = nBody
-                                                )
-                                            }
-                                        }
-                                        if (hasNew) {
-                                            prefs.edit().putStringSet("seen_ids", seenSet).apply()
-                                        }
-                                    }
-                                    break
-                                }
-                            }
-                        } catch (e: Exception) {
-                            // Try next fallback url if needed
-                        }
-                    }
+                    // The player's own messages (deposits, withdrawals, wins, refunds) + announcements
+                    NotificationPoller.pollAndNotify(applicationContext)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                delay(5000) // Poll every 5 seconds
+                delay(8000) // Poll every 8 seconds
             }
         }
     }

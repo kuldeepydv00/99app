@@ -205,7 +205,7 @@ export function MobileMenu({ a, tab, section, onClose, name, mobile, balance }: 
 }
 
 /** Sticky top bar: logo, wallet with Deposit, notifications and profile. */
-export function TopBar({ a, balance, unread }: { a: ShellActions; balance: number; unread: boolean }) {
+export function TopBar({ a, balance, unread }: { a: ShellActions; balance: number; unread: number }) {
   return (
     <header className="sticky top-0 z-30 border-b border-black/30 bg-nv-side/95 shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-2 px-3 sm:px-6 lg:h-16">
@@ -225,10 +225,14 @@ export function TopBar({ a, balance, unread }: { a: ShellActions; balance: numbe
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button onClick={a.notifications} aria-label="Notifications"
-            className="nv-tap relative hidden h-10 w-10 items-center justify-center rounded-md text-nv-text transition-colors hover:bg-nv-card2 hover:text-white sm:flex">
+          <button onClick={a.notifications} aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'}
+            className="nv-tap relative flex h-9 w-9 items-center justify-center rounded-md text-nv-text transition-colors hover:bg-nv-card2 hover:text-white sm:h-10 sm:w-10">
             <Bell className="h-[19px] w-[19px]" />
-            {unread && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-nv-red ring-2 ring-nv-side" />}
+            {unread > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-nv-red px-1 text-[10px] font-bold leading-none text-white ring-2 ring-nv-side">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
           </button>
           <button onClick={a.profile} aria-label="Profile"
             className="nv-tap flex h-9 w-9 items-center justify-center rounded-md text-nv-text transition-colors hover:bg-nv-card2 hover:text-white sm:h-10 sm:w-10">

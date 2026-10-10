@@ -47,4 +47,9 @@ router.get('/bank-details', protectUser, getBankDetails);
 router.post('/bank-details/save', protectUser, saveBankDetails);
 router.post('/commission/transfer', protectUser, transferCommissionToWallet);
 
+// Notifications: the player's own messages + broadcasts, and "opened the bell"
+const notifications = require('../controllers/notificationController');
+router.get('/notifications', protectUser, notifications.myNotifications);
+router.post('/notifications/seen', protectUser, notifications.markSeen);
+
 module.exports = router;

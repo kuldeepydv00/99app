@@ -3,6 +3,7 @@ import TradingAdmin from './games/TradingAdmin';
 import JetAdmin from './games/JetAdmin';
 import InstantAdmin from './games/InstantAdmin';
 import LiveAdmin from './games/LiveAdmin';
+import NotificationsAdmin from './games/NotificationsAdmin';
 import GamesOverview from './games/GamesOverview';
 import UserGamesTab from './games/UserGamesTab';
 import DashboardGamesStrip from './games/DashboardGamesStrip';
@@ -1718,49 +1719,6 @@ export default function App() {
 
   // NOTIFICATION HANDLERS
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
-  const [notifTitle, setNotifTitle] = useState('');
-  const [notifBody, setNotifBody] = useState('');
-  const [notifTarget, setNotifTarget] = useState('All Users');
-  const [isSendingNotif, setIsSendingNotif] = useState(false);
-
-  const handleSendNotification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!notifTitle.trim() || !notifBody.trim()) return;
-    setIsSendingNotif(true);
-
-    const payload = { title: notifTitle, body: notifBody, targetUser: notifTarget };
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/send-notification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.notifications && Array.isArray(data.notifications)) {
-          setNotificationsList(data.notifications);
-        } else {
-          setNotificationsList(prev => [data.notification || payload, ...prev]);
-        }
-        setStatusMessage(`🎉 Notification "${notifTitle}" broadcasted to ${notifTarget}!`);
-        setNotifTitle('');
-        setNotifBody('');
-      } else {
-        setNotificationsList(prev => [payload, ...prev]);
-        setStatusMessage(`🎉 Notification "${notifTitle}" broadcasted!`);
-        setNotifTitle('');
-        setNotifBody('');
-      }
-    } catch (err) {
-      console.error('[Send Notification Error]', err);
-      setNotificationsList(prev => [payload, ...prev]);
-      setStatusMessage(`🎉 Notification "${notifTitle}" broadcasted!`);
-      setNotifTitle('');
-      setNotifBody('');
-    } finally {
-      setIsSendingNotif(false);
-    }
-  };
 
   const handleDeletePayment = async (pmId: string) => {
     try {
@@ -6497,118 +6455,7 @@ export default function App() {
             )}
 
             {/* 14.5 PUSH NOTIFICATIONS MODULE */}
-            {activeTab === 'pushNotifications' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-xl font-bold text-[#212529]">Push Notifications & Broadcast Alerts</h1>
-                </div>
-
-                {/* BROADCAST FORM */}
-                <div className="bg-white rounded border border-[#DEE2E6] shadow-sm p-5 space-y-4">
-                  <h2 className="text-sm font-bold text-[#495057] uppercase tracking-wider border-b border-[#DEE2E6] pb-2 flex items-center gap-2">
-                    <span>📣</span> Send Custom Broadcast Notification to Users & App
-                  </h2>
-
-                  <form onSubmit={handleSendNotification} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-[#495057] mb-1">Notification Title *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. 🎉 Special Deposit Bonus Today!"
-                          value={notifTitle}
-                          onChange={(e) => setNotifTitle(e.target.value)}
-                          className="w-full border border-[#CED4DA] rounded p-2 text-xs font-medium focus:outline-none focus:border-[#007BFF]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-[#495057] mb-1">Target Audience</label>
-                        <select
-                          value={notifTarget}
-                          onChange={(e) => setNotifTarget(e.target.value)}
-                          className="w-full border border-[#CED4DA] rounded p-2 text-xs font-medium focus:outline-none focus:border-[#007BFF]"
-                        >
-                          <option value="All Users">📢 All Registered Users & Android App</option>
-                          <option value="Active Players">🎮 Active Betting Players Only</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-[#495057] mb-1">Message Body *</label>
-                      <textarea
-                        required
-                        rows={3}
-                        placeholder="e.g. Deposit ₹1,000 now and get ₹200 extra bonus instantly into your wallet! Play Kalyan & Desawar now. 🚀"
-                        value={notifBody}
-                        onChange={(e) => setNotifBody(e.target.value)}
-                        className="w-full border border-[#CED4DA] rounded p-2 text-xs font-medium focus:outline-none focus:border-[#007BFF]"
-                      />
-                    </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={isSendingNotif}
-                        className="bg-[#28A745] hover:bg-[#218838] text-white px-6 py-2 rounded text-xs font-bold shadow flex items-center gap-2"
-                      >
-                        <span>{isSendingNotif ? 'Sending Broadcast...' : '🚀 Send Push Notification Now'}</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* SENT NOTIFICATIONS TABLE */}
-                <div className="bg-white rounded border border-[#DEE2E6] shadow-sm p-4 space-y-4 overflow-x-auto">
-                  <h2 className="text-xs font-bold text-[#495057] uppercase tracking-wider">Broadcast History ({notificationsList.length})</h2>
-                  <table className="w-full text-left text-xs text-[#212529] border border-[#DEE2E6]">
-                    <thead className="bg-[#F8F9FA] text-[#495057] uppercase text-[11px] font-bold border-b border-[#DEE2E6]">
-                      <tr>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Sr. No</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Title</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Message Body</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Target</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Date & Time</th>
-                        <th className="p-2.5 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {notificationsList.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="p-4 text-center text-gray-500 font-medium">No broadcast notifications sent yet. Use the form above to send custom notifications!</td>
-                        </tr>
-                      ) : (
-                        notificationsList.map((notif, i) => (
-                          <tr key={i} className="hover:bg-[#F4F6F9]">
-                            <td className="p-2.5 border-r border-[#DEE2E6]">{i + 1}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] font-bold text-indigo-600">{notif.title}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6]">{notif.body}</td>
-                            <td className="p-2.5 border-r border-[#DEE2E6]"><span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{notif.target || 'All Users'}</span></td>
-                            <td className="p-2.5 border-r border-[#DEE2E6] text-gray-500">{notif.createdAt ? new Date(notif.createdAt).toLocaleString() : 'Recently'}</td>
-                            <td className="p-2.5 text-right">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch(`${API_BASE}/api/admin/notifications/${notif._id || notif.id}`, { method: 'DELETE' });
-                                    if (res.ok) {
-                                      setNotificationsList(prev => prev.filter(n => (n._id || n.id) !== (notif._id || notif.id)));
-                                    }
-                                  } catch (e) {}
-                                }}
-                                className="bg-[#DC3545] hover:bg-[#C82333] text-white px-2.5 py-1 rounded text-[10px] font-bold shadow-sm"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            {activeTab === 'pushNotifications' && <NotificationsAdmin initial={notificationsList} onOpenUser={openUserByMobile} />}
 
             {/* 15. SETTINGS MODULE */}
             {activeTab === 'settings' && (

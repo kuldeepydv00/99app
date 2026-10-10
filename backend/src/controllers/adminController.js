@@ -817,6 +817,7 @@ const declareGameResult = async (req, res) => {
     return getCanonicalGameName(bGame) === canonicalGame;
   };
 
+  const wins = require('../utils/notify').perPlayer();
   memoryBets.forEach(bet => {
     if (isTargetGame(bet.game_name) && bet.status === 'pending') {
       const betDateKey = bet.date_key || bet.createdDateKey || getGameBetDateKey(bet.game_name, bet.created_at || bet.createdAt || bet.date);
@@ -869,7 +870,7 @@ const declareGameResult = async (req, res) => {
           bet.win_amount = payout; // Android app reads win_amount (snake_case)
           
           // Find exact user who placed the bet by mobile or user_id
-          const userMobile = (bet.user || bet.mobile || bet.user_id || '').replace(/[^0-9]/g, '').slice(-10);
+          const userMobile = String(bet.mobile || bet.user_id || bet.user || '').replace(/[^0-9]/g, '').slice(-10);
           let targetUser = userMobile ? registeredUsers.find(u => u.mobile && u.mobile.replace(/[^0-9]/g, '').slice(-10) === userMobile) : null;
           if (targetUser) {
             targetUser.winning_balance = parseFloat(((targetUser.winning_balance || 0) + payout).toFixed(2));
@@ -897,8 +898,9 @@ const declareGameResult = async (req, res) => {
             } catch (e) { }
 
             if (typeof logLedgerTransaction === 'function') {
-              logLedgerTransaction(userMobile, 'CREDIT', payout, 'WINNING_PAYOUT', `Won ₹${payout} on ${game_name} (${resultStr})`);
+              logLedgerTransaction({ user: targetUser.name || '', phone: userMobile, amount: payout, transactType: 'Winning', gameType: game_name });
             }
+            wins.add(userMobile, payout, bet);
           }
         } else {
           bet.status = 'lost';
@@ -917,6 +919,13 @@ const declareGameResult = async (req, res) => {
       }
     }
   });
+
+  // One "you won" message per winner
+  wins.send(w => ({
+    type: 'win', amount: w.amount,
+    title: `🎉 You won ₹${w.amount} in ${canonicalGame}`,
+    body: `Result ${resultStr}. ${w.count} winning bet${w.count === 1 ? '' : 's'}${w.items.length ? ` (${w.items.map(b => `${String(b.bet_type || 'Jodi').replace(/_/g, ' ')} ${b.number_str || String(b.number).padStart(2, '0')}`).join(', ')}${w.count > w.items.length ? '…' : ''})` : ''}. The money is in your winning balance.`
+  }));
 
   // Record in memoryResultsHistory for persistent Results Management table (Strictly Canonicalized)
   const { memoryResultsHistory } = require('../store');
@@ -1123,6 +1132,7 @@ const editGameResult = async (req, res) => {
   const baharDigit = parseInt(resultStr.charAt(1));
 
   let recalculatedCount = 0;
+  const revised = require('../utils/notify').perPlayer();
   let wonCount = 0;
   let lostCount = 0;
 
@@ -1175,7 +1185,7 @@ const editGameResult = async (req, res) => {
         }
       }
 
-      const userMobile = (bet.user || bet.mobile || bet.user_id || '').replace(/[^0-9]/g, '').slice(-10);
+      const userMobile = String(bet.mobile || bet.user_id || bet.user || '').replace(/[^0-9]/g, '').slice(-10);
       let targetUser = userMobile ? registeredUsers.find(u => u.mobile && u.mobile.replace(/[^0-9]/g, '').slice(-10) === userMobile) : null;
 
       const previousWinAmount = parseFloat(bet.winAmount || bet.win_amount || 0);
@@ -1188,6 +1198,7 @@ const editGameResult = async (req, res) => {
         bet.win_amount = newPayout;
 
         const netCredit = newPayout - previousWinAmount;
+        if (netCredit !== 0) revised.add(userMobile, netCredit);
         if (targetUser && netCredit !== 0) {
           const oldBalSnapshot = {
             wallet: String(targetUser.balance || '0.00'),
@@ -1234,6 +1245,7 @@ const editGameResult = async (req, res) => {
         bet.winAmount = 0;
         bet.win_amount = 0;
 
+        if (wasPreviouslyWon && previousWinAmount > 0) revised.add(userMobile, -previousWinAmount);
         if (targetUser && wasPreviouslyWon && previousWinAmount > 0) {
           let amountToDeduct = previousWinAmount;
           const oldBalSnapshot = {
@@ -1317,6 +1329,10 @@ const editGameResult = async (req, res) => {
       } catch (e) { }
     }
   });
+
+  revised.send(w => (w.amount > 0
+    ? { type: 'win', amount: w.amount, title: `🎉 Result corrected: you won ₹${w.amount} in ${canonicalGame}`, body: `The ${canonicalGame} result for ${targetDateKey} was corrected to ${resultStr}. ₹${w.amount} has been added to your winning balance.` }
+    : (w.amount < 0 ? { type: 'wallet', amount: w.amount, title: `Result corrected for ${canonicalGame}`, body: `The ${canonicalGame} result for ${targetDateKey} was corrected to ${resultStr}, so ₹${-w.amount} won earlier has been taken back.` } : null)));
 
   saveDiskStore();
 
@@ -1509,7 +1525,7 @@ const clearGameResult = async (req, res) => {
           const payout = parseFloat(bet.winAmount || bet.win_amount || 0);
           if (payout > 0) {
             totalWinningsClawedBack += payout;
-            const userMobile = (bet.user || bet.mobile || bet.user_id || '').replace(/[^0-9]/g, '').slice(-10);
+            const userMobile = String(bet.mobile || bet.user_id || bet.user || '').replace(/[^0-9]/g, '').slice(-10);
             const targetUser = userMobile ? registeredUsers.find(u => u.mobile && u.mobile.replace(/[^0-9]/g, '').slice(-10) === userMobile) : null;
             if (targetUser) {
               targetUser.winning_balance = Math.max(0, parseFloat(((targetUser.winning_balance || 0) - payout).toFixed(2)));
@@ -1922,6 +1938,13 @@ const approveDeposit = async (req, res) => {
     });
   } catch (e) {}
 
+  // Tell the player
+  require('../utils/notify').toUser(cleanMobile, {
+    type: 'deposit', amount: numAmt, ref: String(dep._id || dep.id || ''),
+    title: `₹${numAmt} added to your wallet`,
+    body: `Your deposit of ₹${numAmt}${dep.utr ? ` (UTR ${dep.utr})` : ''} is approved.${userObj ? ` New balance: ₹${updatedNewBalance}.` : ''}`
+  });
+
   saveDiskStore();
   res.json({
     success: true,
@@ -1943,6 +1966,11 @@ const rejectDeposit = async (req, res) => {
   }
   dep.status = 'Rejected';
   dep.rejected_at = new Date().toISOString();
+  require('../utils/notify').toUser(dep.mobile || dep.user, {
+    type: 'deposit', amount: parseFloat(dep.amount) || 0, ref: String(dep._id || dep.id || ''),
+    title: 'Deposit not approved',
+    body: `Your deposit request of ₹${parseFloat(dep.amount) || 0}${dep.utr ? ` (UTR ${dep.utr})` : ''} was not approved. If money left your account, contact support with the UTR.`
+  });
   saveDiskStore();
 
   // Mark it rejected in MongoDB too (by whichever id/UTR it has there), so it can't show up as pending again
@@ -2030,6 +2058,11 @@ const createWithdrawalRequest = async (req, res) => {
     createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
   memoryWithdrawals.unshift(newWithdrawal);
+  require('../utils/notify').toUser(cleanMobile, {
+    type: 'withdrawal', amount: numAmt, ref: newWithdrawal.id,
+    title: `Withdrawal request of ₹${numAmt} received`,
+    body: `₹${numAmt} is held from your wallet and will be sent to your account after approval.`
+  });
   saveDiskStore();
   res.status(201).json(newWithdrawal);
 };
@@ -2086,6 +2119,19 @@ const approveWithdrawal = async (req, res) => {
     }
   } catch (e) {
     console.error('[MongoDB Approve Withdrawal Sync Error]', e);
+  }
+
+  // Tell the player the money was sent
+  {
+    const amt = parseFloat(wth.amount) || 0;
+    const acc = String(wth.account_number || wth.accountNumber || '').replace(/\s/g, '');
+    const upi = wth.upi_id || wth.upi;
+    const dest = acc && acc !== 'N/A' ? `bank account ending ${acc.slice(-4)}` : (upi && upi !== 'N/A' ? `UPI ${upi}` : 'your account');
+    require('../utils/notify').toUser(cleanMobile, {
+      type: 'withdrawal', amount: amt, ref: String(wth._id || wth.id || ''),
+      title: `₹${amt} sent to your account`,
+      body: `Your withdrawal of ₹${amt} is approved and transferred to your ${dest}. It can take a little time to show in your bank.`
+    });
   }
 
   saveDiskStore();
@@ -2201,6 +2247,12 @@ const rejectWithdrawal = async (req, res) => {
       gameType: '-'
     });
   } catch (e) {}
+
+  require('../utils/notify').toUser(cleanMobile, {
+    type: 'refund', amount: numAmt, ref: String(wth._id || wth.id || ''),
+    title: `₹${numAmt} refunded to your wallet`,
+    body: `Your withdrawal of ₹${numAmt} was not approved, so the amount is back in your wallet.${userObj ? ` New balance: ₹${updatedNewBalance}.` : ''}`
+  });
 
   saveDiskStore();
   console.log(`[Admin Withdrawal] Rejected & Refunded ₹${numAmt} back to ${userObj ? userObj.name : wth.user}. New balance: ₹${updatedNewBalance}`);
@@ -2363,6 +2415,14 @@ const updateUserWallet = async (req, res) => {
       }
     } catch (e) { }
 
+    if (val > 0) {
+      const walletName = { deposit: 'deposit', winning: 'winning', bonus: 'bonus', commission: 'commission' }[targetKey] || 'deposit';
+      require('../utils/notify').toUser(targetUser.mobile, {
+        type: 'wallet', amount: type === 'add' ? val : -val,
+        title: type === 'add' ? `₹${val} added to your ${walletName} balance` : `₹${val} deducted from your ${walletName} balance`,
+        body: `${type === 'add' ? 'Added' : 'Deducted'} by admin${transactType ? ` (${transactType})` : ''}. Wallet balance now: ₹${parseFloat((targetUser.balance || 0).toFixed(2))}.`
+      });
+    }
     saveDiskStore();
     console.log(`[Admin Wallet] Updated balance for ${targetUser.name} (${targetUser.mobile}): ${targetUser.balance}`);
     return res.json({ success: true, message: `Wallet updated for ${targetUser.name}`, newBalance: targetUser.balance, user: targetUser });
@@ -3732,6 +3792,14 @@ const deleteAdminBid = async (req, res) => {
           console.error('[Refund Game Ledger Error]:', err.message);
         }
       }
+    }
+
+    if (targetUserObj && refundedAmount > 0) {
+      require('../utils/notify').toUser(targetUserObj.mobile, {
+        type: 'refund', amount: refundedAmount,
+        title: `₹${refundedAmount} refunded to your wallet`,
+        body: `Your bet${targetBet && targetBet.game_name ? ` on ${targetBet.game_name}` : ''}${targetBet && targetBet.number !== undefined ? ` (${String(targetBet.number).padStart(2, '0')})` : ''} was cancelled by admin and the amount is back in your wallet.`
+      });
     }
 
     // 2. Remove bet from memory store
