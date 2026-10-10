@@ -13,6 +13,11 @@ dotenv.config();
 
 // Connect to database
 connectDB();
+// Once connected, read the MongoDB copies the admin pages use, so the first admin page after a
+// restart doesn't wait for them (a few seconds later, after the startup sync has run)
+require('mongoose').connection.once('connected', () => {
+  setTimeout(() => require('./utils/mongoCache').warm(), 3000).unref();
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +46,8 @@ const io = new Server(server, {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Big admin lists are sent compressed (much faster to download)
+app.use('/api/admin', require('./utils/gzipJson'));
 
 // Make io accessible to routers
 app.set('io', io);

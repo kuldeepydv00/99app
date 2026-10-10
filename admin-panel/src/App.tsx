@@ -149,6 +149,39 @@ if (typeof window !== 'undefined' && !(window as any).__adminAuthFetchPatched) {
   (window as any).__adminAuthFetchPatched = true;
 }
 
+// Which live data each admin page uses. Pages not listed (and the first load after login) get everything.
+// The new-games pages load their own data, so they need nothing from here.
+const ALL_PAGE_DATA = ['stats', 'users', 'admins', 'deposits', 'withdrawals', 'bets', 'winnings', 'pm', 'notif', 'banner', 'version', 'settings', 'banners', 'results', 'schedules', 'referral', 'lp', 'ledger'];
+const PAGE_DATA: Record<string, string[]> = {
+  dashboard: ['stats', 'users', 'deposits', 'withdrawals', 'bets', 'winnings', 'schedules'],
+  admins: ['admins'],
+  users: ['users', 'deposits', 'withdrawals', 'bets'],
+  userDetails: ['users', 'deposits', 'withdrawals', 'bets'],
+  userEdit: ['users'],
+  userChange: ['lp'],
+  gameLedger: ['ledger', 'users', 'deposits', 'withdrawals', 'bets'],
+  wallets: ['users'],
+  walletTransactions: ['deposits', 'withdrawals', 'users'],
+  deposits: ['deposits', 'users'],
+  withdraws: ['withdrawals', 'users'],
+  commission: ['users'],
+  leaderboard: ['users'],
+  payouts: ['withdrawals', 'users'],
+  banners: ['banners', 'banner'],
+  referral: ['users', 'referral'],
+  packages: ['users'],
+  paymentMethods: ['pm', 'deposits'],
+  pushNotifications: ['notif'],
+  settings: ['settings', 'deposits'],
+  bids: ['bets', 'schedules'],
+  results: ['results', 'bets', 'schedules'],
+  winnings: ['winnings', 'bets'],
+  gameHistory: ['bets', 'results', 'schedules'],
+  categories: ['schedules'],
+  matka99: [], jetGame: [], diceGame: [], minesGame: [], livePlayers: [], dragonTiger: [], tossGame: [],
+  numberTrading: [], cardTrading: [], colourTrading: [], gamesOverview: []
+};
+
 // Canvas Chart Component for Deposits, Withdraws, etc.
 function CanvasChart({ title, color, dataPoints, chartType, labels }: { title: string; color: string; dataPoints: number[]; chartType: string; labels?: string[] }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -947,31 +980,57 @@ export default function App() {
   }, [isAuthenticated]);
 
   // Fetch Live Data
-  const fetchLiveData = async () => {
+  // Live data: only the data the open page uses is loaded (every 10 s, and right away when you
+  // switch page). After login / a refresh, the open page loads first and the other pages' data
+  // follows once in the background, so switching page is instant. A refresh never starts while the
+  // last one is still running: asking again just runs it once more when that one finishes.
+  const liveRunRef = useRef<Promise<void> | null>(null);
+  const liveAgainRef = useRef(false);
+  const liveAllRef = useRef(false);
+  const liveStartedRef = useRef(false);
+  const fetchLiveData = async (): Promise<void> => {
+    if (liveRunRef.current) { liveAgainRef.current = true; return liveRunRef.current; }
+    const run = (async () => {
+      do {
+        liveAgainRef.current = false;
+        const everything = liveAllRef.current;
+        liveAllRef.current = false;
+        await loadLiveData(everything);
+      } while (liveAgainRef.current);
+    })();
+    liveRunRef.current = run;
+    try { await run; } finally { liveRunRef.current = null; }
+  };
+  const fetchAllLiveData = () => { liveAllRef.current = true; return fetchLiveData(); };
+
+  const loadLiveData = async (everything = false) => {
     try {
       const curStart = dashboardStartDateRef.current;
       const curEnd = dashboardEndDateRef.current;
+      const pageNeeds = PAGE_DATA[activeTabRef.current];
+      const need = new Set<string>(everything || !pageNeeds ? ALL_PAGE_DATA : pageNeeds);
+      const get = (key: string, url: string): Promise<Response | null> => (need.has(key) ? fetch(url) : Promise.resolve(null));
       const [
         statsRes, usersRes, adminsRes, depRes, wdRes, bidsRes, winRes, pmRes, notifRes, bannerRes, versionRes, settingsRes, bannersListRes, resultsRes
       , schedRes, referralRes, lpRes, ledgerRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/stats?startDate=${curStart}&endDate=${curEnd}`),
-        fetch(`${API_BASE}/api/admin/users`),
-        fetch(`${API_BASE}/api/admin/admins`),
-        fetch(`${API_BASE}/api/admin/deposits`),
-        fetch(`${API_BASE}/api/admin/withdrawals`),
-        fetch(`${API_BASE}/api/admin/bets`),
-        fetch(`${API_BASE}/api/admin/winnings`),
-        fetch(`${API_BASE}/api/admin/payment-methods`),
-        fetch(`${API_BASE}/api/admin/notifications`),
-        fetch(`${API_BASE}/api/game/banner`),
-        fetch(`${API_BASE}/api/app/version`),
-        fetch(`${API_BASE}/api/admin/settings`),
-        fetch(`${API_BASE}/api/admin/banners`),
-        fetch(`${API_BASE}/api/admin/results-history`),
-        fetch(`${API_BASE}/api/game/schedules`),
-        fetch(`${API_BASE}/api/admin/referral-config`),
-        fetch(`${API_BASE}/api/admin/live-players`),
-        fetch(`${API_BASE}/api/admin/game-ledger`)
+        get('stats', `${API_BASE}/api/admin/stats?startDate=${curStart}&endDate=${curEnd}`),
+        get('users', `${API_BASE}/api/admin/users`),
+        get('admins', `${API_BASE}/api/admin/admins`),
+        get('deposits', `${API_BASE}/api/admin/deposits`),
+        get('withdrawals', `${API_BASE}/api/admin/withdrawals`),
+        get('bets', `${API_BASE}/api/admin/bets`),
+        get('winnings', `${API_BASE}/api/admin/winnings`),
+        get('pm', `${API_BASE}/api/admin/payment-methods`),
+        get('notif', `${API_BASE}/api/admin/notifications`),
+        get('banner', `${API_BASE}/api/game/banner`),
+        get('version', `${API_BASE}/api/app/version`),
+        get('settings', `${API_BASE}/api/admin/settings`),
+        get('banners', `${API_BASE}/api/admin/banners`),
+        get('results', `${API_BASE}/api/admin/results-history`),
+        get('schedules', `${API_BASE}/api/game/schedules`),
+        get('referral', `${API_BASE}/api/admin/referral-config`),
+        get('lp', `${API_BASE}/api/admin/live-players`),
+        get('ledger', `${API_BASE}/api/admin/game-ledger`)
       ]);
 
       if (ledgerRes && ledgerRes.ok) {
@@ -994,13 +1053,13 @@ export default function App() {
         } catch (e) {}
       }
 
-      if (statsRes.ok) {
+      if (statsRes && statsRes.ok) {
         const sData = await statsRes.json();
         if (sData.startDate === dashboardStartDateRef.current && sData.endDate === dashboardEndDateRef.current) {
           setStats(sData);
         }
       }
-      if (notifRes.ok) {
+      if (notifRes && notifRes.ok) {
         const notifData = await notifRes.json();
         if (Array.isArray(notifData)) setNotificationsList(notifData);
       }
@@ -1108,10 +1167,10 @@ export default function App() {
           }
         } catch (e) {}
       }
-      if (pmRes.ok) {
+      if (pmRes && pmRes.ok) {
         const pmData = await pmRes.json();
         if (Array.isArray(pmData) && pmData.length > 0) setPaymentMethodsList(pmData);
-      } else {
+      } else if (pmRes) {
         try {
           const altRes = await fetch(`${API_BASE}/api/payment-methods`);
           if (altRes.ok) {
@@ -1120,23 +1179,23 @@ export default function App() {
           }
         } catch (e) {}
       }
-      if (usersRes.ok) {
+      if (usersRes && usersRes.ok) {
         const uList = await usersRes.json();
         if (Array.isArray(uList)) {
           setUsers(uList);
         }
       }
-      if (adminsRes.ok) {
+      if (adminsRes && adminsRes.ok) {
         const aList = await adminsRes.json();
         if (Array.isArray(aList) && aList.length > 0) setAdminsList(aList);
       }
-      if (depRes.ok) setDeposits(await depRes.json());
-      if (wdRes.ok) setWithdrawals(await wdRes.json());
-      if (winRes.ok) {
+      if (depRes && depRes.ok) { const d = await depRes.json(); if (Array.isArray(d)) setDeposits(d); }
+      if (wdRes && wdRes.ok) { const w = await wdRes.json(); if (Array.isArray(w)) setWithdrawals(w); }
+      if (winRes && winRes.ok) {
         const wData = await winRes.json();
         if (Array.isArray(wData) && wData.length > 0) setWinningsList(wData);
       }
-      if (bidsRes.ok) {
+      if (bidsRes && bidsRes.ok) {
         const rawBids = await bidsRes.json();
         if (Array.isArray(rawBids)) {
           const formatted = rawBids.map((b: any, idx: number) => {
@@ -1220,11 +1279,23 @@ export default function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchLiveData();
-      const interval = setInterval(fetchLiveData, 4000);
+      liveStartedRef.current = true;
+      // the open page first, then everything else once in the background
+      fetchLiveData().then(() => fetchAllLiveData());
+      // Refresh the open page every 10 s (skipped while the browser tab is in the background)
+      const interval = setInterval(() => { if (document.visibilityState !== 'hidden') fetchLiveData(); }, 10000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
+
+  // Switching page loads that page's data straight away
+  const lastLiveTabRef = useRef(activeTab);
+  useEffect(() => {
+    if (lastLiveTabRef.current === activeTab) return;
+    lastLiveTabRef.current = activeTab;
+    if (isAuthenticated && liveStartedRef.current) fetchLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   // EDIT BID NUMBER HANDLER
   const handleDeleteBid = async (b: any) => {

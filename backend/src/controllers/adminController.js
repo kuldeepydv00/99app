@@ -109,7 +109,6 @@ const getStats = async (req, res) => {
 
     const getItemISTDate = (item) => {
       if (!item) return null;
-      const mongoose = require('mongoose');
       let mongoId = null;
       let dateVal = '';
       let dateKey = '';
@@ -184,14 +183,12 @@ const getStats = async (req, res) => {
       return null;
     };
 
+    // IST is UTC+5:30 all year, so the IST date is the UTC date of (time + 5:30). (toLocaleString per item was very slow.)
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
     const getItemISODate = (item) => {
       const d = getItemISTDate(item);
       if (!d || isNaN(d.getTime())) return null;
-      const itemIST = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-      const yyyy = itemIST.getFullYear();
-      const mm = String(itemIST.getMonth() + 1).padStart(2, '0');
-      const dd = String(itemIST.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
+      return new Date(d.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
     };
 
     const isTargetDate = (item) => {
@@ -226,8 +223,7 @@ const getStats = async (req, res) => {
     const getItemHourSlot = (item) => {
       const d = getItemISTDate(item);
       if (!d || isNaN(d.getTime())) return 2;
-      const ist = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-      const h = ist.getHours();
+      const h = new Date(d.getTime() + IST_OFFSET_MS).getUTCHours();
       return Math.min(5, Math.max(0, Math.floor(h / 4)));
     };
 
@@ -236,96 +232,63 @@ const getStats = async (req, res) => {
     let withdrawalsList = [...memoryWithdrawals];
     let betsList = [...memoryBets];
 
-    // Merge/override from MongoDB Atlas if connected
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      try {
-        const User = require('../models/User');
-        const Bet = require('../models/Bet');
-        const Transaction = require('../models/Transaction');
-        const DepositRequest = require('../models/DepositRequest');
-        const WithdrawalRequest = require('../models/WithdrawalRequest');
+    // Add records that exist only in MongoDB (older data). Memory is the main copy, so a record that
+    // is in both is counted once, from memory. MongoDB is read at most once a minute (utils/mongoCache.js).
+    try {
+      const snap = await require('../utils/mongoCache').snapshot(['users', 'bets', 'deposits', 'txDeposits', 'withdrawals', 'txWithdrawals']);
+      if (snap) {
+        const mob = v => String(v || '').replace(/[^0-9]/g, '').slice(-10);
+        const deletedSet = new Set(require('../store').deletedMobiles || []);
+        const keyOk = v => v !== undefined && v !== null && v !== '' && v !== 'N/A';
 
-        const dbUsers = await User.find({}).lean().catch(() => []);
-        if (dbUsers && dbUsers.length > 0) {
-          usersList = dbUsers;
-        }
-
-        const dbBets = await Bet.find({}).lean().catch(() => []);
-        if (dbBets && dbBets.length > 0) {
-          betsList = dbBets;
-        }
-
-        const dbDeps = await DepositRequest.find({}).lean().catch(() => []);
-        const dbTxns = await Transaction.find({ type: 'deposit' }).lean().catch(() => []);
-
-        // Combine memoryDeposits, DepositRequest and Transaction without duplication
-        const combinedDeps = [];
-        const seenDepIds = new Set();
-        const seenDepUtrs = new Set();
-
-        // 1. From DepositRequest (database)
-        dbDeps.forEach(d => {
-          const id = String(d._id);
-          const utr = d.utr_number || d.utr;
-          seenDepIds.add(id);
-          if (utr && utr !== 'N/A') seenDepUtrs.add(String(utr));
-          combinedDeps.push(d);
+        const userMobs = new Set(usersList.map(u => mob(u.mobile)));
+        snap.users.forEach(u => {
+          const m = mob(u.mobile);
+          if (m && !userMobs.has(m) && !deletedSet.has(m)) { userMobs.add(m); usersList.push(u); }
         });
 
-        // 2. From Transaction (database)
-        dbTxns.forEach(t => {
-          const id = String(t._id);
-          const ref = t.reference_id || t.utr;
-          if (seenDepIds.has(id)) return;
-          if (ref && seenDepUtrs.has(String(ref))) return;
-          seenDepIds.add(id);
-          if (ref && ref !== 'N/A') seenDepUtrs.add(String(ref));
-          combinedDeps.push(t);
+        const betIds = new Set();
+        betsList.forEach(b => { for (const v of [b._id, b.id]) if (keyOk(v)) betIds.add(String(v)); });
+        snap.bets.forEach(b => {
+          if (betIds.has(String(b._id))) return;
+          if (deletedSet.has(mob(b.mobile))) return;
+          betIds.add(String(b._id));
+          betsList.push(b);
         });
 
-        // 3. From memoryDeposits (in-memory)
-        memoryDeposits.filter(m => m && m.type !== 'commission_transfer').forEach(m => {
-          const id = String(m._id || m.id);
-          const utr = m.utr_number || m.utr || m.client_txn_id;
-          if (seenDepIds.has(id)) return;
-          if (utr && seenDepUtrs.has(String(utr))) return;
-          combinedDeps.push(m);
+        // Deposits: memory, then DepositRequest and Transaction records memory doesn't have
+        const seenDep = new Set();
+        depositsList.forEach(d => { for (const v of [d._id, d.id, d.mongo_id, d.utr, d.utr_number, d.client_txn_id]) if (keyOk(v)) seenDep.add(String(v)); });
+        snap.deposits.forEach(d => {
+          const ids = [d._id, d.utr_number, d.utr].filter(keyOk).map(String);
+          if (ids.some(v => seenDep.has(v)) || deletedSet.has(mob(d.mobile || d.user_id))) return;
+          ids.forEach(v => seenDep.add(v));
+          depositsList.push(d);
+        });
+        snap.txDeposits.forEach(t => {
+          const ids = [t._id, t.reference_id, t.utr].filter(keyOk).map(String);
+          if (ids.some(v => seenDep.has(v)) || deletedSet.has(mob(t.user_id || t.mobile))) return;
+          ids.forEach(v => seenDep.add(v));
+          depositsList.push(t);
         });
 
-        depositsList = combinedDeps;
-
-        // Combine memoryWithdrawals, WithdrawalRequest and Transaction without duplication
-        const dbWths = await WithdrawalRequest.find({}).lean().catch(() => []);
-        const dbWds = await Transaction.find({ type: 'withdrawal' }).lean().catch(() => []);
-
-        const combinedWds = [];
-        const seenWdIds = new Set();
-
-        dbWths.forEach(w => {
-          seenWdIds.add(String(w._id));
-          combinedWds.push(w);
+        // Withdrawals: same
+        const seenWd = new Set();
+        withdrawalsList.forEach(w => { for (const v of [w._id, w.id, w.mongo_id]) if (keyOk(v)) seenWd.add(String(v)); });
+        snap.withdrawals.forEach(w => {
+          if (seenWd.has(String(w._id)) || deletedSet.has(mob(w.mobile))) return;
+          seenWd.add(String(w._id));
+          withdrawalsList.push(w);
         });
-
-        dbWds.forEach(t => {
-          const id = String(t._id);
-          const ref = t.reference_id;
-          if (seenWdIds.has(id)) return;
-          if (ref && seenWdIds.has(String(ref))) return;
-          seenWdIds.add(id);
-          combinedWds.push(t);
+        snap.txWithdrawals.forEach(t => {
+          const ids = [t._id, t.reference_id].filter(keyOk).map(String);
+          if (ids.some(v => seenWd.has(v)) || deletedSet.has(mob(t.user_id || t.mobile))) return;
+          ids.forEach(v => seenWd.add(v));
+          withdrawalsList.push(t);
         });
-
-        memoryWithdrawals.forEach(m => {
-          const id = String(m._id || m.id);
-          if (seenWdIds.has(id)) return;
-          combinedWds.push(m);
-        });
-
-        withdrawalsList = combinedWds;
-      } catch (dbErr) {
-        console.error('[getStats DB Sync Error]', dbErr.message);
       }
+    } catch (dbErr) {
+      console.error('[getStats DB Sync Error]', dbErr.message);
     }
 
     // 1. Users metrics
@@ -469,90 +432,78 @@ const getStats = async (req, res) => {
 
 // @desc    Get all registered users for Admin Panel
 // @route   GET /api/admin/users
+// Users added from MongoDB are merged in only when a fresh copy of the users collection arrives.
+let usersMergedVersion = -1;
+
 const getUsers = async (req, res) => {
+  const clean = v => String(v || '').replace(/[^0-9]/g, '').slice(-10);
+  const deletedSet = new Set(require('../store').deletedMobiles || []);
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const User = require('../models/User');
-      const dbUsers = await User.find({});
-      dbUsers.forEach(dbu => {
-        const cleanMobile = (dbu.mobile || '').replace(/[^0-9]/g, '').slice(-10);
-        if (cleanMobile) {
-          let memUser = registeredUsers.find(u => u.mobile && u.mobile.replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
-          const delMobiles = (require('../store').deletedMobiles || []);
-          const isDeleted = delMobiles.some(dm => dm === cleanMobile);
-          if (!memUser && !isDeleted) {
-            memUser = {
-              id: dbu._id || `usr_${Date.now()}_${cleanMobile}`,
-              name: dbu.name || dbu.username || `User ${cleanMobile.slice(-4)}`,
-              mobile: cleanMobile,
-              balance: dbu.wallet_balance || 0.00,
-              deposit_balance: dbu.deposit_balance || 0.00,
-              winning_balance: dbu.winning_balance || 0.00,
-              bonus_balance: dbu.bonus_balance !== undefined ? dbu.bonus_balance : 200.00,
-              commission_balance: dbu.commission_balance || 0.00,
-              custom_referral_commission: dbu.custom_referral_commission !== undefined ? dbu.custom_referral_commission : null,
-              referral_enabled: dbu.referral_enabled !== undefined ? dbu.referral_enabled : true,
-              custom_jodi_rate: dbu.custom_jodi_rate !== undefined ? dbu.custom_jodi_rate : null,
-              custom_haroof_rate: dbu.custom_haroof_rate !== undefined ? dbu.custom_haroof_rate : null,
-              custom_crossing_rate: dbu.custom_crossing_rate !== undefined ? dbu.custom_crossing_rate : null,
-              self_bet_commission: dbu.self_bet_commission !== undefined ? dbu.self_bet_commission : null,
-              referral_code: cleanMobile,
-              referred_by: dbu.referred_by ? String(dbu.referred_by).replace(/[^0-9]/g, '').slice(-10) : null,
-              status: 'Active',
-              createdAt: dbu.createdAt ? new Date(dbu.createdAt).toISOString() : new Date().toISOString()
-            };
-            registeredUsers.push(memUser);
-          } else if (memUser) {
-            // Memory (dataStore.json) is the source of truth for balances and settings;
-            // MongoDB copies can be older, so they only fill in what memory doesn't have.
-            if (dbu.referred_by && !memUser.referred_by) {
-              memUser.referred_by = String(dbu.referred_by).replace(/[^0-9]/g, '').slice(-10);
-            }
-            memUser.referral_code = cleanMobile;
-          }
+    const mongoCache = require('../utils/mongoCache');
+    const snap = await mongoCache.snapshot(['users']);
+    if (snap && mongoCache.version('users') !== usersMergedVersion) {
+      usersMergedVersion = mongoCache.version('users');
+      const byMobile = new Map();
+      registeredUsers.forEach(u => { const m = clean(u.mobile); if (m) byMobile.set(m, u); });
+      snap.users.forEach(dbu => {
+        const cleanMobile = clean(dbu.mobile);
+        if (!cleanMobile) return;
+        let memUser = byMobile.get(cleanMobile);
+        if (!memUser && !deletedSet.has(cleanMobile)) {
+          memUser = {
+            id: dbu._id ? String(dbu._id) : `usr_${Date.now()}_${cleanMobile}`,
+            name: dbu.name || dbu.username || `User ${cleanMobile.slice(-4)}`,
+            mobile: cleanMobile,
+            balance: dbu.wallet_balance || 0.00,
+            deposit_balance: dbu.deposit_balance || 0.00,
+            winning_balance: dbu.winning_balance || 0.00,
+            bonus_balance: dbu.bonus_balance !== undefined ? dbu.bonus_balance : 200.00,
+            commission_balance: dbu.commission_balance || 0.00,
+            custom_referral_commission: dbu.custom_referral_commission !== undefined ? dbu.custom_referral_commission : null,
+            referral_enabled: dbu.referral_enabled !== undefined ? dbu.referral_enabled : true,
+            custom_jodi_rate: dbu.custom_jodi_rate !== undefined ? dbu.custom_jodi_rate : null,
+            custom_haroof_rate: dbu.custom_haroof_rate !== undefined ? dbu.custom_haroof_rate : null,
+            custom_crossing_rate: dbu.custom_crossing_rate !== undefined ? dbu.custom_crossing_rate : null,
+            self_bet_commission: dbu.self_bet_commission !== undefined ? dbu.self_bet_commission : null,
+            referral_code: cleanMobile,
+            referred_by: dbu.referred_by ? clean(dbu.referred_by) : null,
+            status: 'Active',
+            createdAt: dbu.createdAt ? new Date(dbu.createdAt).toISOString() : new Date().toISOString()
+          };
+          registeredUsers.push(memUser);
+          byMobile.set(cleanMobile, memUser);
+        } else if (memUser) {
+          // Memory (dataStore.json) is the source of truth for balances and settings;
+          // MongoDB copies can be older, so they only fill in what memory doesn't have.
+          if (dbu.referred_by && !memUser.referred_by) memUser.referred_by = clean(dbu.referred_by);
         }
       });
     }
   } catch (e) { }
 
-  // Clean out any users not in MongoDB or explicitly deleted
-  const deletedMobiles = (require('../store').deletedMobiles || []);
+  // Deleted accounts never show
   for (let i = registeredUsers.length - 1; i >= 0; i--) {
-    const uMob = (registeredUsers[i].mobile || '').replace(/[^0-9]/g, '').slice(-10);
-    if (deletedMobiles.includes(uMob)) {
-      registeredUsers.splice(i, 1);
-    }
+    if (deletedSet.has(clean(registeredUsers[i].mobile))) registeredUsers.splice(i, 1);
   }
 
-  // Normalize mobile and referral codes (remove REF prefix everywhere, use 10-digit mobile)
+  // Normalize mobile and referral codes (10-digit mobile everywhere), then count referrals in one pass
+  const referrals = new Map();
   registeredUsers.forEach(u => {
-    const cleanMob = String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10);
+    const cleanMob = clean(u.mobile);
     if (cleanMob) {
       u.mobile = cleanMob;
       u.referral_code = cleanMob;
-      if (u.referred_by) {
-        u.referred_by = String(u.referred_by).replace(/[^0-9]/g, '').slice(-10);
-      }
     }
+    const refBy = clean(u.referred_by || u.referBy);
+    u.referred_by = refBy;
+    u.referBy = refBy;
+    if (refBy && refBy !== cleanMob) referrals.set(refBy, (referrals.get(refBy) || 0) + 1);
   });
-
-  // Calculate dynamic referral counts and referBy relationships for every user
   registeredUsers.forEach(u => {
-    const cleanMob = String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10);
-    const count = registeredUsers.filter(other => {
-      if (other === u) return false;
-      const otherRefBy = String(other.referred_by || other.referBy || '').replace(/[^0-9]/g, '').slice(-10);
-      return otherRefBy && otherRefBy === cleanMob;
-    }).length;
-
+    const count = referrals.get(clean(u.mobile)) || 0;
     u.referrals = count;
     u.referrals_count = count;
     u.total_referrals = count;
-
-    const cleanRefBy = u.referred_by ? String(u.referred_by).replace(/[^0-9]/g, '').slice(-10) : '';
-    u.referBy = cleanRefBy;
-    u.referred_by = cleanRefBy;
   });
 
   res.json(registeredUsers);
@@ -589,13 +540,15 @@ const getBetMatrix = async (req, res) => {
     }
   });
 
-  // Sync bets stored in MongoDB Atlas cloud
+  // Pending bets that exist only in MongoDB (a bet in both is counted once, from memory above).
+  // MongoDB is read at most every 15 seconds (utils/mongoCache.js).
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const Bet = require('../models/Bet');
-      const dbBets = await Bet.find({ status: 'pending' });
-      dbBets.forEach(bet => {
+    const snap = await require('../utils/mongoCache').snapshot(['pendingBets'], 15000);
+    if (snap) {
+      const memIds = new Set();
+      memoryBets.forEach(b => { for (const v of [b._id, b.id]) if (v) memIds.add(String(v)); });
+      snap.pendingBets.forEach(bet => {
+        if (memIds.has(String(bet._id))) return;
         if (bet.game_name && bet.number !== undefined) {
           let game = bet.game_name;
           if (game === 'Disawer') game = 'Desawar';
@@ -1371,10 +1324,9 @@ const getResultsHistory = async (req, res) => {
 
     // Merge any cloud-stored results from MongoDB Atlas into memoryResultsHistory
     try {
-      const mongoose = require('mongoose');
-      if (mongoose.connection.readyState === 1) {
-        const ResultRecord = require('../models/ResultRecord');
-        const dbRecords = await ResultRecord.find().sort({ date_key: -1, declared_at: -1 }).limit(100).lean();
+      const snap = await require('../utils/mongoCache').snapshot(['results'], 30000);
+      if (snap) {
+        const dbRecords = snap.results;
         dbRecords.forEach(dbr => {
           const dKey = dbr.date_key || getISTDateStr(dbr.declared_at);
           const cGame = getCanonicalGameName(dbr.game_name);
@@ -1650,12 +1602,17 @@ const getDeclaredResults = async (req, res) => {
 
 // @desc    Get deposit requests
 // @route   GET /api/admin/deposits
+// MongoDB deposit / withdrawal requests are merged in only when a fresh copy arrives (at most once a minute).
+let depositsMergedVersion = -1;
+let withdrawalsMergedVersion = -1;
+
 const getDeposits = async (req, res) => {
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const DepositRequest = require('../models/DepositRequest');
-      const dbDeps = await DepositRequest.find().sort({ createdAt: -1 }).lean();
+    const mongoCache = require('../utils/mongoCache');
+    const snap = await mongoCache.snapshot(['deposits']);
+    if (snap && mongoCache.version('deposits') !== depositsMergedVersion) {
+      depositsMergedVersion = mongoCache.version('deposits');
+      const dbDeps = snap.deposits;
       const added = dataSafety.mergeDbDeposits(memoryDeposits, dbDeps, (d, cleanMob) => {
         const utrKey = d.utr_number || d.utr;
         const rawU = d.username || d.user || 'User';
@@ -1725,12 +1682,12 @@ const getDeposits = async (req, res) => {
 // @route   GET /api/admin/withdrawals
 const getWithdrawals = async (req, res) => {
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const WithdrawalRequest = require('../models/WithdrawalRequest');
-      const User = require('../models/User');
-      const dbWths = await WithdrawalRequest.find().sort({ createdAt: -1 }).lean();
-      const allUsers = await User.find({}).lean();
+    const mongoCache = require('../utils/mongoCache');
+    const snap = await mongoCache.snapshot(['withdrawals', 'users']);
+    if (snap && mongoCache.version('withdrawals') !== withdrawalsMergedVersion) {
+      withdrawalsMergedVersion = mongoCache.version('withdrawals');
+      const dbWths = snap.withdrawals;
+      const allUsers = snap.users;
       const added = dataSafety.mergeDbWithdrawals(memoryWithdrawals, dbWths, allUsers, (w, cleanMobile) => {
         const uMatch = registeredUsers.find(u => u.mobile === cleanMobile) || allUsers.find(u => u.mobile === cleanMobile);
         const accNum = w.account_number || w.accountNumber || w.account_details || (uMatch ? uMatch.account_number : null) || 'N/A';
@@ -1762,10 +1719,11 @@ const getWithdrawals = async (req, res) => {
     }
 
     // Enrich in-memory withdrawals
+    const usersByMobile = new Map(registeredUsers.map(u => [u.mobile, u]));
     memoryWithdrawals.forEach(w => {
       const rawMobile = (w.mobile || w.phone || w.user || '').replace(/[^0-9]/g, '');
       const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
-      const uMatch = registeredUsers.find(u => u.mobile === cleanMobile);
+      const uMatch = cleanMobile ? usersByMobile.get(cleanMobile) : undefined;
 
       if (!w.mobile || w.mobile === 'N/A') w.mobile = cleanMobile || (uMatch ? uMatch.mobile : 'N/A');
       if (!w.phone || w.phone === 'N/A') w.phone = cleanMobile || (uMatch ? uMatch.mobile : 'N/A');
@@ -2595,52 +2553,65 @@ const updateSettingsConfig = async (req, res) => {
 
 // @desc    Get all placed bets for Admin Panel
 // @route   GET /api/admin/bets
+// MongoDB bets are merged in only when a fresh copy arrives (at most once a minute).
+let betsMergedVersion = -1;
+
 const getAdminBets = async (req, res) => {
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const Bet = require('../models/Bet');
-      const dbBets = await Bet.find({}).sort({ createdAt: -1 }).lean();
-      if (dbBets && dbBets.length > 0) {
-        dbBets.forEach(b => {
-          const cleanMob = String(b.mobile || b.username || b.user || '').replace(/[^0-9]/g, '').slice(-10);
-          const dbTime = b.createdAt ? new Date(b.createdAt).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
-
-          const exists = memoryBets.some(m => {
-            if (String(m._id || m.id) === String(b._id)) return true;
-            const mMob = String(m.mobile || m.user || '').replace(/[^0-9]/g, '').slice(-10);
-            const mTime = m.created_at ? new Date(m.created_at).getTime() : (m.timestamp || 0);
-            if (mMob && cleanMob && mMob === cleanMob && m.game_name === b.game_name && String(m.number) === String(b.number) && Math.abs((m.bet_amount || m.amount || 0) - (b.bet_amount || 0)) < 0.01 && (mTime === 0 || dbTime === 0 || Math.abs(mTime - dbTime) < 30000)) {
-              m._id = String(b._id);
-              m.id = String(b._id);
-              if (b.status && b.status !== 'pending') m.status = b.status;
-              if (b.win_amount && b.win_amount > 0) m.win_amount = b.win_amount;
-              return true;
-            }
-            return false;
-          });
-
-          if (!exists) {
-            memoryBets.unshift({
-              _id: b._id,
-              id: b._id,
-              user: b.username || b.mobile || 'User',
-              mobile: b.mobile || 'N/A',
-              game_name: b.game_name,
-              bet_type: b.bet_type || 'JODI',
-              number: b.number,
-              bet_amount: b.bet_amount,
-              multiplier: b.multiplier,
-              potential_payout: b.potential_payout || (b.bet_amount * (b.multiplier || 90)),
-              status: b.status || 'pending',
-              win_amount: b.win_amount || b.winAmount || 0,
-              date_key: b.date_key || b.createdDateKey || getGameBetDateKey(b.game_name, b.createdAt),
-              createdDateKey: b.createdDateKey || b.date_key || getGameBetDateKey(b.game_name, b.createdAt),
-              created_at: b.createdAt ? new Date(b.createdAt).toISOString() : new Date().toISOString()
-            });
-          }
-        });
-      }
+    const mongoCache = require('../utils/mongoCache');
+    const snap = await mongoCache.snapshot(['bets']);
+    if (snap && mongoCache.version('bets') !== betsMergedVersion) {
+      betsMergedVersion = mongoCache.version('bets');
+      const clean = v => String(v || '').replace(/[^0-9]/g, '').slice(-10);
+      const timeOf = b => (b.created_at ? new Date(b.created_at).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : (b.timestamp || 0)));
+      const deletedSet = new Set(require('../store').deletedMobiles || []);
+      const retention = require('../utils/betRetention');
+      // Index memory bets by id, and by player + market + number + amount for bets saved before they had a MongoDB id
+      const byId = new Map();
+      const byKey = new Map();
+      memoryBets.forEach(m => {
+        for (const v of [m._id, m.id]) if (v) byId.set(String(v), m);
+        const k = `${clean(m.mobile || m.user)}|${m.game_name}|${m.number}|${Math.round((m.bet_amount || m.amount || 0) * 100)}`;
+        if (!byKey.has(k)) byKey.set(k, []);
+        byKey.get(k).push(m);
+      });
+      snap.bets.forEach(b => {
+        const id = String(b._id);
+        if (byId.has(id)) return;
+        const cleanMob = clean(b.mobile || b.username || b.user);
+        if (cleanMob && deletedSet.has(cleanMob)) return;
+        const dbTime = timeOf(b);
+        if (dbTime && retention.isExpired(dbTime)) return;
+        const k = `${cleanMob}|${b.game_name}|${b.number}|${Math.round((b.bet_amount || 0) * 100)}`;
+        const twin = (byKey.get(k) || []).find(m => { const mt = timeOf(m); return mt === 0 || dbTime === 0 || Math.abs(mt - dbTime) < 30000; });
+        if (twin) {
+          twin._id = id;
+          twin.id = id;
+          if (b.status && b.status !== 'pending') twin.status = b.status;
+          if (b.win_amount && b.win_amount > 0) twin.win_amount = b.win_amount;
+          byId.set(id, twin);
+          return;
+        }
+        const added = {
+          _id: b._id,
+          id: b._id,
+          user: b.username || b.mobile || 'User',
+          mobile: b.mobile || 'N/A',
+          game_name: b.game_name,
+          bet_type: b.bet_type || 'JODI',
+          number: b.number,
+          bet_amount: b.bet_amount,
+          multiplier: b.multiplier,
+          potential_payout: b.potential_payout || (b.bet_amount * (b.multiplier || 90)),
+          status: b.status || 'pending',
+          win_amount: b.win_amount || b.winAmount || 0,
+          date_key: b.date_key || b.createdDateKey || getGameBetDateKey(b.game_name, b.created_at || b.createdAt),
+          createdDateKey: b.createdDateKey || b.date_key || getGameBetDateKey(b.game_name, b.created_at || b.createdAt),
+          created_at: dbTime ? new Date(dbTime).toISOString() : new Date().toISOString()
+        };
+        memoryBets.unshift(added);
+        byId.set(id, added);
+      });
     }
   } catch (e) {
     console.error('[Admin Bets Error]', e);
@@ -2825,15 +2796,16 @@ const getReferralStats = async (req, res) => {
 
   let allUsers = [...registeredUsers];
   try {
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState === 1) {
-      const User = require('../models/User');
-      const dbUsers = await User.find({}).lean();
+    const snap = await require('../utils/mongoCache').snapshot(['users']);
+    if (snap) {
+      const dbUsers = snap.users;
+      const byMob = new Map(allUsers.map(u => [String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10), u]));
       dbUsers.forEach(dbu => {
         const cleanMobile = (dbu.mobile || '').replace(/[^0-9]/g, '').slice(-10);
         if (cleanMobile) {
-          let exists = allUsers.find(u => u.mobile.replace(/[^0-9]/g, '').slice(-10) === cleanMobile);
+          let exists = byMob.get(cleanMobile);
           if (!exists) {
+            byMob.set(cleanMobile, {});
             allUsers.push({
               id: String(dbu._id),
               name: dbu.name || dbu.username || `User ${cleanMobile.slice(-4)}`,
@@ -2853,9 +2825,16 @@ const getReferralStats = async (req, res) => {
 
   const referrersMap = [];
 
+  // Group once: friends by who referred them, bets by player (bets carry the player's mobile)
+  const cleanM = v => String(v || '').replace(/[^0-9]/g, '').slice(-10);
+  const friendsOf = new Map();
+  allUsers.forEach(r => { const by = cleanM(r.referred_by); if (by) { if (!friendsOf.has(by)) friendsOf.set(by, []); friendsOf.get(by).push(r); } });
+  const betsOf = new Map();
+  memoryBets.forEach(b => { const m = cleanM(b.mobile) || cleanM(b.user); if (m) { if (!betsOf.has(m)) betsOf.set(m, []); betsOf.get(m).push(b); } });
+
   for (let u of allUsers) {
-    const userCleanMob = u.mobile.replace(/[^0-9]/g, '').slice(-10);
-    const referredFriends = allUsers.filter(r => r.referred_by && r.referred_by.replace(/[^0-9]/g, '').slice(-10) === userCleanMob);
+    const userCleanMob = cleanM(u.mobile);
+    const referredFriends = friendsOf.get(userCleanMob) || [];
 
     if (referredFriends.length > 0) {
       let totalCommissionEarned = 0;
@@ -2863,7 +2842,7 @@ const getReferralStats = async (req, res) => {
 
       for (let friend of referredFriends) {
         const friendMob = friend.mobile.replace(/[^0-9]/g, '').slice(-10);
-        const userBets = memoryBets.filter(b => b.user && b.user.replace(/[^0-9]/g, '').slice(-10) === friendMob);
+        const userBets = betsOf.get(friendMob) || [];
         const totalStaked = userBets.reduce((sum, b) => {
           const mainAmt = b.wallet_deducted !== undefined ? parseFloat(b.wallet_deducted) : (b.main_wallet_amount !== undefined ? parseFloat(b.main_wallet_amount) : (b.bonus_deducted !== undefined ? Math.max(0, (parseFloat(b.bet_amount) || 0) - (parseFloat(b.bonus_deducted) || 0)) : (parseFloat(b.bet_amount) || 0)));
           return sum + (isNaN(mainAmt) ? 0 : mainAmt);
@@ -3079,19 +3058,18 @@ const getGameLedger = async (req, res) => {
     let allDeps = [];
     let allWds = [];
 
-    if (mongoose.connection.readyState === 1) {
-      try {
-        const User = require('../models/User');
-        const Bet = require('../models/Bet');
-        const DepositRequest = require('../models/DepositRequest');
-        const WithdrawalRequest = require('../models/WithdrawalRequest');
-
-        allUsers = await User.find({}).lean();
-        allBets = await Bet.find({}).sort({ createdAt: -1 }).lean();
-        allDeps = await DepositRequest.find({ status: { $in: ['Approved', 'approved'] } }).lean();
-        allWds = await WithdrawalRequest.find({ status: { $in: ['Approved', 'approved'] } }).lean();
-      } catch (dbErr) {}
-    }
+    void mongoose;
+    try {
+      // MongoDB copy, read at most once a minute (utils/mongoCache.js)
+      const snap = await require('../utils/mongoCache').snapshot(['users', 'bets', 'deposits', 'withdrawals']);
+      if (snap) {
+        const approved = r => String(r.status || '').toLowerCase() === 'approved';
+        allUsers = snap.users;
+        allBets = snap.bets;
+        allDeps = snap.deposits.filter(approved);
+        allWds = snap.withdrawals.filter(approved);
+      }
+    } catch (dbErr) {}
 
     if (!allUsers || allUsers.length === 0) allUsers = registeredUsers;
     if (!allBets || allBets.length === 0) allBets = memoryBets;
@@ -3149,8 +3127,28 @@ const getGameLedger = async (req, res) => {
       if (m) allUserMobiles.add(m);
     });
 
+    // Group deposits, bets and withdrawals by player once (instead of scanning every list for every player)
+    const firstUser = new Map();
+    allUsers.forEach(u => { const m = String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10); if (m && !firstUser.has(m)) firstUser.set(m, u); });
+    const mobsOf = (item) => {
+      const out = [];
+      const rawItemMob = String(item.mobile || item.phone || item.userPhone || '').replace(/[^0-9]/g, '');
+      if (rawItemMob.length >= 10) out.push(rawItemMob.slice(-10));
+      const userStrMob = String(item.user || item.username || item.userName || '').replace(/[^0-9]/g, '');
+      if (userStrMob.length >= 10 && !out.includes(userStrMob.slice(-10))) out.push(userStrMob.slice(-10));
+      return out;
+    };
+    const groupByMobile = list => {
+      const map = new Map();
+      (list || []).forEach(item => { if (item) for (const m of mobsOf(item)) { if (!map.has(m)) map.set(m, []); map.get(m).push(item); } });
+      return map;
+    };
+    const depsByMob = groupByMobile(allDeps);
+    const betsByMob = groupByMobile(allBets);
+    const wdsByMob = groupByMobile(allWds);
+
     allUserMobiles.forEach(mob => {
-      const userObj = allUsers.find(u => String(u.mobile || '').replace(/[^0-9]/g, '').slice(-10) === mob);
+      const userObj = firstUser.get(mob);
       const name = userObj ? (userObj.name || userObj.username || 'User') : 'User';
       const email = userObj ? (userObj.email || `${mob}@gmail.com`) : `${mob}@gmail.com`;
 
@@ -3182,7 +3180,7 @@ const getGameLedger = async (req, res) => {
       });
 
       // Approved Deposits (including Manual Deposits)
-      allDeps.filter(d => matchesMob(d)).forEach((d, idx) => {
+      (depsByMob.get(mob) || []).filter(d => matchesMob(d)).forEach((d, idx) => {
         const t = safeParseTime(d.timestamp || d.created_at || d.createdAt || d.date, signupTime + 1000 + idx * 100, d._id || d.id);
         const depMethod = d.method || d.payment_method || 'UPI / Bank';
         rawEvents.push({
@@ -3198,7 +3196,7 @@ const getGameLedger = async (req, res) => {
       });
 
       // Bids & Winnings
-      allBets.filter(b => matchesMob(b)).forEach((b, idx) => {
+      (betsByMob.get(mob) || []).filter(b => matchesMob(b)).forEach((b, idx) => {
         const t = safeParseTime(b.timestamp || b.created_at || b.createdAt || b.date, signupTime + 2000 + idx * 100, b._id || b.id);
         const bAmt = parseFloat(b.bet_amount || b.amount) || 10;
         rawEvents.push({
@@ -3259,7 +3257,7 @@ const getGameLedger = async (req, res) => {
       }
 
       // Withdrawals
-      allWds.filter(w => matchesMob(w)).forEach((w, idx) => {
+      (wdsByMob.get(mob) || []).filter(w => matchesMob(w)).forEach((w, idx) => {
         const t = safeParseTime(w.timestamp || w.created_at || w.createdAt || w.date, signupTime + 3000 + idx * 100, w._id || w.id);
         const wAmt = parseFloat(w.amount) || 0;
         rawEvents.push({
