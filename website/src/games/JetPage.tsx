@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { gamesGet, gamesPost, API_BASE } from './api';
+import { gamesGet, gamesPost, API_BASE, everyVisible } from './api';
 import { inr } from './ui';
 import { GameScreen, GameBox, BetAmount, Field, PlayButton, GameFooter, NvModal, RulesList, Segmented, rupees } from './kit';
 import type { Balances } from './TradingPage';
@@ -322,7 +322,7 @@ export default function JetPage({ mobile, balance, onBack, onBalances }: {
   useTicker(100);
   const now = serverNow();
 
-  useEffect(() => { loadMine(); const id = setInterval(loadMine, 6000); return () => clearInterval(id); }, [loadMine]);
+  useEffect(() => { loadMine(); return everyVisible(loadMine, 6000); }, [loadMine]);
   // reload my bets when a new round opens (queued bets move into it)
   const roundId = st?.round.id;
   useEffect(() => { if (roundId) loadMine(); }, [roundId, loadMine]);

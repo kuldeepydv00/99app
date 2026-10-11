@@ -27,11 +27,11 @@ import { gamesPost } from './games/api';
 import { useNotifications, NotificationsPanel, NotificationToast } from './layout/Notifications';
 import { useDownloadApp, DownloadAppPopup, usePhoneAlerts, dropPhoneAlerts, isIOS } from './layout/webApp';
 
-const API_BASE_URLS = [
+const API_BASE_URLS = [...new Set([
   typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com',
   'https://newmatkadomain.com',
   'http://localhost:5002'
-];
+])];
 
 // Attach the logged-in user's session token (issued at OTP verification) to every
 // request automatically, so protected endpoints (wallet, deposits, withdrawals, profile,
@@ -50,18 +50,16 @@ const fetchApi = async (endpoint: string, options: any = {}) => {
     ...options,
     headers: { ...getAuthHeaders(), ...(options.headers || {}) }
   };
-  const method = String(options.method || 'GET').toUpperCase();
   let lastErr: unknown = null;
   for (const base of API_BASE_URLS) {
     try {
-      const res = await fetch(`${base}${endpoint}`, mergedOptions);
-      // A POST/PUT/DELETE that reached a server must not be sent again to the next address:
-      // that created duplicate withdrawal/deposit requests.
-      if (res.ok || method !== 'GET') return res;
+      // The first server that answers is the answer, even "not found" or "not allowed": asking the
+      // next address only helps when this one can't be reached (each failed call used to go to the
+      // server two or three times). A POST that reached a server is never sent twice either.
+      return await fetch(`${base}${endpoint}`, mergedOptions);
     } catch (e) { lastErr = e; }
   }
-  if (method !== 'GET') throw lastErr instanceof Error ? lastErr : new Error('Network error');
-  return fetch(`${API_BASE_URLS[0]}${endpoint}`, mergedOptions);
+  throw lastErr instanceof Error ? lastErr : new Error('Network error');
 };
 
 interface GameSchedule {
@@ -433,9 +431,6 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    fetchWebsiteReferralDetails();
-  }, [showReferralModal, user?.mobile]);
 
   const formatChartDateDisplay = (dateStr: string) => {
     try {
@@ -545,39 +540,6 @@ export default function App() {
 
     fetchDateChart();
   }, [chartFilter, selectedChartDate]);
-
-  // Fetch dynamic promotional banners from Admin Panel
-  useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const resB = await fetchApi('/api/game/banners');
-        if (resB && resB.ok) {
-          const bannersData = await resB.json();
-          if (Array.isArray(bannersData) && bannersData.length > 0) {
-            const activeB = bannersData.filter((b: any) => b.status === 'Active' || b.enabled !== false);
-            if (activeB.length > 0) {
-              setWebBanners(activeB);
-            }
-          }
-        }
-      } catch (e) {}
-
-      try {
-        const resConfig = await fetchApi('/api/game/banner');
-        if (resConfig && resConfig.ok) {
-          const configData = await resConfig.json();
-          if (configData) {
-            setGlobalBannerConfig(configData);
-            setBannerConfig(configData);
-          }
-        }
-      } catch (e) {}
-    };
-
-    fetchBanners();
-    const interval = setInterval(fetchBanners, 8000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Auto-slide hero banner carousel every 4 seconds
   useEffect(() => {
@@ -810,57 +772,45 @@ export default function App() {
     }
   }, []);
 
-  // Poll backend data
-  const refreshData = async () => {
+  // ---------- Live data from the server ----------
+  // Each kind of data is loaded only as often as it changes and only while it is on screen; a refresh
+  // never starts while the last one is still running, and nothing is loaded while the tab is in the
+  // background (it catches up the moment the player comes back). Independent requests go together.
+  //   markets (results + timings) 15 s · balance 10 s · Matka bet history 15 s on My Bets ·
+  //   referral page 30 s while open · banners and settings 5 min
+  // refreshData() (after a bet, the refresh buttons) loads what is on screen straight away.
+  const LIVE_EVERY = { markets: 15000, account: 10000, bets: 15000, referral: 30000, content: 300000 };
+  type LiveKind = keyof typeof LIVE_EVERY;
+  const liveLastRef = useRef<Partial<Record<LiveKind, number>>>({});
+  const liveRunRef = useRef<Promise<void> | null>(null);
+  const liveAgainRef = useRef(false);
+  const liveViewRef = useRef({ tab: activeWebTab, referralOpen: showReferralModal, refDate: refFilterDate });
+  liveViewRef.current = { tab: activeWebTab, referralOpen: showReferralModal, refDate: refFilterDate };
+
+  const loadContent = async () => {
+    const [bRes, blRes, setRes] = await Promise.all([
+      fetchApi('/api/game/banner').catch(() => null),
+      fetchApi('/api/game/banners').catch(() => null),
+      fetchApi('/api/app/settings').catch(() => null)
+    ]);
     try {
-      // Fetch Banner
-      const bRes = await fetchApi('/api/game/banner');
-      if (bRes.ok) {
+      if (bRes && bRes.ok) {
         const bData = await bRes.json();
         setBannerConfig(bData);
         setGlobalBannerConfig(bData);
       }
-
-      // Fetch Banners List
-      try {
-        const blRes = await fetchApi('/api/game/banners');
-        if (blRes.ok) {
-          const blData = await blRes.json();
-          if (Array.isArray(blData) && blData.length > 0) {
-            const activeB = blData.filter((b: any) => b.status === 'Active' || b.enabled !== false);
-            if (activeB.length > 0) setWebBanners(activeB);
-          }
-        }
-      } catch (e) {}
-
-            // Fetch Results
-      const rRes = await fetchApi('/api/game/results');
-      if (rRes.ok) {
-        const rData = await rRes.json();
-        setDeclaredResults(rData);
-      }
-
-      // Fetch Schedules
-      const sRes = await fetchApi('/api/admin/schedules');
-      if (sRes.ok) {
-        const sData = await sRes.json();
-        if (Object.keys(sData).length > 0) {
-          setGameSchedules(sData);
+    } catch (e) {}
+    try {
+      if (blRes && blRes.ok) {
+        const blData = await blRes.json();
+        if (Array.isArray(blData) && blData.length > 0) {
+          const activeB = blData.filter((b: any) => b.status === 'Active' || b.enabled !== false);
+          if (activeB.length > 0) setWebBanners(activeB);
         }
       }
-
-      // Fetch Live Players Count
-      const lpRes = await fetchApi('/api/game/live-players');
-      if (lpRes.ok) {
-        const lpData = await lpRes.json();
-        if (lpData && lpData.data) {
-          setLivePlayersMap(lpData.data);
-        }
-      }
-
-      // Fetch Settings (WhatsApp number, rates, etc.)
-      const setRes = await fetchApi('/api/app/settings');
-      if (setRes.ok) {
+    } catch (e) {}
+    try {
+      if (setRes && setRes.ok) {
         const setData = await setRes.json();
         if (setData.whatsapp_number) {
           setWhatsappNumber(setData.whatsapp_number.replace(/[^0-9]/g, ''));
@@ -876,74 +826,143 @@ export default function App() {
           });
         }
       }
+    } catch (e) {}
+  };
 
-      // Refresh User Wallet & Profile Name from Backend live!
-      const currentSaved = localStorage.getItem('99x_web_user');
-      const activeMobile = user?.mobile || (currentSaved ? JSON.parse(currentSaved)?.mobile : null);
-      if (activeMobile) {
-        const uRes = await fetchApi(`/api/user/profile?mobile=${activeMobile}`);
-        if (uRes.status === 401) {
-          // The account was deleted, or this login ended: log out everywhere on this device
-          endWebSession();
-        } else if (uRes.ok) {
-          const uData = await uRes.json();
-          if (uData.is_deleted || uData.message === 'No Authentication') {
-            endWebSession();
-          } else if (uData.is_blocked || uData.error === 'NO_INTERNET') {
-            setIsWebUserBlocked(true);
-            setIsWebUserDeleted(false);
-          } else {
-            setIsWebUserBlocked(false);
-            setIsWebUserDeleted(false);
-            setUser(prev => {
-              const currentName = uData.name && uData.name !== 'User' ? uData.name : (prev?.name || `User ${activeMobile.slice(-4)}`);
-              const currentBal = uData.balance !== undefined ? uData.balance : (prev?.balance || 0);
-              const updated = { 
-                name: currentName,
-                mobile: activeMobile,
-                balance: currentBal,
-                deposit_balance: uData.deposit_balance !== undefined ? uData.deposit_balance : (prev?.deposit_balance || 0),
-                winning_balance: uData.winning_balance !== undefined ? uData.winning_balance : (prev?.winning_balance || 0),
-                bonus_balance: uData.bonus_balance !== undefined ? uData.bonus_balance : (prev?.bonus_balance !== undefined ? prev.bonus_balance : 200),
-                commission_balance: uData.commission_balance !== undefined ? uData.commission_balance : (prev?.commission_balance || 0),
-                withdrawable_balance: uData.winning_balance !== undefined ? uData.winning_balance : (prev?.winning_balance || 0)              };
-              localStorage.setItem('99x_web_user', JSON.stringify(updated));
-              return updated;
-            });
-          }
-        }
-
-        // Fetch My Bets for active logged-in user
-        const bHistoryRes = await fetchApi(`/api/game/my-bets?mobile=${activeMobile}`);
-        if (bHistoryRes.ok) {
-          const bHistory = await bHistoryRes.json();
-          if (Array.isArray(bHistory)) {
-            setMyBetsList(bHistory);
-            localStorage.setItem(`99x_my_bets_${activeMobile}`, JSON.stringify(bHistory));
-          }
-        }
-
-        // Fetch Referral Stats Live
-        const cleanMob = activeMobile.replace(/[^0-9]/g, '').slice(-10);
-        const refRes = await fetchApi(`/api/user/referral-details?mobile=${cleanMob}`);
-        if (refRes.ok) {
-          const refData = await refRes.json();
-          setReferralDetails({
-            referral_code: (refData.referral_code || cleanMob).replace(/^REF/i, ''),
-            referralsCount: refData.referralsCount || 0,
-            totalCommission: refData.totalCommission || 0,
-            referredUsers: refData.referredUsers || []
-          });
-        }
+  const loadMarkets = async () => {
+    const [rRes, sRes] = await Promise.all([
+      fetchApi('/api/game/results').catch(() => null),
+      fetchApi('/api/admin/schedules').catch(() => null)
+    ]);
+    try {
+      if (rRes && rRes.ok) setDeclaredResults(await rRes.json());
+    } catch (e) {}
+    try {
+      if (sRes && sRes.ok) {
+        const sData = await sRes.json();
+        if (Object.keys(sData).length > 0) setGameSchedules(sData);
       }
     } catch (e) {}
   };
 
+  // Wallet balance and name (also notices a deleted or blocked account)
+  const loadAccount = async (activeMobile: string) => {
+    const uRes = await fetchApi(`/api/user/profile?mobile=${activeMobile}`);
+    if (uRes.status === 401) {
+      // The account was deleted, or this login ended: log out everywhere on this device
+      endWebSession();
+    } else if (uRes.ok) {
+      const uData = await uRes.json();
+      if (uData.is_deleted || uData.message === 'No Authentication') {
+        endWebSession();
+      } else if (uData.is_blocked || uData.error === 'NO_INTERNET') {
+        setIsWebUserBlocked(true);
+        setIsWebUserDeleted(false);
+      } else {
+        setIsWebUserBlocked(false);
+        setIsWebUserDeleted(false);
+        setUser(prev => {
+          const currentName = uData.name && uData.name !== 'User' ? uData.name : (prev?.name || `User ${activeMobile.slice(-4)}`);
+          const currentBal = uData.balance !== undefined ? uData.balance : (prev?.balance || 0);
+          const updated = {
+            name: currentName,
+            mobile: activeMobile,
+            balance: currentBal,
+            deposit_balance: uData.deposit_balance !== undefined ? uData.deposit_balance : (prev?.deposit_balance || 0),
+            winning_balance: uData.winning_balance !== undefined ? uData.winning_balance : (prev?.winning_balance || 0),
+            bonus_balance: uData.bonus_balance !== undefined ? uData.bonus_balance : (prev?.bonus_balance !== undefined ? prev.bonus_balance : 200),
+            commission_balance: uData.commission_balance !== undefined ? uData.commission_balance : (prev?.commission_balance || 0),
+            withdrawable_balance: uData.winning_balance !== undefined ? uData.winning_balance : (prev?.winning_balance || 0)
+          };
+          localStorage.setItem('99x_web_user', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    }
+  };
+
+  // Matka bet history (My Bets page)
+  const loadBets = async (activeMobile: string) => {
+    const bHistoryRes = await fetchApi(`/api/game/my-bets?mobile=${activeMobile}`);
+    if (bHistoryRes.ok) {
+      const bHistory = await bHistoryRes.json();
+      if (Array.isArray(bHistory)) {
+        setMyBetsList(bHistory);
+        localStorage.setItem(`99x_my_bets_${activeMobile}`, JSON.stringify(bHistory));
+      }
+    }
+  };
+
+  const runLive = async (force: boolean) => {
+    const now = Date.now();
+    const currentSaved = localStorage.getItem('99x_web_user');
+    let activeMobile: string | null = user?.mobile || null;
+    if (!activeMobile && currentSaved) { try { activeMobile = JSON.parse(currentSaved)?.mobile || null; } catch (e) { activeMobile = null; } }
+    const view = liveViewRef.current;
+    const wanted: Record<LiveKind, boolean> = {
+      content: true,
+      markets: true,
+      account: !!activeMobile,
+      bets: !!activeMobile && view.tab === 'mybets',
+      referral: !!activeMobile && (view.tab === 'referral' || view.referralOpen)
+    };
+    const due = (k: LiveKind) => wanted[k] && (now - (liveLastRef.current[k] || 0) >= LIVE_EVERY[k] || (force && k !== 'content'));
+    const jobs: Promise<unknown>[] = [];
+    const go = (k: LiveKind, job: () => Promise<unknown>) => {
+      if (!due(k)) return;
+      liveLastRef.current[k] = now;
+      jobs.push(job().catch(() => {}));
+    };
+    go('content', loadContent);
+    go('markets', loadMarkets);
+    if (activeMobile) {
+      const mob = activeMobile;
+      go('account', () => loadAccount(mob));
+      go('bets', () => loadBets(mob));
+      go('referral', () => fetchWebsiteReferralDetails(view.refDate));
+    }
+    await Promise.all(jobs);
+  };
+
+  const refreshLive = (force = false): Promise<void> => {
+    if (liveRunRef.current) {
+      if (force) liveAgainRef.current = true;
+      return liveRunRef.current;
+    }
+    const run = (async () => {
+      try {
+        let f = force;
+        do {
+          liveAgainRef.current = false;
+          await runLive(f);
+          f = liveAgainRef.current;
+        } while (f);
+      } catch (e) {
+        // keep what we have
+      } finally {
+        liveRunRef.current = null;
+      }
+    })();
+    liveRunRef.current = run;
+    return run;
+  };
+  // After a bet, a deposit or a tap on refresh: load what is on screen now
+  const refreshData = () => refreshLive(true);
+
   useEffect(() => {
-    refreshData();
-    const timer = setInterval(refreshData, 3000);
-    return () => clearInterval(timer);
+    refreshLive(true);
+    const timer = setInterval(() => { if (document.visibilityState !== 'hidden') refreshLive(); }, 5000);
+    const back = () => { if (document.visibilityState === 'visible') refreshLive(); };
+    document.addEventListener('visibilitychange', back);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', back); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.mobile]);
+
+  // Opening My Bets or the referral page loads it straight away (if it's not fresh)
+  useEffect(() => {
+    refreshLive();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWebTab, showReferralModal]);
 
   // Resend OTP countdown timer
   useEffect(() => {

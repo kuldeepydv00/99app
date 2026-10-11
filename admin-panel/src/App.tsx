@@ -1012,7 +1012,7 @@ export default function App() {
         get('winnings', `${API_BASE}/api/admin/winnings`),
         get('pm', `${API_BASE}/api/admin/payment-methods`),
         get('notif', `${API_BASE}/api/admin/notifications`),
-        get('banner', `${API_BASE}/api/game/banner`),
+        get('banner', `${API_BASE}/api/admin/banner`),
         get('settings', `${API_BASE}/api/admin/settings`),
         get('banners', `${API_BASE}/api/admin/banners`),
         get('results', `${API_BASE}/api/admin/results-history`),

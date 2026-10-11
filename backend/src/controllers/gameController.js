@@ -522,6 +522,24 @@ const placeBet = async (req, res) => {
 // @desc    Get user bet history
 // @route   GET /api/game/my-bets?mobile=...
 // @access  Public / Private
+// A player's bets in MongoDB, read at most once a minute per player
+const mongoBetsCache = new Map(); // mobile -> { at, bets }
+async function mongoBetsOf(mobile, since) {
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) return [];
+  const hit = mongoBetsCache.get(mobile);
+  if (hit && Date.now() - hit.at < 60000) return hit.bets;
+  const Bet = require('../models/Bet');
+  const bets = await Bet.find({
+    $or: [{ mobile }, { user: mobile }],
+    createdAt: { $gte: new Date(since) }
+  }).sort({ createdAt: -1 }).lean();
+  mongoBetsCache.delete(mobile);
+  mongoBetsCache.set(mobile, { at: Date.now(), bets });
+  if (mongoBetsCache.size > 5000) mongoBetsCache.delete(mongoBetsCache.keys().next().value);
+  return bets;
+}
+
 const getMyBets = async (req, res) => {
   const userMobile = req.query.mobile || req.query.user;
   let userBets = [];
@@ -559,27 +577,23 @@ const getMyBets = async (req, res) => {
       }
     });
 
-    // Query MongoDB Atlas for cloud-stored bets up to 40 days
+    // MongoDB copy (older bets, or bets another server took). Memory already has every recent bet,
+    // so MongoDB is read at most once a minute per player (the website asks every few seconds).
     try {
-      const mongoose = require('mongoose');
-      if (mongoose.connection.readyState === 1) {
-        const Bet = require('../models/Bet');
-        const dbBets = await Bet.find({
-          $or: [{ mobile: cleanMobile }, { user: cleanMobile }],
-          createdAt: { $gte: new Date(cutoff40Days) }
-        }).sort({ createdAt: -1 }).lean();
-
+      const dbBets = await mongoBetsOf(cleanMobile, cutoff40Days);
+      if (dbBets.length) {
+        const ids = new Set(userBets.map(b => String(b._id || b.id)));
+        const keyOf = (b) => `${b.game_name}|${String(b.bet_type || 'JODI').toUpperCase()}|${String(b.number)}|${Math.round((Number(b.bet_amount) || 0) * 100)}`;
+        const times = new Map(); // same bet (game, type, number, amount) -> times placed
+        for (const b of userBets) {
+          const k = keyOf(b);
+          if (!times.has(k)) times.set(k, []);
+          times.get(k).push(new Date(b.created_at || Date.now()).getTime());
+        }
         dbBets.forEach(dbb => {
           const dbId = String(dbb._id);
-          const dbBType = String(dbb.bet_type || 'JODI').toUpperCase();
-          const exists = userBets.some(b => 
-            String(b._id || b.id) === dbId ||
-            (b.game_name === dbb.game_name && 
-             String(b.bet_type || 'JODI').toUpperCase() === dbBType && 
-             String(b.number) === String(dbb.number) && 
-             Math.abs(b.bet_amount - dbb.bet_amount) < 0.01 &&
-             Math.abs(new Date(b.created_at || Date.now()).getTime() - new Date(dbb.created_at || dbb.createdAt || Date.now()).getTime()) < 20000)
-          );
+          const dbTime = new Date(dbb.created_at || dbb.createdAt || Date.now()).getTime();
+          const exists = ids.has(dbId) || (times.get(keyOf(dbb)) || []).some(t => Math.abs(t - dbTime) < 20000);
           if (!exists) {
             const isHar = String(dbb.bet_type || '').toUpperCase().includes('HAR') || String(dbb.bet_type || '').toUpperCase().includes('ANDER') || String(dbb.bet_type || '').toUpperCase().includes('BAHAR');
             const formattedStr = isHar ? String(dbb.number) : (String(dbb.number) === '0' || String(dbb.number) === '100' ? '00' : String(dbb.number).padStart(2, '0'));
@@ -729,4 +743,7 @@ const getChartResults = async (req, res) => {
   });
 };
 
-module.exports = { placeBet, getMyBets, getResults, getChartResults, memoryBets };
+// Account deleted: forget the cached MongoDB copy of that player's bets
+function forgetBetsCache(mobile) { mongoBetsCache.delete(String(mobile || '').replace(/[^0-9]/g, '').slice(-10)); }
+
+module.exports = { placeBet, getMyBets, getResults, getChartResults, memoryBets, forgetBetsCache };

@@ -46,8 +46,8 @@ const io = new Server(server, {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-// Big admin lists are sent compressed (much faster to download)
-app.use('/api/admin', require('./utils/gzipJson'));
+// Big replies are sent compressed, and not sent again when the browser already has them (304)
+app.use('/api', require('./utils/gzipJson'));
 
 // Make io accessible to routers
 app.set('io', io);

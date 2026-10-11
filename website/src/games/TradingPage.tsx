@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { gamesGet, gamesPost } from './api';
+import { gamesGet, gamesPost, everyVisible } from './api';
 import type { TradingGame } from './api';
 import { inr, clock, useServerNow, OptionTag, CountdownRing, SUITS, cardParts, COLOURS } from './ui';
 import { GameScreen, GameBox, BetAmount, Field, ReadBox, PlayButton, Notice, GameFooter, NvModal, RulesList, BetsTable, PausedNote, MobileBetBar, RoundInfo, ResultPop, rupees } from './kit';
@@ -80,9 +80,9 @@ export default function TradingPage({ game, mobile, balance, onBack, onBalances 
   useEffect(() => {
     load();
     loadBets();
-    const id = setInterval(load, game === 'colour' ? 2000 : 5000);
-    const id2 = setInterval(loadBets, 15000);
-    return () => { clearInterval(id); clearInterval(id2); };
+    const stop = everyVisible(load, game === 'colour' ? 2000 : 5000);
+    const stop2 = everyVisible(loadBets, 15000);
+    return () => { stop(); stop2(); };
   }, [game, load, loadBets]);
 
   const now = useServerNow(st?.serverTime);

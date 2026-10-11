@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { gamesGet } from './api';
+import { gamesGet, everyVisible } from './api';
 import { inr, OptionTag } from './ui';
 
 type Bet = { id: string; game: string; option: string; amount: number; status: string; win_amount: number; result: string | number | null; created_at: string; roundId?: string; marketName?: string; dateKey?: string; cashout?: number | null };
@@ -16,8 +16,8 @@ export default function NewGamesBets({ mobile }: { mobile: string }) {
     let alive = true;
     const load = () => gamesGet<{ bets: Bet[] }>(`/api/games/my-bets?mobile=${mobile}`).then(d => { if (alive) setBets(d.bets || []); }).catch(() => { if (alive) setBets([]); });
     load();
-    const id = setInterval(load, 15000);
-    return () => { alive = false; clearInterval(id); };
+    const stop = everyVisible(load, 15000);
+    return () => { alive = false; stop(); };
   }, [mobile]);
 
   const list = (bets || []).filter(b => filter === 'all' || b.game === filter);

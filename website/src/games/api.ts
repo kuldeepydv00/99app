@@ -34,6 +34,17 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   throw lastErr instanceof Error ? lastErr : new Error('Network error. Check your connection.');
 }
 
+/**
+ * Runs `fn` every `ms` while the page is on screen, and once straight away when the player comes back
+ * to it. Nothing is loaded while the tab or app is in the background. Returns the stop function.
+ */
+export function everyVisible(fn: () => void, ms: number): () => void {
+  const id = window.setInterval(() => { if (document.visibilityState !== 'hidden') fn(); }, ms);
+  const back = () => { if (document.visibilityState === 'visible') fn(); };
+  document.addEventListener('visibilitychange', back);
+  return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', back); };
+}
+
 /** Base URL for long-lived connections (live round stream); same first choice as requests. */
 export const API_BASE = BASES[0];
 

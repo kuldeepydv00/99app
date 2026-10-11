@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { gamesGet, gamesPost } from './api';
+import { gamesGet, gamesPost, everyVisible } from './api';
 import { inr, clock, useServerNow, CountdownRing, SUITS, cardParts, DT_SIDES, OptionTag } from './ui';
 import { GameScreen, GameBox, BetAmount, Field, ReadBox, PlayButton, Notice, GameFooter, NvModal, RulesList, BetsTable, PausedNote, MobileBetBar, RoundInfo, rupees } from './kit';
 import type { HistoryRow } from './kit';
@@ -115,9 +115,9 @@ export default function DragonTigerPage({ mobile, balance, onBack, onBalances }:
   useEffect(() => {
     load();
     loadBets();
-    const id = setInterval(load, 2000);
-    const id2 = setInterval(loadBets, 15000);
-    return () => { clearInterval(id); clearInterval(id2); };
+    const stop = everyVisible(load, 2000);
+    const stop2 = everyVisible(loadBets, 15000);
+    return () => { stop(); stop2(); };
   }, [load, loadBets]);
 
   const now = useServerNow(st?.serverTime);

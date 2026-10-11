@@ -64,6 +64,9 @@ async function purgeUser(id, { by = 'admin' } = {}) {
   for (const m of mob) {
     if (store.notificationSeen) delete store.notificationSeen[m];
     try { removed.phones += require('./webPush').forgetMobile(m); } catch (e) { /* ignore */ }
+    // short-lived copies kept for the website (bets / referral page)
+    try { require('../controllers/gameController').forgetBetsCache(m); } catch (e) { /* ignore */ }
+    try { require('../controllers/userController').forgetReferralCache(m); } catch (e) { /* ignore */ }
     if (store.userWalletStore && store.userWalletStore[m]) delete store.userWalletStore[m];
     if (store.userWalletStore && cleanMobile(store.userWalletStore.mobile) === m) {
       store.userWalletStore.balance = 0; store.userWalletStore.name = ''; store.userWalletStore.mobile = '';

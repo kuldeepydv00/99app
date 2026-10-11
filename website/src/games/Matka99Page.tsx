@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
-import { gamesGet, gamesPost } from './api';
+import { gamesGet, gamesPost, everyVisible } from './api';
 import { inr, OptionTag, GlassCard, AmountPicker, StatusPill, Sheet } from './ui';
 import type { Balances } from './TradingPage';
 
@@ -32,9 +32,9 @@ export default function Matka99Page({ marketKey, mobile, balance, onBack, onBala
 
   useEffect(() => {
     load(); loadBets();
-    const a = setInterval(load, 15000);
-    const b = setInterval(loadBets, 20000);
-    return () => { clearInterval(a); clearInterval(b); };
+    const a = everyVisible(load, 15000);
+    const b = everyVisible(loadBets, 20000);
+    return () => { a(); b(); };
   }, [load, loadBets]);
 
   const market = data?.markets.find(m => m.key === marketKey) || null;

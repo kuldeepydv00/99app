@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { gamesGet } from './api';
+import { gamesGet, everyVisible } from './api';
 import type { TradingGame } from './api';
 import { clock, useServerNow } from './ui';
 import MarketTile, { shortTime } from './MarketTile';
@@ -16,7 +16,7 @@ export type Lobby = {
     round: { id?: string; phase: string; bettingEndsAt?: number; flyAt?: number | null; point?: number | null } };
 };
 
-/** Polls the games lobby every 5 s while `enabled`. Returns null until the first load. */
+/** Polls the games lobby every 5 s while `enabled` and the page is on screen. Returns null until the first load. */
 export function useLobby(enabled = true) {
   const [lobby, setLobby] = useState<Lobby | null>(null);
   useEffect(() => {
@@ -24,8 +24,8 @@ export function useLobby(enabled = true) {
     let alive = true;
     const load = () => gamesGet<Lobby>('/api/games/lobby').then(d => { if (alive) setLobby(d); }).catch(() => {});
     load();
-    const id = setInterval(load, 5000);
-    return () => { alive = false; clearInterval(id); };
+    const stop = everyVisible(load, 5000);
+    return () => { alive = false; stop(); };
   }, [enabled]);
   return lobby;
 }

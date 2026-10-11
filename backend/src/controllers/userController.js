@@ -1242,6 +1242,34 @@ const checkUserExists = async (req, res) => {
 
 // @desc    Get detailed referral statistics & referred users list
 // @route   GET /api/user/referral-details
+// The MongoDB part of the referral page (account, friends, commission records), read at most once a
+// minute per player. Memory adds anything newer on every request.
+const referralMongoCache = new Map(); // mobile -> { at, dbUser, dbReferred, dbCommissionTxns }
+async function referralMongoOf(cleanMobile) {
+  const hit = referralMongoCache.get(cleanMobile);
+  if (hit && Date.now() - hit.at < 60000) return hit;
+  const User = require('../models/User');
+  const Transaction = require('../models/Transaction');
+  const [dbUser, dbReferred, dbCommissionTxns] = await Promise.all([
+    User.findOne({ mobile: { $regex: cleanMobile } }).lean(),
+    User.find({
+      $or: [
+        { referred_by: cleanMobile },
+        { referred_by: `+91${cleanMobile}` },
+        { referred_by: `REF${cleanMobile}` },
+        { referred_by: { $regex: cleanMobile } }
+      ]
+    }).lean(),
+    Transaction.find({ mobile: { $regex: cleanMobile }, type: { $regex: /COMMISSION|REFERRAL/i } }).lean()
+  ]);
+  const entry = { at: Date.now(), dbUser, dbReferred: dbReferred || [], dbCommissionTxns: dbCommissionTxns || [] };
+  referralMongoCache.delete(cleanMobile);
+  referralMongoCache.set(cleanMobile, entry);
+  if (referralMongoCache.size > 5000) referralMongoCache.delete(referralMongoCache.keys().next().value);
+  return entry;
+}
+function forgetReferralCache(mobile) { referralMongoCache.delete(String(mobile || '').replace(/[^0-9]/g, '').slice(-10)); }
+
 const getReferralDetails = async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   const { mobile, date } = req.query;
@@ -1258,24 +1286,17 @@ const getReferralDetails = async (req, res) => {
 
   try {
     if (!dataSafety.mongoReady()) throw new Error('skip');
-    const User = require('../models/User');
-    const dbUser = await User.findOne({ mobile: { $regex: cleanMobile } }).lean();
+    const fromDb = await referralMongoOf(cleanMobile);
+    const dbUser = fromDb.dbUser;
     if (dbUser) {
-      if (!user) user = dbUser;
+      if (!user) user = { ...dbUser };
       else {
         // (commission_balance stays as in memory: it is money and MongoDB's copy can be older)
         user.total_commission = dbUser.total_commission !== undefined ? dbUser.total_commission : user.total_commission;
       }
     }
 
-    const dbReferred = await User.find({
-      $or: [
-        { referred_by: cleanMobile },
-        { referred_by: `+91${cleanMobile}` },
-        { referred_by: `REF${cleanMobile}` },
-        { referred_by: { $regex: cleanMobile } }
-      ]
-    }).lean();
+    const dbReferred = fromDb.dbReferred;
 
     if (dbReferred && dbReferred.length > 0) {
       rawReferred = dbReferred.map(r => ({
@@ -1287,15 +1308,11 @@ const getReferralDetails = async (req, res) => {
       }));
     }
 
-    // Fetch actual historical commission transactions for this user (referral + self bet commission)
-    const Transaction = require('../models/Transaction');
-    dbCommissionTxns = await Transaction.find({
-      mobile: { $regex: cleanMobile },
-      type: { $regex: /COMMISSION|REFERRAL/i }
-    }).lean();
+    // Historical commission transactions for this user (referral + self bet commission)
+    dbCommissionTxns = fromDb.dbCommissionTxns;
 
   } catch (e) {
-    console.error('[MongoDB Referral Search Error]', e);
+    if (e.message !== 'skip') console.error('[MongoDB Referral Search Error]', e.message); // 'skip': MongoDB not connected
   }
 
   // Merge any memory registered users
@@ -1326,10 +1343,16 @@ const getReferralDetails = async (req, res) => {
     commissionsByDate[dKey] = parseFloat(((commissionsByDate[dKey] || 0) + (parseFloat(tx.amount) || 0)).toFixed(2));
   }
 
-  // Also inspect memory bets stamped with referral or self commission
+  // Also inspect memory bets stamped with referral or self commission.
+  // Bets are grouped by player once here (each friend used to scan every bet again).
+  const betsByPlayer = new Map();
   for (let b of memoryBets) {
     const isRef = b.referrer_mobile && b.referrer_mobile.replace(/[^0-9]/g, '').slice(-10) === cleanMobile;
-    const betUserClean = (b.user || '').replace(/[^0-9]/g, '').slice(-10);
+    const betUserClean = String(b.mobile || b.user || '').replace(/[^0-9]/g, '').slice(-10);
+    if (betUserClean) {
+      if (!betsByPlayer.has(betUserClean)) betsByPlayer.set(betUserClean, []);
+      betsByPlayer.get(betUserClean).push(b);
+    }
     const isSelf = betUserClean === cleanMobile;
     const commAmt = parseFloat(b.referral_commission || b.self_commission || 0);
 
@@ -1363,9 +1386,7 @@ const getReferralDetails = async (req, res) => {
     }
 
     // 2. Add from memory bets for this friend
-    const userBets = memoryBets.filter(b => {
-      const betUserClean = (b.user || '').replace(/[^0-9]/g, '').slice(-10);
-      if (betUserClean !== refCleanMob) return false;
+    const userBets = (betsByPlayer.get(refCleanMob) || []).filter(b => {
       if (filterDateKey) {
         const bDateKey = b.createdDateKey || (b.created_at ? getISTDateStr(b.created_at) : '');
         return bDateKey === filterDateKey;
@@ -1581,5 +1602,6 @@ module.exports = {
   checkUserExists,
   getReferralDetails,
   applyReferralCode,
-  transferCommissionToWallet
+  transferCommissionToWallet,
+  forgetReferralCache
 };
