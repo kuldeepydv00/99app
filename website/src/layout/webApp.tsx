@@ -19,11 +19,12 @@ export const isIOS = () => {
 };
 export const isAndroid = () => /Android/i.test(navigator.userAgent || '');
 
+// Only "standalone" (how the installed app opens). Not "fullscreen": Chrome also reports that for a
+// normal tab while the browser window is in full screen (e.g. macOS full screen), which wrongly
+// hid every Download App button.
 const standalone = () => {
   try {
-    return window.matchMedia('(display-mode: standalone)').matches
-      || window.matchMedia('(display-mode: fullscreen)').matches
-      || (navigator as any).standalone === true;
+    return window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
   } catch { return false; }
 };
 
