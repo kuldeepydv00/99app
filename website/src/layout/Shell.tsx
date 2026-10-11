@@ -257,7 +257,7 @@ export function TopBar({ a, balance, unread }: { a: ShellActions; balance: numbe
         <div className="flex shrink-0 items-center gap-1">
           {!a.inApp && (
             <button onClick={a.download} aria-label="Download App"
-              className="nv-tap mr-1 hidden h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-nv-green ring-1 ring-nv-green/30 transition-colors hover:bg-nv-green/10 lg:flex">
+              className="nv-tap mr-1 hidden h-10 items-center gap-1.5 rounded-md bg-nv-green/10 px-3 text-sm font-semibold text-nv-green ring-1 ring-nv-green/40 transition-colors hover:bg-nv-green/20 md:flex">
               <Download className="h-4 w-4" />Download App
             </button>
           )}
