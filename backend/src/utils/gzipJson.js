@@ -1,14 +1,14 @@
-// Big JSON replies (16 KB+) are:
+// JSON replies of 1 KB or more are:
 // - gzip-compressed when the browser accepts it (all browsers do): lists like all bets or the game
 //   ledger can be many MB; compressed they are about 10x smaller;
 // - tagged with an ETag, so a browser asking again for the same data gets "304 Not Modified" and no
 //   body at all (browsers do this by themselves when they have the earlier reply).
 // The last few compressed replies are kept, so the same big reply is not compressed again for every
-// player. Small replies go through Express as before (Express adds ETag / 304 to those itself).
+// player. Tiny replies go through Express as before (Express adds ETag / 304 to those itself).
 const zlib = require('zlib');
 const crypto = require('crypto');
 
-const MIN_BYTES = 16 * 1024;
+const MIN_BYTES = 1024; // the lobby (6.5 KB) and live-bets list (10 KB), asked every 5 s, shrink to 1-2 KB
 const KEEP = 40;               // compressed replies kept in memory
 const zipped = new Map();      // etag -> gzip Buffer (oldest first)
 
