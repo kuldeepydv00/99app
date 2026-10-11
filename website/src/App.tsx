@@ -1512,7 +1512,7 @@ export default function App() {
     rules: () => setShowRulesModal(true),
     profile: needLogin(() => setShowProfileModal(true)),
     notifications: openNotifications,
-    download: appDl.show,
+    download: appDl.download,
     inApp: !appDl.available,
     loggedIn: !!user,
     login: () => openAuth('login'),
@@ -1563,7 +1563,7 @@ export default function App() {
       { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: needLogin(() => setJetOpen(true)) }
     );
     if (appDl.available && !isIOS()) {
-      list.push({ id: 'papp', kind: 'card', tag: 'Android app', title: 'Get the 99x app', text: 'Faster play, and alerts for deposits, withdrawals and results on your phone.', cta: 'Download', art: '/icons/icon-512.png', tint: '#0F6B4A', onClick: appDl.show });
+      list.push({ id: 'papp', kind: 'card', tag: 'Android app', title: 'Get the 99x app', text: 'Faster play, and alerts for deposits, withdrawals and results on your phone.', cta: 'Download', art: '/icons/icon-512.png', tint: '#0F6B4A', onClick: appDl.download });
     }
     return list;
   })();

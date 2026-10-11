@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { BellRing, BellOff, Download, Share, SquarePlus, X, Check, Smartphone, Zap, ShieldCheck } from 'lucide-react';
+import { BellRing, BellOff, Download, Share, SquarePlus, MoreVertical, X, Check, Smartphone, Zap, ShieldCheck } from 'lucide-react';
 
-// The 99xmatka app: the Android APK (android-app/, opens this website full screen) is downloaded
-// from the "Download App" popup. Also here: offline screen (public/sw.js + public/offline.html)
-// and phone notifications (web push, see backend utils/webPush.js).
+// The 99xmatka app is the website itself, installed from the browser (a web app). "Download App"
+// opens the browser's own install dialog (Chrome / Edge / Samsung Internet, Android and computer):
+// one tap and 99xmatka is in the app drawer and on the home screen, opens full screen, and gets
+// phone notifications. iPhone (Safari has no install dialog): Share -> Add to Home Screen.
+// Fallback for browsers without the dialog: the APK at /99xmatka.apk, if you upload one
+// (android-app/), otherwise the steps for that browser.
+// Also here: offline screen (public/sw.js + public/offline.html) and phone notifications (web push).
 
 export const APK_URL = '/99xmatka.apk';
 
@@ -14,29 +18,43 @@ export const isIOS = () => {
   return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 };
 export const isAndroid = () => /Android/i.test(navigator.userAgent || '');
-const isPhone = () => isAndroid() || isIOS() || /Mobi/i.test(navigator.userAgent || '');
 
-/** Opened inside the 99xmatka Android app (or from an iPhone home-screen icon). */
+const standalone = () => {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: fullscreen)').matches
+      || (navigator as any).standalone === true;
+  } catch { return false; }
+};
+
+/** Opened as the installed app (web app, or the Android APK) rather than in a browser tab. */
 export const inApp = (() => {
   let cached: boolean | null = null;
   return () => {
     if (cached !== null) return cached;
     let v = false;
     try {
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('source') === 'apk') sessionStorage.setItem('99x_in_app', '1');
-      v = sessionStorage.getItem('99x_in_app') === '1'
-        || document.referrer.startsWith('android-app://')
-        || window.matchMedia('(display-mode: standalone)').matches
-        || (navigator as any).standalone === true;
+      const src = new URL(window.location.href).searchParams.get('source');
+      if (src === 'apk' || src === 'app') sessionStorage.setItem('99x_in_app', '1');
+      v = sessionStorage.getItem('99x_in_app') === '1' || document.referrer.startsWith('android-app://') || standalone();
     } catch { v = false; }
     cached = v;
     return v;
   };
 })();
 
+// The browser announces "this site can be installed" once, early, so it is caught here before
+// React starts (registerWebApp runs in main.tsx).
+type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
+let installPrompt: InstallPrompt | null = null;
+let installedNow = false;
+const listeners = new Set<() => void>();
+const changed = () => listeners.forEach(f => f());
+
 export function registerWebApp() {
-  inApp(); // remember "opened from the app" before the address changes
+  inApp(); // remember "opened as the app" before the address changes
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e as InstallPrompt; changed(); });
+  window.addEventListener('appinstalled', () => { installPrompt = null; installedNow = true; changed(); });
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => { /* the site works without it */ });
@@ -48,25 +66,74 @@ export function registerWebApp() {
   }
 }
 
-// ---------- Download App popup ----------
-const POPUP_KEY = '99x_app_popup_at';
-const POPUP_EVERY_MS = 24 * 3600 * 1000; // shown by itself at most once a day
+/** The browser's own install dialog. 'none' when this browser didn't offer one. */
+async function nativeInstall(): Promise<'accepted' | 'dismissed' | 'none'> {
+  const p = installPrompt;
+  if (!p) return 'none';
+  installPrompt = null; // a prompt can be shown only once
+  changed();
+  try {
+    await p.prompt();
+    const choice = await p.userChoice;
+    if (choice.outcome === 'accepted') { installedNow = true; changed(); }
+    return choice.outcome;
+  } catch { return 'none'; }
+}
 
-/** The popup: opens from the menu, and by itself once a day for Android phones in the browser. */
+async function apkAvailable() {
+  try {
+    const r = await fetch(APK_URL, { method: 'HEAD', cache: 'no-store' });
+    return r.ok && !(r.headers.get('content-type') || '').includes('text/html');
+  } catch { return false; }
+}
+function downloadApk() {
+  const a = document.createElement('a');
+  a.href = `${APK_URL}?v=${Date.now()}`;
+  a.download = '99xmatka.apk';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 500);
+}
+
+// ---------- Download App ----------
+const POPUP_KEY = '99x_app_popup_at';
+const POPUP_EVERY_MS = 24 * 3600 * 1000; // the pop-up opens by itself at most once a day
+
+/**
+ * download(): what every "Download App" button does. Opens the browser's install dialog straight
+ * away when it can (like other web apps); otherwise our pop-up with the right steps for this phone.
+ * The pop-up also opens by itself once a day on Android phones in the browser.
+ */
 export function useDownloadApp() {
   const [open, setOpen] = useState(false);
+  const [, force] = useState(0);
+  useEffect(() => {
+    const f = () => force(x => x + 1);
+    listeners.add(f);
+    let mq: MediaQueryList | null = null;
+    try { mq = window.matchMedia('(display-mode: standalone)'); mq.addEventListener('change', f); } catch { /* old browsers */ }
+    return () => { listeners.delete(f); try { mq?.removeEventListener('change', f); } catch { /* ignore */ } };
+  }, []);
   useEffect(() => {
     if (inApp() || !isAndroid()) return;
     let last = 0;
     try { last = Number(localStorage.getItem(POPUP_KEY)) || 0; } catch { /* ignore */ }
     if (Date.now() - last < POPUP_EVERY_MS) return;
     const id = window.setTimeout(() => {
+      if (installedNow) return;
       setOpen(true);
       try { localStorage.setItem(POPUP_KEY, String(Date.now())); } catch { /* ignore */ }
     }, 2500);
     return () => window.clearTimeout(id);
   }, []);
-  return { open, show: () => setOpen(true), close: () => setOpen(false), available: !inApp() };
+  const download = async () => {
+    if (installPrompt) {
+      const r = await nativeInstall();
+      if (r !== 'none') return;
+    }
+    setOpen(true);
+  };
+  return { open, download, show: () => setOpen(true), close: () => setOpen(false), available: !inApp() && !installedNow };
 }
 
 function Step({ n, children }: { n: number; children: ReactNode }) {
@@ -84,24 +151,17 @@ const Ico = ({ children }: { children: ReactNode }) => (
 
 export function DownloadAppPopup({ onClose }: { onClose: () => void }) {
   const ios = isIOS();
-  const [state, setState] = useState<'idle' | 'checking' | 'started' | 'missing'>('idle');
+  const android = isAndroid();
+  const [state, setState] = useState<'idle' | 'working' | 'installed' | 'apk' | 'steps'>(ios ? 'steps' : 'idle');
 
-  // Direct download of the APK. Checks first that the file is really there (a missing file would
-  // otherwise download the website page under the name 99xmatka.apk).
   const download = async () => {
-    setState('checking');
-    try {
-      const r = await fetch(APK_URL, { method: 'HEAD', cache: 'no-store' });
-      const type = r.headers.get('content-type') || '';
-      if (!r.ok || type.includes('text/html')) { setState('missing'); return; }
-    } catch { /* offline check failed: try the download anyway */ }
-    const a = document.createElement('a');
-    a.href = `${APK_URL}?v=${Date.now()}`;
-    a.download = '99xmatka.apk';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => a.remove(), 500);
-    setState('started');
+    setState('working');
+    const r = await nativeInstall();
+    if (r === 'accepted') { setState('installed'); return; }
+    if (r === 'dismissed') { setState('idle'); return; }
+    // this browser has no install dialog: the APK if one is uploaded, otherwise the steps
+    if (android && await apkAvailable()) { downloadApk(); setState('apk'); return; }
+    setState('steps');
   };
 
   return (
@@ -125,30 +185,46 @@ export function DownloadAppPopup({ onClose }: { onClose: () => void }) {
           })}
         </div>
         <div className="px-5 pb-5">
-          {ios ? (
+          {state === 'installed' ? (
+            <div className="rounded-xl bg-nv-green/10 p-4 text-center ring-1 ring-nv-green/25">
+              <Check className="mx-auto h-6 w-6 text-nv-green" />
+              <p className="mt-1 text-[14px] font-semibold text-white">Installing 99xmatka…</p>
+              <p className="mt-0.5 text-[12.5px] text-nv-text">Open it from your home screen or app list in a few seconds.</p>
+            </div>
+          ) : state === 'apk' ? (
+            <p className="rounded-xl bg-nv-input/70 p-4 text-center text-[12.5px] leading-relaxed text-nv-text">
+              Downloading <Key>99xmatka.apk</Key>… Open it from your notifications or Downloads and tap <Key>Install</Key>.
+              If your phone asks, allow <Key>Install unknown apps</Key> for your browser.
+            </p>
+          ) : state === 'steps' ? (
             <div className="rounded-xl bg-nv-input/70 p-4">
-              <p className="text-[13px] font-semibold text-white">On iPhone</p>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-nv-text">The APK is for Android phones. On iPhone, play right here in Safari, or get an app icon:</p>
-              <ol className="mt-3 space-y-2.5">
-                <Step n={1}>Tap <Ico><Share className="h-3.5 w-3.5" /></Ico> <Key>Share</Key> in Safari.</Step>
-                <Step n={2}>Tap <Ico><SquarePlus className="h-3.5 w-3.5" /></Ico> <Key>Add to Home Screen</Key>, then <Key>Add</Key>.</Step>
-              </ol>
+              {ios ? (
+                <>
+                  <p className="text-[13px] font-semibold text-white">On iPhone (Safari)</p>
+                  <ol className="mt-3 space-y-2.5">
+                    <Step n={1}>Tap <Ico><Share className="h-3.5 w-3.5" /></Ico> <Key>Share</Key> at the bottom of Safari.</Step>
+                    <Step n={2}>Tap <Ico><SquarePlus className="h-3.5 w-3.5" /></Ico> <Key>Add to Home Screen</Key>, then <Key>Add</Key>.</Step>
+                  </ol>
+                  <p className="mt-3 text-[12px] text-nv-mute">The 99xmatka icon appears on your home screen and opens like an app.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[13px] font-semibold text-white">Install from your browser menu</p>
+                  <ol className="mt-3 space-y-2.5">
+                    <Step n={1}>Open the browser menu <Ico><MoreVertical className="h-3.5 w-3.5" /></Ico>.</Step>
+                    <Step n={2}>Tap <Key>Install app</Key> (or <Key>Add to Home screen</Key>), then <Key>Install</Key>.</Step>
+                  </ol>
+                  <p className="mt-3 text-[12px] text-nv-mute">Tip: in Chrome, the Download App button installs it in one tap.</p>
+                </>
+              )}
             </div>
           ) : (
             <>
-              <button onClick={download} disabled={state === 'checking'}
+              <button onClick={download} disabled={state === 'working'}
                 className="nv-tap flex w-full items-center justify-center gap-2 rounded-lg bg-nv-blue py-3.5 text-[15px] font-bold text-white shadow-lg transition-colors hover:bg-nv-blue2 disabled:opacity-70">
-                <Download className="h-5 w-5" /> {state === 'checking' ? 'Starting…' : 'Download APK'}
+                <Download className="h-5 w-5" /> {state === 'working' ? 'Opening…' : 'Download App'}
               </button>
-              {state === 'started' && (
-                <p className="mt-3 text-center text-[12.5px] text-nv-green">Downloading… Open 99xmatka.apk from your notifications or Downloads and tap Install.</p>
-              )}
-              {state === 'missing' && (
-                <p className="mt-3 text-center text-[12.5px] text-nv-red">The app file isn't available right now. Please try again later or contact support.</p>
-              )}
-              <p className="mt-3 text-center text-[11.5px] leading-relaxed text-nv-mute">
-                For Android. If your phone asks, allow <span className="text-nv-text">Install unknown apps</span> for your browser.
-              </p>
+              <p className="mt-3 text-center text-[11.5px] text-nv-mute">Free · Installs in seconds · Same login as the website</p>
             </>
           )}
         </div>

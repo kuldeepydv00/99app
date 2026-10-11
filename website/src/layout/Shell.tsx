@@ -3,7 +3,7 @@ import {
   LayoutGrid, Sparkles, Crown, Gem, Plane, Flame, Coins, Palette, Hash, Spade,
   ReceiptText, ChartColumn, Wallet, ArrowDownToLine, ArrowUpFromLine, Bell,
   Gift, BookOpen, Headphones, Smartphone, LogOut, Menu, X, UserRound, Plus,
-  House, MessageCircle, ShieldCheck, Zap, PanelLeftClose, Dices, Bomb
+  House, MessageCircle, ShieldCheck, Zap, PanelLeftClose, Dices, Bomb, Download
 } from 'lucide-react';
 import type { TradingGame } from '../games/api';
 
@@ -224,6 +224,12 @@ export function TopBar({ a, balance, unread }: { a: ShellActions; balance: numbe
         <Logo onClick={a.home} />
         {!a.loggedIn ? (
           <div className="flex flex-1 items-center justify-end gap-2">
+            {!a.inApp && (
+              <button onClick={a.download} aria-label="Download App"
+                className="nv-tap hidden h-9 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-semibold text-nv-green ring-1 ring-nv-green/30 transition-colors hover:bg-nv-green/10 min-[370px]:flex sm:h-10 sm:px-3.5 sm:text-sm">
+                <Download className="h-4 w-4" /><span className="hidden sm:inline">Download App</span>
+              </button>
+            )}
             <button onClick={a.login}
               className="nv-tap h-9 rounded-md bg-nv-card2 px-3.5 text-[13px] font-semibold text-white transition-colors hover:bg-nv-line sm:h-10 sm:px-5 sm:text-sm">
               Sign In
@@ -249,6 +255,12 @@ export function TopBar({ a, balance, unread }: { a: ShellActions; balance: numbe
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {!a.inApp && (
+            <button onClick={a.download} aria-label="Download App"
+              className="nv-tap mr-1 hidden h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-nv-green ring-1 ring-nv-green/30 transition-colors hover:bg-nv-green/10 lg:flex">
+              <Download className="h-4 w-4" />Download App
+            </button>
+          )}
           <button onClick={a.notifications} aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'}
             className="nv-tap relative flex h-9 w-9 items-center justify-center rounded-md text-nv-text transition-colors hover:bg-nv-card2 hover:text-white sm:h-10 sm:w-10">
             <Bell className="h-[19px] w-[19px]" />

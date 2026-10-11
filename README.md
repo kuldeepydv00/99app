@@ -59,20 +59,25 @@ npm run dev
 # Website at http://localhost:5174
 ```
 
-### Android app (APK)
-The APK opens https://newmatkadomain.com full screen in Chrome (a Trusted Web Activity), so every
-website change shows in the app straight away. Rebuild the APK only to change its name, icon or address.
-1. Open `android-app` in **Android Studio** and let it sync (it downloads `androidbrowserhelper` once).
-2. In Android Studio's Terminal: `./gradlew assembleRelease`
-   The APK is copied to `website/public/99xmatka.apk` (not kept in git).
-3. Build and upload the website as usual: the APK is served at `/99xmatka.apk`, which the website's
-   **Download App** pop-up downloads (Android phones see the pop-up once a day; also in the menu).
-- Signing key: `android-app/app/debug.keystore` (not in git; **keep a backup**). It is the key the old app
-  used, so phones that have the old app get this one as an update. Its fingerprint is in
-  `website/public/.well-known/assetlinks.json`; that file must be online at
-  `https://newmatkadomain.com/.well-known/assetlinks.json`, otherwise the app shows an address bar.
-- iPhones can't install APKs. iPhone players use the website in Safari (the Download App pop-up shows them
-  how to add an icon to the home screen).
+### The 99xmatka app (web app)
+The app is the website, installed from the browser. Every **Download App** button (top bar, menu, footer,
+offer card, and a pop-up Android phones see once a day) opens the browser's own **Install app** dialog:
+one tap and 99xmatka is in the app list / home screen, opens full screen, and gets phone notifications.
+Works in Chrome, Edge and Samsung Internet on Android and on computers. Website updates show in the app
+straight away: there is nothing to rebuild or update.
+- Files: `website/public/manifest.webmanifest` (name, icons, screenshots shown in the install dialog),
+  `website/public/icons/`, `website/public/screenshots/`, `website/public/sw.js`, `website/src/layout/webApp.tsx`.
+- Needs **HTTPS** (fine on newmatkadomain.com; `localhost` also works for testing).
+- iPhone: Safari has no install dialog, so Download App shows the steps (Share → Add to Home Screen).
+- Browsers with no install dialog (e.g. Firefox): Download App shows the steps, or downloads the APK if one
+  is uploaded at `/99xmatka.apk`.
+
+### Optional: Android APK (`/android-app`)
+Only needed as the fallback above. It opens the website full screen (Trusted Web Activity).
+1. Open `android-app` in Android Studio and let it sync.
+2. Terminal: `./gradlew assembleRelease` → copied to `website/public/99xmatka.apk` (not in git), then deploy the website.
+- Signing key `android-app/app/debug.keystore` (not in git; keep a backup). Its fingerprint is in
+  `website/public/.well-known/assetlinks.json`, which must be online for the APK to open without an address bar.
 
 ### Phone notifications (web push)
 Players turn them on in the bell (🔔), on the website or in the Android app. Deposits, withdrawals, wins, refunds, wallet changes, admin messages and
