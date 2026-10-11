@@ -151,7 +151,7 @@ if (typeof window !== 'undefined' && !(window as any).__adminAuthFetchPatched) {
 
 // Which live data each admin page uses. Pages not listed (and the first load after login) get everything.
 // The new-games pages load their own data, so they need nothing from here.
-const ALL_PAGE_DATA = ['stats', 'users', 'admins', 'deposits', 'withdrawals', 'bets', 'winnings', 'pm', 'notif', 'banner', 'version', 'settings', 'banners', 'results', 'schedules', 'referral', 'lp', 'ledger'];
+const ALL_PAGE_DATA = ['stats', 'users', 'admins', 'deposits', 'withdrawals', 'bets', 'winnings', 'pm', 'notif', 'banner', 'settings', 'banners', 'results', 'schedules', 'referral', 'lp', 'ledger'];
 const PAGE_DATA: Record<string, string[]> = {
   dashboard: ['stats', 'users', 'deposits', 'withdrawals', 'bets', 'winnings', 'schedules'],
   admins: ['admins'],
@@ -169,7 +169,6 @@ const PAGE_DATA: Record<string, string[]> = {
   payouts: ['withdrawals', 'users'],
   banners: ['banners', 'banner'],
   referral: ['users', 'referral'],
-  packages: ['users'],
   paymentMethods: ['pm', 'deposits'],
   pushNotifications: ['notif'],
   settings: ['settings', 'deposits'],
@@ -319,12 +318,12 @@ export default function App() {
   const [activeTab, setActiveTabRaw] = useState<
     'dashboard' | 'admins' | 'users' | 'userChange' | 'gameLedger' | 'wallets' |
     'walletTransactions' | 'deposits' | 'withdraws' | 'commission' |
-    'leaderboard' | 'payouts' | 'banners' | 'referral' | 'packages' | 'paymentMethods' | 'pushNotifications' | 'settings' |
+    'leaderboard' | 'payouts' | 'banners' | 'referral' | 'paymentMethods' | 'pushNotifications' | 'settings' |
     'userDetails' | 'userEdit' | 'bids' | 'results' | 'winnings' | 'gameHistory' | 'categories' |
     'matka99' | 'jetGame' | 'diceGame' | 'minesGame' | 'livePlayers' | 'dragonTiger' | 'tossGame' | 'numberTrading' | 'cardTrading' | 'colourTrading' | 'gamesOverview'
   >(() => {
     const saved = localStorage.getItem('adminActiveTab');
-    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'packages', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'diceGame', 'minesGame', 'livePlayers', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
+    const validTabs = ['dashboard', 'admins', 'users', 'userChange', 'gameLedger', 'wallets', 'walletTransactions', 'deposits', 'withdraws', 'commission', 'leaderboard', 'payouts', 'banners', 'referral', 'paymentMethods', 'pushNotifications', 'settings', 'bids', 'results', 'winnings', 'gameHistory', 'categories', 'matka99', 'jetGame', 'diceGame', 'minesGame', 'livePlayers', 'dragonTiger', 'tossGame', 'numberTrading', 'cardTrading', 'colourTrading', 'gamesOverview'];
     return (saved && validTabs.includes(saved)) ? saved as any : 'dashboard';
   });
   const setActiveTab = (tab: any) => { localStorage.setItem('adminActiveTab', tab); setActiveTabRaw(tab); };
@@ -631,7 +630,6 @@ export default function App() {
   const [winningsList, setWinningsList] = useState<any[]>([]);
   const [adminsList, setAdminsList] = useState<any[]>([]);
   const [bannersList, setBannersList] = useState<any[]>([]);
-  const [packagesList, setPackagesList] = useState<any[]>([]);
   const [paymentMethodsList, setPaymentMethodsList] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
@@ -641,7 +639,6 @@ export default function App() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [showAddBannerModal, setShowAddBannerModal] = useState(false);
-  const [showAddPackageModal, setShowAddPackageModal] = useState(false);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showAddResultModal, setShowAddResultModal] = useState(false);
@@ -665,7 +662,6 @@ export default function App() {
 
   // Edit Item States
   const [editingBanner, setEditingBanner] = useState<any>(null);
-  const [editingPackage, setEditingPackage] = useState<any>(null);
   const [editingAdmin, setEditingAdmin] = useState<any>(null);
   const [editingPayment, setEditingPayment] = useState<any>(null);
 
@@ -674,7 +670,6 @@ export default function App() {
   const [editUserForm, setEditUserForm] = useState<any>({});
   
   const [bannerForm, setBannerForm] = useState({ name: '', type: 'Image', link: '', image: 'banner1.png', previewUrl: '', status: 'Active' });
-  const [packageForm, setPackageForm] = useState({ packageName: '', appName: '', status: 'Active' });
   const [adminForm, setAdminForm] = useState({ name: '', username: '', mobile: '', password: '', role: 'Super Admin', status: 'Active' });
   const [paymentForm, setPaymentForm] = useState<any>({ name: 'PhonePe / GPay / Paytm UPI', upi_id: '8930507940@ybl', merchant_name: 'Matka Official', ordering: 1, status: 'Active' });
 
@@ -684,7 +679,6 @@ export default function App() {
   const [referralStatus, setReferralStatus] = useState('Active');
   const [referralPromoText, setReferralPromoText] = useState('केवल 5 प्लेइंग यूजर को रिफर करें और पाएं ₹500 बोनस');
   const referralLoadedRef = useRef(false);
-  const versionLoadedRef = useRef(false);
   const bannerLoadedRef = useRef(false);
 
   const [walletTargetUser, setWalletTargetUser] = useState<any>(null);
@@ -696,8 +690,6 @@ export default function App() {
   const [settingsForm, setSettingsForm] = useState<{
     whatsapp_number: string;
     whatsapp_call_number: string;
-    app_download_link: string;
-    app_version: string;
     bank_withdrawal_enable: boolean;
     upi_withdrawal_enable: boolean;
     lucky_card_maintenance: boolean;
@@ -717,8 +709,6 @@ export default function App() {
   }>({
     whatsapp_number: '+917206561420',
     whatsapp_call_number: '+917206561420',
-    app_download_link: 'https://newmatkadomain.com/99xmatka.apk',
-    app_version: '1.0.15',
     bank_withdrawal_enable: true,
     upi_withdrawal_enable: true,
     lucky_card_maintenance: false,
@@ -1011,7 +1001,7 @@ export default function App() {
       const need = new Set<string>(everything || !pageNeeds ? ALL_PAGE_DATA : pageNeeds);
       const get = (key: string, url: string): Promise<Response | null> => (need.has(key) ? fetch(url) : Promise.resolve(null));
       const [
-        statsRes, usersRes, adminsRes, depRes, wdRes, bidsRes, winRes, pmRes, notifRes, bannerRes, versionRes, settingsRes, bannersListRes, resultsRes
+        statsRes, usersRes, adminsRes, depRes, wdRes, bidsRes, winRes, pmRes, notifRes, bannerRes, settingsRes, bannersListRes, resultsRes
       , schedRes, referralRes, lpRes, ledgerRes] = await Promise.all([
         get('stats', `${API_BASE}/api/admin/stats?startDate=${curStart}&endDate=${curEnd}`),
         get('users', `${API_BASE}/api/admin/users`),
@@ -1023,7 +1013,6 @@ export default function App() {
         get('pm', `${API_BASE}/api/admin/payment-methods`),
         get('notif', `${API_BASE}/api/admin/notifications`),
         get('banner', `${API_BASE}/api/game/banner`),
-        get('version', `${API_BASE}/api/app/version`),
         get('settings', `${API_BASE}/api/admin/settings`),
         get('banners', `${API_BASE}/api/admin/banners`),
         get('results', `${API_BASE}/api/admin/results-history`),
@@ -1085,21 +1074,6 @@ export default function App() {
         } catch (e) {}
       }
       
-      if (versionRes && versionRes.ok) {
-        try {
-          const vData = await versionRes.json();
-          if (vData && !versionLoadedRef.current) {
-            versionLoadedRef.current = true;
-            setAppVersionForm({
-              latestVersionCode: vData.latestVersionCode !== undefined ? vData.latestVersionCode : 1,
-              latestVersionName: vData.latestVersionName || 'v1.0.0',
-              apkUrl: vData.apkUrl || 'https://newmatkadomain.com/99xmatka.apk',
-              updateMessage: vData.updateMessage || '🚀 A new performance update is available! Tap Update now to get the latest features.',
-              forceUpdate: vData.forceUpdate !== undefined ? vData.forceUpdate : false
-            });
-          }
-        } catch (e) {}
-      }
       if (settingsRes && settingsRes.ok) {
         try {
           const sData = await settingsRes.json();
@@ -1108,8 +1082,6 @@ export default function App() {
             setSettingsForm({
               whatsapp_number: sData.whatsapp_number || '+917206561420',
               whatsapp_call_number: sData.whatsapp_call_number || '+917206561420',
-              app_download_link: sData.app_download_link || 'https://newmatkadomain.com/99xmatka.apk',
-              app_version: sData.app_version || '1.0.0',
               bank_withdrawal_enable: sData.bank_withdrawal_enable !== undefined ? sData.bank_withdrawal_enable : true,
               upi_withdrawal_enable: sData.upi_withdrawal_enable !== undefined ? sData.upi_withdrawal_enable : true,
               lucky_card_maintenance: sData.lucky_card_maintenance !== undefined ? sData.lucky_card_maintenance : false,
@@ -1681,23 +1653,6 @@ export default function App() {
     setBannerForm({ name: '', type: 'Image', link: '', image: 'banner1.png', previewUrl: '', status: 'Active' });
   };
 
-  // PACKAGE ADD / EDIT HANDLERS
-  const handleSavePackage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!packageForm.appName) return;
-    if (editingPackage) {
-      setPackagesList(packagesList.map(p => p.id === editingPackage.id ? { ...p, ...packageForm } : p));
-      setStatusMessage(`🎉 Package "${packageForm.appName}" updated!`);
-      setEditingPackage(null);
-    } else {
-      const newP = { id: `${Date.now()}`, ...packageForm };
-      setPackagesList([newP, ...packagesList]);
-      setStatusMessage(`🎉 Package "${packageForm.appName}" added successfully!`);
-    }
-    setShowAddPackageModal(false);
-    setPackageForm({ packageName: '', appName: '', status: 'Active' });
-  };
-
   // ADMIN ADD / EDIT HANDLERS
   const handleSaveAdmin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1845,28 +1800,6 @@ export default function App() {
     setUsers(prev => [...prev, newUserObj]);
     setStatusMessage(`🎉 User ${newUserForm.name} created!`);
     setShowAddUserModal(false);
-  };
-
-  const [appVersionForm, setAppVersionForm] = useState({
-    latestVersionCode: 1,
-    latestVersionName: 'v1.0.0',
-    apkUrl: 'https://newmatkadomain.com/99xmatka.apk',
-    updateMessage: '🚀 A new performance update is available! Tap Update now to get the latest features & instant wallet sync.',
-    forceUpdate: false
-  });
-
-  const handleSaveAppVersionConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/update-app-version`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(appVersionForm)
-      });
-      if (res.ok) {
-        setStatusMessage('🚀 App Auto-Update Configuration Saved & Live for all users!');
-      }
-    } catch (err) {}
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -2292,7 +2225,6 @@ export default function App() {
               { id: 'commission', label: 'Commission Dashboard', icon: '🎁' },
               { id: 'leaderboard', label: 'Leader Board', icon: '🥇' },
               { id: 'payouts', label: 'Payout', icon: '💰' },
-              { id: 'packages', label: 'App/Package', icon: '📄' },
               { id: 'paymentMethods', label: 'Payment Methods', icon: '💳' },
               { id: 'pushNotifications', label: 'Push Notifications', icon: '🔔' },
               { id: 'settings', label: 'Settings', icon: '⚙️' }
@@ -6053,7 +5985,7 @@ export default function App() {
                 <div className="bg-white rounded border border-[#DEE2E6] shadow-sm p-6 space-y-4 text-xs">
                   <div className="border-b pb-3">
                     <h3 className="font-bold text-sm text-[#212529]">🖼️ Live Promotional Banner Config</h3>
-                    <p className="text-gray-500 text-[11px] mt-0.5">Changes saved here are instantly displayed on both the Android App & Website in real-time.</p>
+                    <p className="text-gray-500 text-[11px] mt-0.5">Changes saved here show on the website and the installed web app straight away.</p>
                   </div>
 
                   <form onSubmit={handleSaveGlobalBannerConfig} className="space-y-4">
@@ -6295,129 +6227,6 @@ export default function App() {
               </div>
             )}
 
-            {/* 13. APP / PACKAGE MODULE (OPTION B IN-APP AUTO-UPDATER CONTROL) */}
-            {activeTab === 'packages' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h1 className="text-2xl font-bold text-[#212529]">App Version & Package Management</h1>
-                </div>
-
-                {/* OPTION B: IN-APP AUTO-UPDATER ENGINE */}
-                <div className="bg-white rounded border border-[#DEE2E6] shadow-sm p-6 space-y-4 text-xs">
-                  <div className="border-b pb-3 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-sm text-[#212529]">📱 Option B: In-App Auto-Update System</h3>
-                      <p className="text-gray-500 text-[11px] mt-0.5">Control the update popup shown to users when they open the Android app on their phones.</p>
-                    </div>
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 font-bold rounded-full text-[10px]">ACTIVE ENGINE</span>
-                  </div>
-
-                  <form onSubmit={handleSaveAppVersionConfig} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block font-bold text-[#212529] mb-1">Latest Version Code (e.g. 2, 3, 4)</label>
-                        <input
-                          type="number"
-                          value={appVersionForm.latestVersionCode}
-                          onChange={(e) => setAppVersionForm({ ...appVersionForm, latestVersionCode: parseInt(e.target.value) || 1 })}
-                          className="w-full border border-[#CED4DA] p-2 rounded text-xs focus:outline-none focus:border-[#007BFF]"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-[#212529] mb-1">Version Display Name (e.g. v1.0.2)</label>
-                        <input
-                          type="text"
-                          value={appVersionForm.latestVersionName}
-                          onChange={(e) => setAppVersionForm({ ...appVersionForm, latestVersionName: e.target.value })}
-                          className="w-full border border-[#CED4DA] p-2 rounded text-xs focus:outline-none focus:border-[#007BFF]"
-                          required
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block font-bold text-[#212529] mb-1">Direct APK Download URL</label>
-                        <input
-                          type="url"
-                          value={appVersionForm.apkUrl}
-                          onChange={(e) => setAppVersionForm({ ...appVersionForm, apkUrl: e.target.value })}
-                          className="w-full border border-[#CED4DA] p-2 rounded text-xs font-mono focus:outline-none focus:border-[#007BFF]"
-                          required
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block font-bold text-[#212529] mb-1">In-App Update Notice Message</label>
-                        <textarea
-                          rows={2}
-                          value={appVersionForm.updateMessage}
-                          onChange={(e) => setAppVersionForm({ ...appVersionForm, updateMessage: e.target.value })}
-                          className="w-full border border-[#CED4DA] p-2 rounded text-xs focus:outline-none focus:border-[#007BFF]"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="checkbox"
-                          id="forceUpdateChk"
-                          checked={appVersionForm.forceUpdate}
-                          onChange={(e) => setAppVersionForm({ ...appVersionForm, forceUpdate: e.target.checked })}
-                          className="w-4 h-4 text-[#007BFF] rounded"
-                        />
-                        <label htmlFor="forceUpdateChk" className="font-bold text-[#212529]">
-                          Force Update (Users MUST update before playing)
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex justify-end">
-                      <button
-                        type="submit"
-                        className="bg-[#28A745] hover:bg-[#218838] text-white px-5 py-2 rounded font-bold shadow-sm text-xs"
-                      >
-                        💾 Save & Trigger Update Notice to Users
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* PACKAGES TABLE */}
-                <div className="bg-white rounded border border-[#DEE2E6] shadow-sm p-4 space-y-4">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <h3 className="font-bold text-xs text-gray-700">Registered Packages</h3>
-                    <button onClick={() => { setEditingPackage(null); setPackageForm({ packageName: '', appName: '', status: 'Active' }); setShowAddPackageModal(true); }} className="bg-[#007BFF] hover:bg-[#0069D9] text-white px-3 py-1 rounded text-xs font-bold shadow-sm">+ Add Package</button>
-                  </div>
-                  <table className="w-full text-left text-xs text-[#212529] border border-[#DEE2E6]">
-                    <thead className="bg-[#F8F9FA] text-[#495057] uppercase text-[11px] font-bold border-b border-[#DEE2E6]">
-                      <tr>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Sr. No</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Package Name</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">App Name</th>
-                        <th className="p-2.5 border-r border-[#DEE2E6]">Status</th>
-                        <th className="p-2.5 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {packagesList.map((p, i) => (
-                        <tr key={i} className="hover:bg-[#F4F6F9]">
-                          <td className="p-2.5 border-r border-[#DEE2E6]">{i + 1}</td>
-                          <td className="p-2.5 border-r border-[#DEE2E6] font-mono">{p.packageName}</td>
-                          <td className="p-2.5 border-r border-[#DEE2E6] font-bold">{p.appName}</td>
-                          <td className="p-2.5 border-r border-[#DEE2E6]"><span className="px-2 py-0.5 rounded bg-[#28A745] text-white text-[10px] font-bold">{p.status}</span></td>
-                          <td className="p-2.5 text-right space-x-1">
-                            <button onClick={() => { setEditingPackage(p); setPackageForm(p); setShowAddPackageModal(true); }} className="bg-[#007BFF] text-white px-2 py-1 rounded text-[10px] font-bold">Edit</button>
-                            <button onClick={() => setPackagesList(packagesList.filter(x => x.id !== p.id))} className="bg-[#DC3545] text-white px-2 py-1 rounded text-[10px] font-bold">Delete</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
             {/* 14. PAYMENT METHODS MODULE */}
             {activeTab === 'paymentMethods' && (
               <div className="space-y-4">
@@ -6544,14 +6353,6 @@ export default function App() {
                     <div>
                       <label className="block text-[#495057] font-semibold mb-1">Whatsapp Call Number</label>
                       <input type="text" value={settingsForm.whatsapp_call_number} onChange={(e)=>setSettingsForm({...settingsForm, whatsapp_call_number: e.target.value})} className="w-full border border-[#CED4DA] p-2 rounded" required />
-                    </div>
-                    <div>
-                      <label className="block text-[#495057] font-semibold mb-1">App Download Link</label>
-                      <input type="text" value={settingsForm.app_download_link} onChange={(e)=>setSettingsForm({...settingsForm, app_download_link: e.target.value})} className="w-full border border-[#CED4DA] p-2 rounded" required />
-                    </div>
-                    <div>
-                      <label className="block text-[#495057] font-semibold mb-1">App Version</label>
-                      <input type="text" value={settingsForm.app_version} onChange={(e)=>setSettingsForm({...settingsForm, app_version: e.target.value})} className="w-full border border-[#CED4DA] p-2 rounded font-mono" required />
                     </div>
 
                     <div className="pt-4 border-t border-[#DEE2E6] space-y-3">
@@ -6761,7 +6562,7 @@ export default function App() {
                           <span className="text-xl">📲</span>
                           <div>
                             <h4 className="font-bold text-indigo-900 text-sm">MSG91 SMS OTP Gateway</h4>
-                            <p className="text-[11px] text-indigo-700">Real-time mobile OTP authentication for Website and Android App</p>
+                            <p className="text-[11px] text-indigo-700">Mobile OTP login for the website and web app</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -6845,7 +6646,7 @@ export default function App() {
                       <span>👥</span> User Change (Live Players Count)
                     </h1>
                     <p className="text-xs text-gray-500 mt-1">
-                      Manage the displayed live active playing user count for all 8 markets across the Android App and Website.
+                      Manage the displayed live active playing user count for all 8 markets on the website and web app.
                     </p>
                   </div>
                   {!autoPlayerConfig.enabled && (
@@ -7203,36 +7004,6 @@ export default function App() {
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={()=>setShowAddBannerModal(false)} className="flex-1 bg-gray-500 text-white p-2 rounded font-bold">Cancel</button>
                 <button type="submit" className="flex-1 bg-[#007BFF] text-white p-2 rounded font-bold">Save Banner</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 4. PACKAGE ADD/EDIT MODAL */}
-      {showAddPackageModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 text-xs">
-          <div className="bg-white rounded-lg p-5 w-full max-w-md space-y-4 border border-[#DEE2E6] shadow-xl">
-            <h3 className="font-bold text-[#212529] text-base border-b pb-2">{editingPackage ? 'Edit Package' : 'Add Package'}</h3>
-            <form onSubmit={handleSavePackage} className="space-y-3">
-              <div>
-                <label className="block text-[#495057] font-bold mb-1">Package Name *</label>
-                <input type="text" value={packageForm.packageName} onChange={(e)=>setPackageForm({...packageForm, packageName: e.target.value})} required placeholder="com.example.numberbetting" className="w-full border border-[#CED4DA] p-2 rounded font-mono" />
-              </div>
-              <div>
-                <label className="block text-[#495057] font-bold mb-1">App Name *</label>
-                <input type="text" value={packageForm.appName} onChange={(e)=>setPackageForm({...packageForm, appName: e.target.value})} required placeholder="99xmatka" className="w-full border border-[#CED4DA] p-2 rounded" />
-              </div>
-              <div>
-                <label className="block text-[#495057] font-bold mb-1">Status</label>
-                <select value={packageForm.status} onChange={(e)=>setPackageForm({...packageForm, status: e.target.value})} className="w-full border border-[#CED4DA] p-2 rounded">
-                  <option value="Active">Active</option>
-                  <option value="Deactive">Deactive</option>
-                </select>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={()=>setShowAddPackageModal(false)} className="flex-1 bg-gray-500 text-white p-2 rounded font-bold">Cancel</button>
-                <button type="submit" className="flex-1 bg-[#007BFF] text-white p-2 rounded font-bold">Save Package</button>
               </div>
             </form>
           </div>

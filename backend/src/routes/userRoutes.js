@@ -19,12 +19,10 @@ const {
   checkUserExists,
   getReferralDetails,
   applyReferralCode,
-  transferCommissionToWallet,
-  uploadApkChunk
+  transferCommissionToWallet
 } = require('../controllers/userController');
 
 // Public: no account exists yet / proving phone ownership happens here
-router.post('/upload-apk-chunk', uploadApkChunk);
 router.get('/check', checkUserExists);
 router.get('/referral-details', getReferralDetails);
 router.post('/apply-referral', applyReferralCode);
@@ -51,5 +49,8 @@ router.post('/commission/transfer', protectUser, transferCommissionToWallet);
 const notifications = require('../controllers/notificationController');
 router.get('/notifications', protectUser, notifications.myNotifications);
 router.post('/notifications/seen', protectUser, notifications.markSeen);
+// Phone notifications (web push) for this player's phone
+router.post('/push/subscribe', protectUser, notifications.pushSubscribe);
+router.post('/push/unsubscribe', protectUser, notifications.pushUnsubscribe);
 
 module.exports = router;

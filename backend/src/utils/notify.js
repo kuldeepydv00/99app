@@ -18,6 +18,8 @@ let seq = 0;
 const newId = () => `notif_${Date.now()}_${(seq = (seq + 1) % 100000)}_${Math.floor(Math.random() * 1000)}`;
 
 function store() { return require('../store'); }
+// Each message also goes to the player's phone when they turned on phone notifications (web push)
+function phone() { return require('./webPush'); }
 
 // A stored notification is personal when it names one 10-digit mobile.
 function ownerOf(n) {
@@ -53,11 +55,13 @@ function toUser(mobile, { type = 'info', title, body, amount = null, ref = null 
     const m = cleanMobile(mobile);
     if (m.length !== 10 || !title) return null;
     const id = newId();
-    return add({
+    const n = add({
       _id: id, id, type, title: String(title).slice(0, 120), body: String(body || '').slice(0, 500),
       mobile: m, target: m, amount: amount === null ? null : Number(amount) || 0, ref,
       createdAt: new Date().toISOString()
     });
+    try { phone().toMobile(m, { title: n.title, body: n.body, type, tag: id }); } catch (e) { /* the bell still has it */ }
+    return n;
   } catch (e) {
     console.error('[Notify]', e.message);
     return null;
@@ -67,10 +71,12 @@ function toUser(mobile, { type = 'info', title, body, amount = null, ref = null 
 // Everyone.
 function broadcast({ type = 'admin', title, body, by = 'admin' } = {}) {
   const id = newId();
-  return add({
+  const n = add({
     _id: id, id, type, title: String(title || '').slice(0, 120), body: String(body || '').slice(0, 500),
     target: 'All Users', by, createdAt: new Date().toISOString()
   });
+  try { phone().toAll({ title: n.title, body: n.body, type, url: '/?open=notifications', tag: id }); } catch (e) { /* ignore */ }
+  return n;
 }
 
 // Adds amounts per player inside a loop, then sends one message each (e.g. one "you won" per result).

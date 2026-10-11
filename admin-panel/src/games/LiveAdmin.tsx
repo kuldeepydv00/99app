@@ -6,7 +6,7 @@ import type { OpenUser } from './common';
 // the busiest moment of each day, the live bets feed and the settings.
 
 type Place = { key: string; label: string; count: number; sub?: boolean };
-type Player = { mobile: string; name: string; where: string; whereLabel: string; platform: 'web' | 'android'; since: string; lastSeen: string; balance: number | null };
+type Player = { mobile: string; name: string; where: string; whereLabel: string; platform: 'web' | 'app'; since: string; lastSeen: string; balance: number | null };
 type FeedEntry = {
   id: string; game: string; gameLabel: string; market: string | null; player: string; mobile: string; user: string;
   amount: number; picks: number; detail: string; status: 'won' | 'lost' | 'pending'; multiplier: number | null; payout: number | null; at: string;
@@ -14,7 +14,7 @@ type FeedEntry = {
 type Live = {
   config: { enabled: boolean; minShow: number; feed: boolean };
   total: number;
-  platforms: { web: number; android: number };
+  platforms: { web: number; app: number };
   places: Place[];
   players: Player[];
   shownToPlayers: { enabled: boolean; minShow: number; total: number | null; counts: Record<string, number> };
@@ -86,7 +86,7 @@ export default function LiveAdmin({ onOpenUser }: { onOpenUser?: OpenUser }) {
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi label="Online now" value={d.total} sub="logged-in players, each counted once" accent />
-        <Kpi label="Website / App" value={`${d.platforms.web} / ${d.platforms.android}`} sub="where they are playing from" />
+        <Kpi label="Website / App" value={`${d.platforms.web ?? 0} / ${d.platforms.app ?? 0}`} sub="browser / installed web app" />
         <Kpi label="Players see" value={d.shownToPlayers.total != null ? `${d.shownToPlayers.total} online` : (d.config.enabled ? 'Live dot' : 'Nothing')}
           sub={d.config.enabled ? `numbers show from ${d.config.minShow} players` : 'counts are switched off'} />
         <Kpi label="Busiest today" value={today ? today.total : 0} sub={today ? `at ${istTime(today.at)}` : 'no players yet today'} />
@@ -174,7 +174,7 @@ export default function LiveAdmin({ onOpenUser }: { onOpenUser?: OpenUser }) {
                     <tr key={p.mobile} className="border-t border-gray-100">
                       <td className="px-2 py-1.5"><PlayerCell name={p.name} mobile={p.mobile} onOpenUser={onOpenUser} /></td>
                       <td className="px-2 py-1.5">{p.whereLabel}</td>
-                      <td className="px-2 py-1.5">{p.platform === 'android' ? <Pill tone="green">App</Pill> : <Pill tone="blue">Website</Pill>}</td>
+                      <td className="px-2 py-1.5">{p.platform === 'app' ? <Pill tone="green">App</Pill> : <Pill tone="blue">Website</Pill>}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-gray-500">{since(p.since)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{p.balance == null ? '—' : inr(p.balance)}</td>
                     </tr>

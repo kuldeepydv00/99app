@@ -28,7 +28,8 @@ export type ShellActions = {
   rules: () => void;
   profile: () => void;
   notifications: () => void;
-  download: () => void;
+  install: () => void;
+  installed: boolean;
   logout: () => void;
   supportUrl: string;
 };
@@ -143,7 +144,7 @@ function navGroups(a: ShellActions, tab: WebTab, section: HomeSection): Item[][]
       { key: 'refer', label: 'Refer & Earn', icon: Gift, onClick: a.refer, tone: 'text-nv-gold' },
       { key: 'rules', label: 'Rules & Rates', icon: BookOpen, onClick: a.rules },
       { key: 'support', label: 'Live Support', icon: Headphones, href: a.supportUrl },
-      { key: 'download', label: 'Download App', icon: Smartphone, onClick: a.download }
+      ...(a.installed ? [] : [{ key: 'install', label: 'Install App', icon: Smartphone, onClick: a.install }])
     ]
   ];
 }
@@ -310,7 +311,7 @@ export function SiteFooter({ a }: { a: ShellActions }) {
               <button className={link} onClick={a.rules}>Rules & Rates</button>
               <a className={link} href={a.supportUrl} target="_blank" rel="noreferrer">Live Support</a>
               <button className={link} onClick={a.refer}>Refer & Earn</button>
-              <button className={link} onClick={a.download}>Download App</button>
+              {!a.installed && <button className={link} onClick={a.install}>Install App</button>}
             </div>
           </div>
         </div>

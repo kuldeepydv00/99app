@@ -33,6 +33,10 @@ const memoryNotifications = [];
 const sessionCutoffs = {};
 // mobile -> time (ms) the player last opened their notifications (newer ones count as unread)
 const notificationSeen = {};
+// Phone notifications (web push, see utils/webPush.js): the server's key pair, and each player's
+// phones that turned notifications on
+const pushConfig = {};
+const pushSubscriptions = [];
 
 // Bets are deleted after 60 days by utils/betRetention.js (daily totals are kept for the admin reports).
 // Kept so older callers still work; it does nothing now.
@@ -97,20 +101,9 @@ let referralConfig = {
   commissionPercentage: 4
 };
 
-let appVersionConfig = {
-  latestVersionCode: 59,
-  latestVersionName: '1.0.59',
-  minSupportedVersion: 1,
-  apkUrl: 'https://newmatkadomain.com/99xmatka.apk',
-  updateMessage: '🚀 New Update Available! Golden bottom bar glow & full-width cards. Tap UPDATE NOW!',
-  forceUpdate: true
-};
-
 let settingsConfig = {
   whatsapp_number: '+917206561420',
   whatsapp_call_number: '+917206561420',
-  app_download_link: 'https://newmatkadomain.com/99xmatka.apk',
-  app_version: '1.0.15',
   bank_withdrawal_enable: true,
   upi_withdrawal_enable: true,
   lucky_card_maintenance: false,
@@ -385,7 +378,6 @@ function saveDiskStore() {
       chartRecords,
       bannerConfig,
       referralConfig,
-      appVersionConfig,
       settingsConfig,
       bannersListStore,
       blockedMobiles,
@@ -394,6 +386,8 @@ function saveDiskStore() {
       memoryNotifications,
       sessionCutoffs,
       notificationSeen,
+      pushConfig,
+      pushSubscriptions,
       livePlayersMap,
       autoPlayerConfig
     };
@@ -525,13 +519,9 @@ function loadDiskStore() {
       // Older default pointed at a placeholder domain that doesn't exist
       if (/newmatkadomain\.com\/app_header\.png/.test(String(bannerConfig.imageUrl || ''))) bannerConfig.imageUrl = '';
       if (data.referralConfig) Object.assign(referralConfig, data.referralConfig);
-      if (data.appVersionConfig) Object.assign(appVersionConfig, data.appVersionConfig);
-      appVersionConfig.latestVersionCode = 59;
-      appVersionConfig.latestVersionName = '1.0.59';
-      appVersionConfig.updateMessage = '🚀 New Update Available! Golden bottom bar glow & full-width cards. Tap UPDATE NOW!';
-      appVersionConfig.forceUpdate = true;
-      appVersionConfig.apkUrl = 'https://newmatkadomain.com/99xmatka.apk';
       if (data.settingsConfig) Object.assign(settingsConfig, data.settingsConfig);
+      // There is no Android app any more (players install the website as a web app)
+      delete settingsConfig.app_download_link; delete settingsConfig.app_version;
       if (data.bannersListStore && Array.isArray(data.bannersListStore)) bannersListStore.length = 0, bannersListStore.push(...data.bannersListStore);
       if (data.blockedMobiles && Array.isArray(data.blockedMobiles)) blockedMobiles.length = 0, blockedMobiles.push(...data.blockedMobiles);
       if (data.deletedMobiles && Array.isArray(data.deletedMobiles)) deletedMobiles.length = 0, deletedMobiles.push(...data.deletedMobiles);
@@ -539,6 +529,8 @@ function loadDiskStore() {
       if (Array.isArray(data.memoryNotifications)) memoryNotifications.length = 0, memoryNotifications.push(...data.memoryNotifications);
       if (data.sessionCutoffs && typeof data.sessionCutoffs === 'object') Object.assign(sessionCutoffs, data.sessionCutoffs);
       if (data.notificationSeen && typeof data.notificationSeen === 'object') Object.assign(notificationSeen, data.notificationSeen);
+      if (data.pushConfig && typeof data.pushConfig === 'object') Object.assign(pushConfig, data.pushConfig);
+      if (Array.isArray(data.pushSubscriptions)) pushSubscriptions.length = 0, pushSubscriptions.push(...data.pushSubscriptions);
       if (data.livePlayersMap && typeof data.livePlayersMap === 'object') Object.assign(livePlayersMap, data.livePlayersMap);
       if (data.autoPlayerConfig && typeof data.autoPlayerConfig === 'object') Object.assign(autoPlayerConfig, data.autoPlayerConfig);
       // Deleted accounts never come back, even if an older copy of the file still lists them
@@ -581,7 +573,6 @@ module.exports = {
   gameSchedulesStore,
   bannerConfig,
   referralConfig,
-  appVersionConfig,
   settingsConfig,
   bannersListStore,
   saveDiskStore,
@@ -589,6 +580,8 @@ module.exports = {
   endSessions,
   sessionCutoffs,
   notificationSeen,
+  pushConfig,
+  pushSubscriptions,
   logLedgerTransaction,
   purgeOldLedger,
   purgeOldBets,

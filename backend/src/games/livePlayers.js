@@ -80,7 +80,7 @@ let countsCache = null;     // { at, raw }
 function rawCounts(now = Date.now()) {
   if (countsCache && now - countsCache.at < 1000) return countsCache.raw;
   const by = {};
-  const platforms = { web: 0, android: 0 };
+  const platforms = { web: 0, app: 0 }; // app = the web app installed on the phone's home screen
   let total = 0;
   for (const [m, p] of presence) {
     if (now - p.at > TTL_MS) { presence.delete(m); continue; }
@@ -121,7 +121,7 @@ function ping(mobile, where, platform, now = Date.now()) {
   const u = wallet.findUser(clean);
   if (u && !wallet.checkCanBet(u, clean)) {
     const w = normWhere(where);
-    const p = platform === 'android' ? 'android' : 'web';
+    const p = platform === 'app' || platform === 'android' ? 'app' : 'web';
     const cur = presence.get(clean);
     if (!cur || cur.where !== w) presence.set(clean, { where: w, platform: p, at: now, since: now });
     else { cur.at = now; cur.platform = p; }

@@ -60,8 +60,10 @@ async function purgeUser(id, { by = 'admin' } = {}) {
     const t = cleanMobile(n && (n.target || n.targetUser || n.mobile));
     return t.length === 10 && mob.has(t);
   });
+  removed.phones = 0;
   for (const m of mob) {
     if (store.notificationSeen) delete store.notificationSeen[m];
+    try { removed.phones += require('./webPush').forgetMobile(m); } catch (e) { /* ignore */ }
     if (store.userWalletStore && store.userWalletStore[m]) delete store.userWalletStore[m];
     if (store.userWalletStore && cleanMobile(store.userWalletStore.mobile) === m) {
       store.userWalletStore.balance = 0; store.userWalletStore.name = ''; store.userWalletStore.mobile = '';

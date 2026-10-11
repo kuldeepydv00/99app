@@ -37,6 +37,7 @@ export default function NotificationsAdmin({ initial = [], onOpenUser }: { initi
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [filter, setFilter] = useState<'all' | 'admin' | 'auto'>('all');
   const [search, setSearch] = useState('');
+  const [phones, setPhones] = useState<{ players: number; phones: number } | null>(null);
 
   const load = usePolling(async () => {
     try {
@@ -44,6 +45,7 @@ export default function NotificationsAdmin({ initial = [], onOpenUser }: { initi
       setList(Array.isArray(data) ? data : []);
       setError('');
     } catch (e: any) { setError(e.message); }
+    try { setPhones(await apiGet<{ players: number; phones: number }>('/api/admin/push/stats')); } catch { /* older server */ }
   }, 20000);
 
   const send = async (e: React.FormEvent) => {
@@ -96,8 +98,9 @@ export default function NotificationsAdmin({ initial = [], onOpenUser }: { initi
       <div className="rounded-xl border border-[#DEE2E6] bg-white p-4 shadow-sm">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-[#212529]"><span>🔔</span>Push Notifications</h1>
         <p className="mt-1 text-xs text-gray-500">
-          Players see these in the bell on the website and as phone notifications in the app. Deposits, withdrawals, refunds,
-          Matka / 99x Matka wins and wallet changes are sent automatically; each player only sees their own.
+          Players see these in the bell on the website. Players who turned on phone notifications in the web app also get them on
+          their phone, even when the app is closed. Deposits, withdrawals, refunds, Matka / 99x Matka wins and wallet changes are
+          sent automatically; each player only sees their own.
         </p>
       </div>
 
@@ -105,7 +108,7 @@ export default function NotificationsAdmin({ initial = [], onOpenUser }: { initi
         <Kpi label="Sent today" value={stats.today} sub={`${stats.personalToday} to single players`} accent />
         <Kpi label="Admin messages" value={stats.admin} sub="sent from this page" />
         <Kpi label="Automatic messages" value={stats.auto} sub="deposits, withdrawals, wins…" />
-        <Kpi label="Kept for" value="60 days" sub="for messages to one player" />
+        <Kpi label="Phone notifications on" value={phones ? phones.players : '—'} sub={phones ? `players (${phones.phones} phone${phones.phones === 1 ? '' : 's'})` : 'players'} />
       </div>
 
       <Card title="📣 Send a notification">

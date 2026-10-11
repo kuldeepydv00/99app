@@ -1,9 +1,12 @@
 // Notifications API.
 // Players: GET /api/user/notifications (their own + broadcasts, with unread count),
 //          POST /api/user/notifications/seen (opened the bell: everything so far is read).
-// Public:  GET /api/notifications — broadcasts only (older app versions poll this).
+// Public:  GET /api/notifications — broadcasts only (shown to logged-out visitors).
 // Admin:   POST /api/admin/send-notification — to all users, one user, or several mobiles.
+// Phone notifications (web push, utils/webPush.js):
+//          GET /api/push/public-key, POST /api/user/push/subscribe | unsubscribe, GET /api/admin/push/stats
 const notify = require('../utils/notify');
+const webPush = require('../utils/webPush');
 
 const clean = m => String(m || '').replace(/[^0-9]/g, '').slice(-10);
 
@@ -58,4 +61,28 @@ exports.sendNotification = async (req, res) => {
     message: `Sent to ${found.length} user${found.length === 1 ? '' : 's'}${missing.length ? ` (not found: ${missing.join(', ')})` : ''}`,
     sentTo: found, notFound: missing, notification: sent[0] || null, notifications: memoryNotifications
   });
+};
+
+// ---------- phone notifications (web push) ----------
+exports.pushPublicKey = (req, res) => {
+  try { res.json({ success: true, publicKey: webPush.publicKey() }); }
+  catch (e) { res.status(500).json({ success: false, message: 'Phone notifications are not available right now' }); }
+};
+
+// body: { subscription: { endpoint, keys: { p256dh, auth } } } from the browser's pushManager.subscribe()
+exports.pushSubscribe = (req, res) => {
+  const sub = (req.body && (req.body.subscription || req.body)) || null;
+  const r = webPush.subscribe(req.authMobile, sub, req.headers['user-agent']);
+  if (!r.ok) return res.status(400).json({ success: false, message: r.message });
+  res.json({ success: true, message: 'Phone notifications are on' });
+};
+
+exports.pushUnsubscribe = (req, res) => {
+  const endpoint = String((req.body && req.body.endpoint) || '');
+  const removed = endpoint ? webPush.unsubscribe(req.authMobile, endpoint) : 0;
+  res.json({ success: true, removed });
+};
+
+exports.pushStats = (req, res) => {
+  res.json({ success: true, ...webPush.summary() });
 };

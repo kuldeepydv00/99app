@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Download, UserPlus, Play, Star, ShieldCheck, 
+  Download, UserPlus, Play, ShieldCheck, 
   Smartphone, Wallet, ArrowLeft, RefreshCw, 
   CheckCircle, MessageCircle, Clock, Trophy, ChevronRight, X, Bell 
 } from 'lucide-react';
@@ -25,6 +25,7 @@ import NewGamesBets from './games/NewGamesBets';
 import type { TradingGame } from './games/api';
 import { gamesPost } from './games/api';
 import { useNotifications, NotificationsPanel, NotificationToast } from './layout/Notifications';
+import { useInstallApp, InstallSheet, usePhoneAlerts, dropPhoneAlerts } from './layout/webApp';
 
 const API_BASE_URLS = [
   typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com',
@@ -372,6 +373,25 @@ export default function App() {
   const notes = useNotifications(!!user);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const openNotifications = () => { setShowNotificationsModal(true); notes.markSeen(); };
+  // Web app: install to the home screen, and phone notifications
+  const installApp = useInstallApp();
+  const phoneAlerts = usePhoneAlerts(!!user);
+  // A tapped phone notification opens the bell (app already open, or opened with ?open=notifications)
+  const openNotificationsRef = useRef(openNotifications);
+  openNotificationsRef.current = openNotifications;
+  useEffect(() => {
+    const open = () => { if (localStorage.getItem('99x_web_token')) openNotificationsRef.current(); };
+    window.addEventListener('99x-open-notifications', open);
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('open') === 'notifications') {
+        url.searchParams.delete('open');
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+        setTimeout(open, 300);
+      }
+    } catch { /* ignore */ }
+    return () => window.removeEventListener('99x-open-notifications', open);
+  }, []);
 
   const [applyRefInput, setApplyRefInput] = useState('');
   const [applyRefStatus, setApplyRefStatus] = useState('');
@@ -1440,32 +1460,6 @@ export default function App() {
     }
   };
 
-  const isDownloadingApkRef = useRef(false);
-
-  // Download APK Trigger (Single-fire download with debounce to prevent duplicate triggers)
-  const handleDownloadApk = () => {
-    if (isDownloadingApkRef.current) return;
-    isDownloadingApkRef.current = true;
-    setTimeout(() => {
-      isDownloadingApkRef.current = false;
-    }, 3000);
-
-    const timestamp = Date.now();
-    const apkUrl = `/99xmatka.apk?v=${timestamp}`;
-    const link = document.createElement('a');
-    link.href = apkUrl;
-    link.setAttribute('download', '99xmatka.apk');
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      try {
-        if (document.body.contains(link)) {
-          document.body.removeChild(link);
-        }
-      } catch (e) {}
-    }, 500);
-  };
-
   // Account deleted by the admin, or login ended: close every game, log out, show the notice
   const endWebSession = () => {
     setTradingGame(null); setJetOpen(false); setInstantGame(null); setBet99(null); setMatka99Market(null);
@@ -1483,6 +1477,7 @@ export default function App() {
 
   // ---------- Casino layout: actions, Matka market cards, promotions ----------
   const handleWebLogout = () => {
+    dropPhoneAlerts(); // this phone stops getting this player's notifications (uses the token, so first)
     setUser(null);
     setMyBetsList([]);
     localStorage.removeItem('99x_web_user'); localStorage.removeItem('99x_web_token');
@@ -1515,7 +1510,8 @@ export default function App() {
     rules: () => setShowRulesModal(true),
     profile: () => setShowProfileModal(true),
     notifications: openNotifications,
-    download: () => handleDownloadApk(),
+    install: () => installApp.install(),
+    installed: installApp.installed,
     logout: handleWebLogout,
     supportUrl: `https://wa.me/${whatsappNumber}`
   };
@@ -1558,9 +1554,11 @@ export default function App() {
       { id: 'pmines', kind: 'card', tag: 'New game', title: 'Mines', text: 'Find the gems, dodge the mines. Cash out any time.', cta: 'Play now', art: '/tiles/promo_mines.webp', tint: '#0F6B4A', onClick: () => setInstantGame('mines') },
       { id: 'pdt', kind: 'card', tag: 'Live game', title: 'Dragon Tiger', text: `One-minute rounds. Pays ${dt?.payout ?? 2}x, and a Tie pays ${dt?.tiePayout ?? 15}x.`, cta: 'Play now', art: '/tiles/promo_dt.webp', tint: '#8A1020', onClick: () => setTradingGame('dragontiger') },
       { id: 'pref', kind: 'card', tag: 'Promotion', title: 'Refer & Earn', text: 'Invite friends and earn commission on every bet they place, for life.', cta: 'Invite friends', art: '/tiles/promo_coin.webp', tint: '#8A5A06', onClick: () => setShowReferralModal(true) },
-      { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: () => setJetOpen(true) },
-      { id: 'papp', kind: 'card', tag: 'Android app', title: 'Get the 99x app', text: 'Faster play and instant result alerts on your phone.', cta: 'Download', art: '/app_logo.png', tint: '#0F6B4A', onClick: () => handleDownloadApk() }
+      { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: () => setJetOpen(true) }
     );
+    if (!installApp.installed) {
+      list.push({ id: 'papp', kind: 'card', tag: 'Web app', title: 'Install the 99x app', text: 'Add it to your home screen. No download, and alerts for deposits, withdrawals and results.', cta: 'Install', art: '/icons/icon-512.png', tint: '#0F6B4A', onClick: () => installApp.install() });
+    }
     return list;
   })();
 
@@ -1607,24 +1605,17 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* VIEW 1: GOOGLE PLAY STORE STYLE LANDING PAGE              */}
+        {/* VIEW 1: LANDING PAGE (install the web app or play online)  */}
         {/* ========================================================= */}
         {view === 'landing' && (
           <div className="flex-1 bg-white text-slate-900 pb-12">
-            {/* Official Google Play Top Header */}
-            <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+            {/* Top bar */}
+            <div className="flex justify-between items-center px-5 py-3.5 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div className="flex items-center gap-2.5">
-                <svg className="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="none">
-                  <path d="M3.6 1.8C3.3 2.1 3.1 2.6 3.1 3.2V20.8C3.1 21.4 3.3 21.9 3.6 22.2L3.7 22.3L13.5 12.5V12.3V12.1L3.7 1.7L3.6 1.8Z" fill="#2ECC8F"/>
-                  <path d="M16.8 15.6L13.5 12.3V12.1V11.9L16.8 8.6L16.9 8.7L20.8 10.9C21.9 11.5 21.9 12.7 20.8 13.3L16.9 15.5L16.8 15.6Z" fill="#D9B98C"/>
-                  <path d="M16.9 15.5L13.5 12.1L3.6 22.2C4.0 22.6 4.6 22.7 5.4 22.2L16.9 15.5Z" fill="#D50000"/>
-                  <path d="M16.9 8.7L5.4 2.1C4.6 1.7 4.0 1.8 3.6 2.2L13.5 12.3L16.9 8.7Z" fill="#0091EA"/>
-                </svg>
-                <span className="font-semibold text-gray-700 text-sm tracking-tight">Google Play</span>
+                <img src="/icons/icon-192.png" alt="" className="w-8 h-8 rounded-lg" />
+                <span className="font-black text-gray-900 text-base tracking-tight">99xmatka</span>
               </div>
-              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                95
-              </div>
+              <span className="text-[11px] font-bold text-gray-500">Web app</span>
             </div>
 
             {/* App Branding & Icon */}
@@ -1635,41 +1626,36 @@ export default function App() {
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-black text-gray-900 leading-tight">99xmatka SATTA</h1>
                 <p className="text-xs text-[#1C7A52] font-bold mt-0.5">99X Games Ltd.</p>
-                <p className="text-[11px] text-gray-400 font-medium">Contains ads • In-app purchases</p>
+                <p className="text-[11px] text-gray-400 font-medium">Install on your phone in 2 taps. No APK, no download.</p>
               </div>
             </div>
 
-            {/* Stats Row (Rating, Size, Downloads) */}
+            {/* What you get */}
             <div className="grid grid-cols-3 px-5 py-3 border-y border-gray-100 text-center">
               <div>
-                <div className="flex justify-center items-center gap-1 text-sm font-bold text-gray-900">
-                  <span>4.8</span> <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
-                </div>
-                <div className="text-[10px] text-gray-500 font-medium mt-0.5">12L+</div>
+                <div className="flex justify-center"><Smartphone className="w-4 h-4 text-gray-900" /></div>
+                <div className="text-[10px] text-gray-500 font-medium mt-1">Android &amp; iPhone</div>
               </div>
               <div className="border-l border-gray-200">
-                <div className="text-sm font-bold text-gray-900">54L+</div>
-                <div className="text-[10px] text-gray-500 font-medium mt-0.5">Downloads</div>
+                <div className="flex justify-center"><Bell className="w-4 h-4 text-gray-900" /></div>
+                <div className="text-[10px] text-gray-500 font-medium mt-1">Phone alerts</div>
               </div>
               <div className="border-l border-gray-200">
-                <div className="text-sm font-bold text-gray-900">2017</div>
-                <div className="text-[10px] text-gray-500 font-medium mt-0.5">Launch Date</div>
+                <div className="flex justify-center"><ShieldCheck className="w-4 h-4 text-gray-900" /></div>
+                <div className="text-[10px] text-gray-500 font-medium mt-1">Always the latest version</div>
               </div>
             </div>
 
             {/* 2 Action Buttons (INSTALL APP & PLAY ONLINE) */}
             <div className="px-5 my-5 space-y-3">
-              <a 
-                href="/99xmatka.apk"
-                download="99xmatka.apk"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDownloadApk();
-                }}
-                className="w-full bg-[#1C7A52] hover:bg-[#155E3F] text-white font-black py-3.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all text-center cursor-pointer"
-              >
-                <Download className="w-4 h-4 stroke-[3]" /> DOWNLOAD APP
-              </a>
+              {!installApp.installed && (
+                <button
+                  onClick={() => installApp.install()}
+                  className="w-full bg-[#1C7A52] hover:bg-[#155E3F] text-white font-black py-3.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all text-center cursor-pointer"
+                >
+                  <Download className="w-4 h-4 stroke-[3]" /> INSTALL APP
+                </button>
+              )}
 
               <button 
                 onClick={() => {
@@ -1685,7 +1671,7 @@ export default function App() {
                 }}
                 className="w-full bg-white hover:bg-gray-50 text-gray-900 font-black py-3.5 rounded-xl border-2 border-[#333333] shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all"
               >
-                <Play className="w-4 h-4 fill-gray-900 text-gray-900" /> PLAY ONLINE ON WEBSITE
+                <Play className="w-4 h-4 fill-gray-900 text-gray-900" /> {installApp.installed ? 'PLAY NOW' : 'PLAY ONLINE'}
               </button>
             </div>
 
@@ -1727,146 +1713,14 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Apple/iPhone Users Info */}
+              {/* Web app info */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-2">
                 <div className="flex items-start gap-3">
-                  <svg className="w-6 h-6 shrink-0 mt-0.5" viewBox="0 0 384 512" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-62.1 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                  <Smartphone className="w-6 h-6 shrink-0 mt-0.5 text-gray-900" />
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    <strong className="text-gray-900">Apple(Iphone) यूजर्स</strong> के लिए हमने इस ऐप को <strong>वेबसाइट</strong> पर भी लॉन्च किया है जिसे आप ऊपर <strong className="text-[#1C7A52]">Play on Website</strong> पर क्लिक करके वहां प्ले कर सकते है ।
+                    <strong className="text-gray-900">Android और iPhone</strong> दोनों पर चलता है। ऊपर <strong className="text-[#1C7A52]">Install App</strong> दबाएं, ऐप आपकी होम स्क्रीन पर आ जाएगा। कोई APK डाउनलोड नहीं करना, और ऐप हमेशा नया रहता है।
                   </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Data Safety Section */}
-            <div className="px-5 mt-8 border-t border-gray-100 pt-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Data Safety</h3>
-              <p className="text-xs text-gray-500 leading-relaxed mb-4">
-                Safety starts with understanding how developers collect and share your data. Data privacy and security practices may vary based on your use, region and age. The developer provided this information and may update it over time.
-              </p>
-
-              <div className="bg-slate-50 p-4 rounded-2xl border border-gray-200 space-y-4">
-                <div className="flex gap-3 items-start text-xs text-gray-700">
-                  <span className="text-base">🔗</span>
-                  <div>
-                    <span className="font-bold text-gray-900 block">No data shared with third parties.</span>
-                    <span className="text-gray-500">Learn more about how developers declare sharing.</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 items-start text-xs text-gray-700">
-                  <span className="text-base">☁️</span>
-                  <div>
-                    <span className="font-bold text-gray-900 block">No data collected.</span>
-                    <span className="text-gray-500">Learn more about how developers declare collection.</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 items-start text-xs text-gray-700">
-                  <span className="text-base">🔒</span>
-                  <span className="font-bold text-gray-900">Data is encrypted in transit.</span>
-                </div>
-
-                <div className="flex gap-3 items-start text-xs text-gray-700">
-                  <span className="text-base">🗑️</span>
-                  <span className="font-bold text-gray-900">You can request that data be deleted.</span>
-                </div>
-              </div>
-            </div>
-
-            {/* App Reviews Section */}
-            <div className="px-5 mt-8 border-t border-gray-100 pt-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">App Reviews</h3>
-
-              <div className="flex gap-6 items-center mb-6">
-                <div>
-                  <div className="text-4xl font-extrabold text-gray-900">4.8</div>
-                  <div className="text-[11px] text-gray-500 font-medium">12L+</div>
-                  <div className="flex text-[#2ECC8F] text-sm mt-1">
-                    ★★★★★
-                  </div>
-                </div>
-
-                {/* Rating Bar Chart */}
-                <div className="flex-1 space-y-1.5 text-xs text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <span>5</span>
-                    <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#2ECC8F] h-full w-[85%]"></div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>4</span>
-                    <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#2ECC8F] h-full w-[70%]"></div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>3</span>
-                    <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#2ECC8F] h-full w-[50%]"></div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>2</span>
-                    <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#2ECC8F] h-full w-[25%]"></div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>1</span>
-                    <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#2ECC8F] h-full w-[10%]"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Review Items - Randomized on each page load */}
-              <div className="space-y-4">
-                {(() => {
-                  const allReviews = [
-                    { name: 'Vishal', color: 'bg-teal-500', date: '19 November 2024', text: "I've been playing this game from many years, this is the best khaiwal app.", stars: 5 },
-                    { name: 'Suman', color: 'bg-emerald-400', date: '22 November 2024', text: 'Ye khaiwal app meri fav hai, isse acchi app mujhe aaj tak nahi mili, time pe payout milta hai.', stars: 5 },
-                    { name: 'Rohit', color: 'bg-blue-500', date: '3 December 2024', text: 'Bahut badhiya app hai, rate bhi accha milta hai 10 ka 900, aur withdrawal bhi fast hota hai.', stars: 5 },
-                    { name: 'Amit', color: 'bg-purple-500', date: '15 January 2025', text: 'Mera dost ne recommend kiya tha, tab se khel raha hoon. Commission bhi milta hai refer ka. Best app!', stars: 5 },
-                    { name: 'Priya', color: 'bg-pink-500', date: '8 February 2025', text: 'Customer support bahut accha hai, turant reply aata hai. Paise bhi time pe mil jaate hain.', stars: 5 },
-                    { name: 'Rajesh', color: 'bg-orange-500', date: '28 December 2024', text: 'Main 2 saal se use kar raha hoon, kabhi koi problem nahi aayi. Trustworthy app hai ye.', stars: 5 },
-                    { name: 'Deepak', color: 'bg-red-500', date: '5 March 2025', text: 'Sabse acchi baat ye hai ki 8% commission milta hai refer karne pe, bahut faayda hota hai.', stars: 5 },
-                    { name: 'Manish', color: 'bg-indigo-500', date: '12 January 2025', text: 'Pehle doosri app use karta tha par yahan rate bahut accha hai. Ab sirf yahi use karta hoon.', stars: 4 },
-                    { name: 'Sunil', color: 'bg-cyan-500', date: '20 February 2025', text: 'Very good app. Fast deposit and withdrawal. 10 ka 900 rate milta hai, best in market.', stars: 5 },
-                    { name: 'Vikram', color: 'bg-amber-600', date: '1 April 2025', text: 'App ka interface bahut simple hai, koi bhi asaani se samajh sakta hai. Maza aa gaya!', stars: 5 },
-                    { name: 'Ravi', color: 'bg-lime-600', date: '18 March 2025', text: 'Withdrawal request diya aur 10 minute mein paisa aa gaya. Bahut fast service hai.', stars: 5 },
-                    { name: 'Ankur', color: 'bg-rose-500', date: '7 April 2025', text: 'Maine apne 5 dost ko refer kiya hai, har mahine accha commission aa jaata hai wallet mein.', stars: 5 },
-                    { name: 'Gaurav', color: 'bg-violet-500', date: '25 January 2025', text: 'Bharat ki sabse acchi matka app hai ye. Rate, service, support sab top class hai.', stars: 5 },
-                    { name: 'Nikhil', color: 'bg-sky-500', date: '14 February 2025', text: 'Website pe bhi khel sakte hain, iPhone walo ke liye bahut accha feature hai ye.', stars: 4 },
-                    { name: 'Arun', color: 'bg-green-600', date: '9 March 2025', text: 'Trusted app hai, 1 saal se use kar raha hoon. Kabhi payment mein koi issue nahi aaya.', stars: 5 },
-                    { name: 'Sachin', color: 'bg-yellow-600', date: '30 November 2024', text: 'Best khaiwal app in India. Customer care 24/7 available rehta hai, bahut helpful hain.', stars: 5 },
-                    { name: 'Pankaj', color: 'bg-fuchsia-500', date: '22 March 2025', text: 'Deposit karte hi turant balance update ho jaata hai. No waiting, instant process.', stars: 5 },
-                    { name: 'Karan', color: 'bg-stone-500', date: '11 April 2025', text: 'Meri family mein sab log ye app use karte hain. Reliable aur safe hai bilkul.', stars: 5 },
-                    { name: 'Mohit', color: 'bg-teal-600', date: '2 May 2025', text: 'Bahut din se dhundh raha tha ek acchi matka app, finally mil gayi. Sab kuch perfect hai.', stars: 5 },
-                    { name: 'Harsh', color: 'bg-blue-600', date: '19 April 2025', text: 'Refer karke accha paisa kama raha hoon. 8% commission sach mein milta hai, tested hai.', stars: 5 },
-                  ];
-                  const seed = Math.floor(Date.now() / 60000);
-                  const shuffled = [...allReviews].sort((a, b) => {
-                    const ha = ((seed * 31 + a.name.charCodeAt(0)) % 997);
-                    const hb = ((seed * 31 + b.name.charCodeAt(0)) % 997);
-                    return ha - hb;
-                  });
-                  const picked = shuffled.slice(0, 2);
-                  return picked.map((r, i) => (
-                    <div key={i} className="border-b border-gray-100 pb-4">
-                      <div className="flex items-center gap-3 mb-1.5">
-                        <div className={`w-8 h-8 rounded-full ${r.color} text-white font-bold flex items-center justify-center text-xs`}>{r.name[0]}</div>
-                        <div>
-                          <h4 className="text-xs font-bold text-gray-900">{r.name}</h4>
-                          <div className="flex text-[#2ECC8F] text-xs">{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)} <span className="text-[10px] text-gray-400 ml-2">{r.date}</span></div>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-700 leading-relaxed">{r.text}</p>
-                    </div>
-                  ));
-                })()}
               </div>
             </div>
 
@@ -3597,7 +3451,11 @@ export default function App() {
         )}
 
         {/* Notifications panel + pop-up for a new message */}
-        {showNotificationsModal && <NotificationsPanel list={notes.list} loggedIn={!!user} onClose={() => setShowNotificationsModal(false)} />}
+        {showNotificationsModal && (
+          <NotificationsPanel list={notes.list} loggedIn={!!user} onClose={() => setShowNotificationsModal(false)}
+            alerts={phoneAlerts} onInstall={() => { setShowNotificationsModal(false); installApp.install(); }} />
+        )}
+        {installApp.sheet && <InstallSheet onClose={installApp.closeSheet} />}
         <NotificationToast note={notes.toast} onOpen={() => { notes.closeToast(); openNotifications(); }} onClose={notes.closeToast} />
 
         {/* MODAL: RULES & PAYOUT RATES */}

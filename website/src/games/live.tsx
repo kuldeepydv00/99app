@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { isStandalone } from '../layout/webApp';
 import { Users, Trophy, Radio } from 'lucide-react';
 import { gamesGet, gamesPost } from './api';
 
@@ -36,7 +37,7 @@ export function useLivePresence(where: string | null, active = true) {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       try {
         const r = where && hasToken()
-          ? await gamesPost<LiveCounts>('/api/games/live/ping', { where, platform: 'web' })
+          ? await gamesPost<LiveCounts>('/api/games/live/ping', { where, platform: isStandalone() ? 'app' : 'web' })
           : await gamesGet<LiveCounts>('/api/games/live');
         if (!stop) setCounts({ enabled: !!r.enabled, minShow: r.minShow, total: r.total ?? null, counts: r.counts || {} });
       } catch { /* keep the last numbers */ }

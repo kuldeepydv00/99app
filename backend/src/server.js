@@ -66,18 +66,6 @@ app.get('/', (req, res) => {
   res.send('99xmatka API (IST) is running...');
 });
 
-app.get('/api/app/version', (req, res) => {
-  const { appVersionConfig } = require('./store');
-  res.json(appVersionConfig || {
-    latestVersionCode: 48,
-    latestVersionName: '1.0.48',
-    minSupportedVersion: 1,
-    apkUrl: 'https://newmatkadomain.com/99xmatka.apk',
-    updateMessage: '🚀 New Update Available! Market logos updated across Website & Android App. Tap UPDATE NOW!',
-    forceUpdate: true
-  });
-});
-
 // Settings fields that must never reach the public app/website (admin reads them via /api/admin/settings)
 const SECRET_SETTING_KEYS = ['msg91_auth_key', 'msg91_template_id', 'ekqr_api_key', 'ekqr_webhook_url'];
 app.get('/api/app/settings', (req, res) => {
@@ -90,8 +78,6 @@ app.get('/api/app/settings', (req, res) => {
   res.json({
     whatsapp_number: '+917206561420',
     whatsapp_call_number: '+917206561420',
-    app_download_link: 'https://newmatkadomain.com/99xmatka.apk',
-    app_version: '1.0.0',
     bank_withdrawal_enable: true,
     upi_withdrawal_enable: true,
     lucky_card_maintenance: false,
@@ -110,24 +96,7 @@ app.post('/api/admin/update-settings', protectAdmin, (req, res) => {
     if (req.body.haroof_rate !== undefined) store.settingsConfig.haroof_rate = parseFloat(req.body.haroof_rate) || 9.5;
 
     Object.assign(store.settingsConfig, req.body);
-    
-    // Sync settings with appVersionConfig so both configurations update
-    if (req.body.app_version) {
-      store.appVersionConfig.latestVersionName = req.body.app_version;
-      if (req.body.latestVersionCode !== undefined) {
-        store.appVersionConfig.latestVersionCode = parseInt(req.body.latestVersionCode);
-      }
-    }
-    if (req.body.app_download_link) {
-      store.appVersionConfig.apkUrl = req.body.app_download_link;
-    }
-    if (req.body.updateMessage) {
-      store.appVersionConfig.updateMessage = req.body.updateMessage;
-    }
-    if (req.body.forceUpdate !== undefined) {
-      store.appVersionConfig.forceUpdate = !!req.body.forceUpdate;
-    }
-    
+    delete store.settingsConfig.app_download_link; delete store.settingsConfig.app_version; // no Android app any more
     store.saveDiskStore();
     res.json({ success: true, settingsConfig: store.settingsConfig });
   } else {
@@ -144,6 +113,8 @@ app.post('/api/payment-methods/:id/toggle', protectAdmin, toggleActivePaymentMet
 
 // Public list = broadcasts only (a player's own messages are at /api/user/notifications)
 app.get('/api/notifications', require('./controllers/notificationController').publicNotifications);
+// Phone notifications (web push): the key a browser needs to turn them on
+app.get('/api/push/public-key', require('./controllers/notificationController').pushPublicKey);
 app.post('/api/send-notification', protectAdmin, require('./controllers/notificationController').sendNotification);
 app.delete('/api/notifications/:id', protectAdmin, deleteNotification);
 

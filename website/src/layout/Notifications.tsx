@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, X, Wallet, Landmark, Undo2, Trophy, Megaphone, Target, Info } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { gamesGet, gamesPost } from '../games/api';
+import { PhoneAlertsCard, type usePhoneAlerts } from './webApp';
 
 // Notifications: the player's own messages (deposits, withdrawals, wins, refunds, admin messages)
 // plus announcements for everyone. Logged out: announcements only.
@@ -118,7 +119,10 @@ function Row({ n }: { n: Note }) {
 }
 
 /** The notifications panel (opened from the bell). */
-export function NotificationsPanel({ list, loggedIn, onClose }: { list: Note[]; loggedIn: boolean; onClose: () => void }) {
+export function NotificationsPanel({ list, loggedIn, onClose, alerts, onInstall }: {
+  list: Note[]; loggedIn: boolean; onClose: () => void;
+  alerts?: ReturnType<typeof usePhoneAlerts>; onInstall?: () => void;
+}) {
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const shown = tab === 'mine' ? list.filter(n => n.personal) : list;
   return (
@@ -138,6 +142,7 @@ export function NotificationsPanel({ list, loggedIn, onClose }: { list: Note[]; 
           </div>
         )}
         <div className="flex-1 space-y-2 overflow-y-auto p-4">
+          {loggedIn && alerts && <div className="pb-1"><PhoneAlertsCard alerts={alerts} onInstall={onInstall || (() => {})} /></div>}
           {shown.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="mx-auto mb-2 h-8 w-8 text-nv-dim" />

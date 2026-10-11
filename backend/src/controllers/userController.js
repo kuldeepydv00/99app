@@ -1564,51 +1564,6 @@ const transferCommissionToWallet = async (req, res) => {
   });
 };
 
-const uploadApkChunk = async (req, res) => {
-  try {
-    const { chunk, isLast, reset } = req.body;
-    const fs = require('fs');
-    const path = require('path');
-    const tempFile = path.join(__dirname, '../../temp_upload.apk.b64');
-
-    if (reset && fs.existsSync(tempFile)) {
-      fs.unlinkSync(tempFile);
-    }
-
-    if (chunk) {
-      fs.appendFileSync(tempFile, chunk);
-    }
-
-    if (isLast) {
-      if (!fs.existsSync(tempFile)) {
-        return res.status(400).json({ success: false, message: 'No temp file found' });
-      }
-      const fullB64 = fs.readFileSync(tempFile, 'utf8');
-      const buffer = Buffer.from(fullB64, 'base64');
-      const targetPaths = [
-        '/var/www/99xmatka-website/dist/99xmatka.apk',
-        '/var/www/99xmatka-website/99xmatka.apk',
-        '/var/www/99xmatka-admin/99xmatka.apk'
-      ];
-      let updatedCount = 0;
-      targetPaths.forEach(p => {
-        try {
-          fs.writeFileSync(p, buffer);
-          updatedCount++;
-        } catch (_) {}
-      });
-      if (fs.existsSync(tempFile)) {
-        fs.unlinkSync(tempFile);
-      }
-      return res.json({ success: true, message: 'APK uploaded successfully', bytes: buffer.length, updatedCount });
-    }
-
-    return res.json({ success: true, message: 'Chunk received' });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
 module.exports = {
   registerUser,
   loginUser,
@@ -1626,6 +1581,5 @@ module.exports = {
   checkUserExists,
   getReferralDetails,
   applyReferralCode,
-  transferCommissionToWallet,
-  uploadApkChunk
+  transferCommissionToWallet
 };

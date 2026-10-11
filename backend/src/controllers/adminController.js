@@ -754,6 +754,8 @@ const declareGameResult = async (req, res) => {
     createdDateKey: targetDateKey
   };
   memoryNotifications.unshift(resultNotif);
+  // and on the phones of players who turned on phone notifications
+  try { require('../utils/webPush').toAll({ title: resultNotif.title, body: resultNotif.body, type: 'result', url: '/', tag: `result-${game_name}` }); } catch (e) {}
 
   const io = req.app.get('io');
   if (io) {
@@ -2486,32 +2488,11 @@ const saveBannersList = async (req, res) => {
   res.json({ success: true, message: 'Banners list updated successfully', banners: bannersListStore });
 };
 
-const getAppVersionConfig = async (req, res) => {
-  const { appVersionConfig } = require('../store');
-  res.json(appVersionConfig || {
-    latestVersionCode: 25,
-    latestVersionName: '1.0.25',
-    minSupportedVersion: 1,
-    apkUrl: 'https://newmatkadomain.com/99xmatka.apk',
-    updateMessage: '🚀 New Update Available! Consolidated Bet History cards & instant wallet deduction. Tap UPDATE NOW!',
-    forceUpdate: true
-  });
-};
-
-const updateAppVersionConfig = async (req, res) => {
-  const { appVersionConfig, saveDiskStore } = require('../store');
-  if (req.body && appVersionConfig) Object.assign(appVersionConfig, req.body);
-  saveDiskStore();
-  res.json({ success: true, appVersionConfig });
-};
-
 const getSettingsConfig = async (req, res) => {
   const { settingsConfig } = require('../store');
   res.json(settingsConfig || {
     whatsapp_number: '+917206561420',
     whatsapp_call_number: '+917206561420',
-    app_download_link: 'https://newmatkadomain.com/99xmatka.apk',
-    app_version: '1.0.23',
     bank_withdrawal_enable: true,
     upi_withdrawal_enable: true,
     lucky_card_maintenance: false,
@@ -2529,21 +2510,7 @@ const updateSettingsConfig = async (req, res) => {
     if (req.body.haroof_rate !== undefined) store.settingsConfig.haroof_rate = parseFloat(req.body.haroof_rate) || 9.5;
 
     Object.assign(store.settingsConfig, req.body);
-    if (req.body.app_version) {
-      store.appVersionConfig.latestVersionName = req.body.app_version;
-      if (req.body.latestVersionCode !== undefined) {
-        store.appVersionConfig.latestVersionCode = parseInt(req.body.latestVersionCode);
-      }
-    }
-    if (req.body.app_download_link) {
-      store.appVersionConfig.apkUrl = req.body.app_download_link;
-    }
-    if (req.body.updateMessage) {
-      store.appVersionConfig.updateMessage = req.body.updateMessage;
-    }
-    if (req.body.forceUpdate !== undefined) {
-      store.appVersionConfig.forceUpdate = !!req.body.forceUpdate;
-    }
+    delete store.settingsConfig.app_download_link; delete store.settingsConfig.app_version; // no Android app any more
     store.saveDiskStore();
     res.json({ success: true, message: 'Settings saved successfully', settingsConfig: store.settingsConfig });
   } else {
@@ -3395,12 +3362,6 @@ const getPayouts = async (req, res) => {
   })));
 };
 
-const getPackages = async (req, res) => {
-  res.json([
-    { id: '1', packageName: 'com.example.numberbetting', appName: '99xmatka', version: '3.0', apkLink: 'https://newmatkadomain.com/99xmatka.apk', status: 'Active' }
-  ]);
-};
-
 let memoryPaymentMethods = [
   {
     _id: 'pm_1',
@@ -4103,8 +4064,6 @@ module.exports = {
   updateBannerConfig,
   getBannersList,
   saveBannersList,
-  getAppVersionConfig,
-  updateAppVersionConfig,
   getReferralConfig,
   updateReferralConfig,
   getReferralStats,
@@ -4116,7 +4075,6 @@ module.exports = {
   getCommissionLogs,
   getLeaderboard,
   getPayouts,
-  getPackages,
   getPaymentMethods,
   savePaymentMethod,
   deletePaymentMethod,

@@ -29,8 +29,6 @@ const {
   updateBannerConfig,
   getBannersList,
   saveBannersList,
-  getAppVersionConfig,
-  updateAppVersionConfig,
   getSettingsConfig,
   updateSettingsConfig,
   getReferralConfig,
@@ -44,7 +42,6 @@ const {
   getCommissionLogs,
   getLeaderboard,
   getPayouts,
-  getPackages,
   getPaymentMethods,
   savePaymentMethod,
   deletePaymentMethod,
@@ -79,6 +76,8 @@ router.use(protectAdmin);
 router.get('/notifications', getNotifications);
 // To all users, one user or several mobiles (see controllers/notificationController.js)
 router.post('/send-notification', require('../controllers/notificationController').sendNotification);
+// How many players turned on phone notifications
+router.get('/push/stats', require('../controllers/notificationController').pushStats);
 router.delete('/notifications/:id', deleteNotification);
 
 router.get('/admins', getAdminAdmins);
@@ -87,7 +86,6 @@ router.get('/game-ledger', getGameLedger);
 router.get('/commission-logs', getCommissionLogs);
 router.get('/leaderboard', getLeaderboard);
 router.get('/payouts', getPayouts);
-router.get('/packages', getPackages);
 router.post('/payment-methods', savePaymentMethod);
 router.post('/payment-methods/save', savePaymentMethod);
 router.delete('/payment-methods/:id', deletePaymentMethod);
@@ -101,8 +99,6 @@ router.get('/banner', getBannerConfig);
 router.post('/update-banner', updateBannerConfig);
 router.get('/banners', getBannersList);
 router.post('/update-banners-list', saveBannersList);
-router.get('/app-version', getAppVersionConfig);
-router.post('/update-app-version', updateAppVersionConfig);
 router.get('/settings', getSettingsConfig);
 router.post('/update-settings', updateSettingsConfig);
 router.get('/referral-config', getReferralConfig);

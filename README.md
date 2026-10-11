@@ -6,7 +6,7 @@ This repository contains the complete production-ready ecosystem for **99xmatka*
 
 ## 📁 Repository Structure
 
-- `/android-app`: Kotlin + Jetpack Compose Android app (MVVM Clean Architecture).
+- `/website`: React (Vite) player website. Players install it on their phone as a web app (no Android app / APK).
 - `/backend`: Node.js + Express + Socket.io + MongoDB API server locked to **Indian Standard Time (IST)**.
 - `/admin-panel`: React (Vite) + Tailwind CSS web dashboard for draw scheduling and 95x result declaration.
 
@@ -50,10 +50,30 @@ npm run dev
 # Admin Panel accessible at http://localhost:5173
 ```
 
-### 3. Run Android App
-1. Open **Android Studio**.
-2. Select **Open** -> Choose `/Users/kuldeep/app 2/android-app`.
-3. Press **Run ▶** to launch on Emulator.
+### 3. Run the Website (player web app)
+```bash
+cd website
+npm install
+npm run dev
+# Website at http://localhost:5174
+```
+
+### Web app (install on the phone)
+There is no Android app any more. Players open the website and tap **Install App**:
+- Android / Chrome: the browser's own install dialog. iPhone: Share → **Add to Home Screen**.
+- It opens full screen from the home screen and always runs the latest website, so there is nothing to update.
+- `website/public/manifest.webmanifest` + `website/public/icons/` (name, icons), `website/public/sw.js` (offline screen and
+  phone notifications), `website/public/offline.html`, `website/src/layout/webApp.tsx` (install button and phone notifications).
+- Installing and phone notifications need **HTTPS** (fine on newmatkadomain.com; `localhost` also works for testing).
+
+### Phone notifications (web push)
+Players turn them on in the bell (🔔) on the website. Deposits, withdrawals, wins, refunds, wallet changes, admin messages and
+declared results then pop up on their phone, even when the app is closed (iPhone: only after installing to the home screen).
+- Sent by `backend/src/utils/webPush.js` (no extra packages). The server needs outgoing HTTPS to the browsers' push services
+  (fcm.googleapis.com, web.push.apple.com, push.services.mozilla.com, notify.windows.com).
+- Server keys: set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` in `backend/.env`, or leave them out and the
+  server makes a pair once and keeps it in `dataStore.json`. Never change the keys afterwards: phones that turned
+  notifications on would stop getting them until each player turns them on again.
 
 ---
 
