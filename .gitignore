@@ -11,3 +11,8 @@ local.properties
 backend/src/dataStore.json
 backend/gamesStore.json
 backend/gamesStore.json.tmp
+
+# Android app signing key (keep a backup: the same key is needed for every app update)
+android-app/app/*.keystore
+android-app/.gradle/
+android-app/app/build/

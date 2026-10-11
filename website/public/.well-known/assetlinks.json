@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.newcompany.newmatka",
+      "sha256_cert_fingerprints": [
+        "71:4E:4E:F6:46:C1:3A:19:C4:D7:FE:0F:1A:1B:00:9A:42:38:56:8F:CC:2B:68:82:CF:7C:77:5F:EC:7B:42:36"
+      ]
+    }
+  }
+]

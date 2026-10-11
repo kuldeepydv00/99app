@@ -6,7 +6,8 @@ This repository contains the complete production-ready ecosystem for **99xmatka*
 
 ## 📁 Repository Structure
 
-- `/website`: React (Vite) player website. Players install it on their phone as a web app (no Android app / APK).
+- `/website`: React (Vite) player website (the casino lobby, like Stake). Works on Android and iPhone.
+- `/android-app`: the Android app (APK). It has no screens of its own: it opens the website full screen.
 - `/backend`: Node.js + Express + Socket.io + MongoDB API server locked to **Indian Standard Time (IST)**.
 - `/admin-panel`: React (Vite) + Tailwind CSS web dashboard for draw scheduling and 95x result declaration.
 
@@ -58,16 +59,23 @@ npm run dev
 # Website at http://localhost:5174
 ```
 
-### Web app (install on the phone)
-There is no Android app any more. Players open the website and tap **Install App**:
-- Android / Chrome: the browser's own install dialog. iPhone: Share → **Add to Home Screen**.
-- It opens full screen from the home screen and always runs the latest website, so there is nothing to update.
-- `website/public/manifest.webmanifest` + `website/public/icons/` (name, icons), `website/public/sw.js` (offline screen and
-  phone notifications), `website/public/offline.html`, `website/src/layout/webApp.tsx` (install button and phone notifications).
-- Installing and phone notifications need **HTTPS** (fine on newmatkadomain.com; `localhost` also works for testing).
+### Android app (APK)
+The APK opens https://newmatkadomain.com full screen in Chrome (a Trusted Web Activity), so every
+website change shows in the app straight away. Rebuild the APK only to change its name, icon or address.
+1. Open `android-app` in **Android Studio** and let it sync (it downloads `androidbrowserhelper` once).
+2. In Android Studio's Terminal: `./gradlew assembleRelease`
+   The APK is copied to `website/public/99xmatka.apk` (not kept in git).
+3. Build and upload the website as usual: the APK is served at `/99xmatka.apk`, which the website's
+   **Download App** pop-up downloads (Android phones see the pop-up once a day; also in the menu).
+- Signing key: `android-app/app/debug.keystore` (not in git; **keep a backup**). It is the key the old app
+  used, so phones that have the old app get this one as an update. Its fingerprint is in
+  `website/public/.well-known/assetlinks.json`; that file must be online at
+  `https://newmatkadomain.com/.well-known/assetlinks.json`, otherwise the app shows an address bar.
+- iPhones can't install APKs. iPhone players use the website in Safari (the Download App pop-up shows them
+  how to add an icon to the home screen).
 
 ### Phone notifications (web push)
-Players turn them on in the bell (🔔) on the website. Deposits, withdrawals, wins, refunds, wallet changes, admin messages and
+Players turn them on in the bell (🔔), on the website or in the Android app. Deposits, withdrawals, wins, refunds, wallet changes, admin messages and
 declared results then pop up on their phone, even when the app is closed (iPhone: only after installing to the home screen).
 - Sent by `backend/src/utils/webPush.js` (no extra packages). The server needs outgoing HTTPS to the browsers' push services
   (fcm.googleapis.com, web.push.apple.com, push.services.mozilla.com, notify.windows.com).

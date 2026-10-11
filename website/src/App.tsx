@@ -25,7 +25,7 @@ import NewGamesBets from './games/NewGamesBets';
 import type { TradingGame } from './games/api';
 import { gamesPost } from './games/api';
 import { useNotifications, NotificationsPanel, NotificationToast } from './layout/Notifications';
-import { useInstallApp, InstallSheet, usePhoneAlerts, dropPhoneAlerts } from './layout/webApp';
+import { useDownloadApp, DownloadAppPopup, usePhoneAlerts, dropPhoneAlerts, isIOS } from './layout/webApp';
 
 const API_BASE_URLS = [
   typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:5002' : window.location.origin) : 'https://newmatkadomain.com',
@@ -147,18 +147,10 @@ const getValidBannerImg = (slide: any, globalConfig: any, backupConfig?: any): s
 };
 
 export default function App() {
-  // Navigation View: 'landing' | 'auth' | 'webapp'
-  const [view, setView] = useState<'landing' | 'auth' | 'webapp'>(() => {
-    if (typeof window !== 'undefined') {
-      const savedView = localStorage.getItem('99x_web_view');
-      const savedUser = localStorage.getItem('99x_web_user');
-      if (savedView === 'landing' || savedView === 'auth' || savedView === 'webapp') {
-        return savedView;
-      }
-      return savedUser ? 'webapp' : 'landing';
-    }
-    return 'landing';
-  });
+  // Everyone lands straight on the casino lobby (like Stake). 'auth' = the Sign In / Register
+  // pop-up open on top of it.
+  const [view, setView] = useState<'auth' | 'webapp'>('webapp');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // Auth Flow States: 'phone' | 'otp' | 'register'
   const [authStep, setAuthStep] = useState<'phone' | 'otp' | 'register'>('phone');
@@ -373,8 +365,18 @@ export default function App() {
   const notes = useNotifications(!!user);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const openNotifications = () => { setShowNotificationsModal(true); notes.markSeen(); };
-  // Web app: install to the home screen, and phone notifications
-  const installApp = useInstallApp();
+  // Sign In / Register pop-up; anything that needs an account opens it first when logged out
+  const openAuth = (mode: 'login' | 'register' = 'login') => {
+    setAuthMode(mode); setAuthStep('phone'); setMobileNumber(''); setOtpInput(''); setAuthError(''); setOtpSuccessMessage('');
+    setIsSideMenuOpen(false);
+    setView('auth');
+  };
+  const needLogin = <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => {
+    if (!localStorage.getItem('99x_web_token') && !user) { openAuth('login'); return; }
+    fn(...args);
+  };
+  // The app download pop-up, and phone notifications
+  const appDl = useDownloadApp();
   const phoneAlerts = usePhoneAlerts(!!user);
   // A tapped phone notification opens the bell (app already open, or opened with ?open=notifications)
   const openNotificationsRef = useRef(openNotifications);
@@ -740,7 +742,7 @@ export default function App() {
     : matka99Market ? `matka99:${matka99Market}`
     : selectedGameForBetting ? `matka:${selectedGameForBetting}`
     : 'lobby';
-  useLivePresence(user ? liveWhere : null, view === 'webapp');
+  useLivePresence(user ? liveWhere : null, true);
   const [betsMode, setBetsMode] = useState<'matka' | 'new'>('matka');
   const applyGameBalances = (b: Balances) => {
     setUser(prev => {
@@ -1491,32 +1493,36 @@ export default function App() {
     setAuthError('');
     setActiveWebTab('home'); setHomeSection(null);
     setSelectedGameForBetting(null);
-    setView('landing');
+    setView('webapp');
     setIsSideMenuOpen(false);
   };
   const toTop = () => { try { window.scrollTo({ top: 0 }); } catch { /* ignore */ } };
   const shellActions: ShellActions = {
     home: () => { setSelectedGameForBetting(null); setActiveWebTab('home'); setHomeSection(null); toTop(); },
     section: (s) => { setSelectedGameForBetting(null); setActiveWebTab('home'); openHomeSection(s); },
-    jet: () => setJetOpen(true),
-    instant: (g) => setInstantGame(g),
-    trading: (g) => setTradingGame(g),
-    myBets: () => { setSelectedGameForBetting(null); setActiveWebTab('mybets'); toTop(); },
+    jet: needLogin(() => setJetOpen(true)),
+    instant: needLogin((g: 'dice' | 'mines') => setInstantGame(g)),
+    trading: needLogin((g: TradingGame) => setTradingGame(g)),
+    myBets: needLogin(() => { setSelectedGameForBetting(null); setActiveWebTab('mybets'); toTop(); }),
     charts: () => { setSelectedGameForBetting(null); setActiveWebTab('charts'); toTop(); },
-    wallet: () => setShowWalletModal(true),
-    deposit: () => setShowDepositModal(true),
-    withdraw: () => setShowWithdrawModal(true),
-    refer: () => setShowReferralModal(true),
+    wallet: needLogin(() => setShowWalletModal(true)),
+    deposit: needLogin(() => setShowDepositModal(true)),
+    withdraw: needLogin(() => setShowWithdrawModal(true)),
+    refer: needLogin(() => setShowReferralModal(true)),
     rules: () => setShowRulesModal(true),
-    profile: () => setShowProfileModal(true),
+    profile: needLogin(() => setShowProfileModal(true)),
     notifications: openNotifications,
-    install: () => installApp.install(),
-    installed: installApp.installed,
+    download: appDl.show,
+    inApp: !appDl.available,
+    loggedIn: !!user,
+    login: () => openAuth('login'),
+    register: () => openAuth('register'),
     logout: handleWebLogout,
     supportUrl: `https://wa.me/${whatsappNumber}`
   };
   const openLobbyGame = (id: GameId) => {
     if (id === 'matka' || id === 'matka99') openHomeSection(id);
+    else if (!user) openAuth('login');
     else if (id === 'jet') setJetOpen(true);
     else if (id === 'dice' || id === 'mines') setInstantGame(id);
     else setTradingGame(id);
@@ -1551,20 +1557,20 @@ export default function App() {
     const dt = gamesLobby?.trading?.dragontiger;
     list.push(
       { id: 'p99', kind: 'card', tag: 'Fixed payout', title: '99x Matka', text: `Same 8 markets with a fixed ${gamesLobby?.matka99.payout ?? 99}x on Jodi. The lowest total bet wins.`, cta: 'Play now', art: '/tiles/promo_99x.webp', tint: '#8A1846', onClick: () => shellActions.section('matka99') },
-      { id: 'pmines', kind: 'card', tag: 'New game', title: 'Mines', text: 'Find the gems, dodge the mines. Cash out any time.', cta: 'Play now', art: '/tiles/promo_mines.webp', tint: '#0F6B4A', onClick: () => setInstantGame('mines') },
-      { id: 'pdt', kind: 'card', tag: 'Live game', title: 'Dragon Tiger', text: `One-minute rounds. Pays ${dt?.payout ?? 2}x, and a Tie pays ${dt?.tiePayout ?? 15}x.`, cta: 'Play now', art: '/tiles/promo_dt.webp', tint: '#8A1020', onClick: () => setTradingGame('dragontiger') },
-      { id: 'pref', kind: 'card', tag: 'Promotion', title: 'Refer & Earn', text: 'Invite friends and earn commission on every bet they place, for life.', cta: 'Invite friends', art: '/tiles/promo_coin.webp', tint: '#8A5A06', onClick: () => setShowReferralModal(true) },
-      { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: () => setJetOpen(true) }
+      { id: 'pmines', kind: 'card', tag: 'New game', title: 'Mines', text: 'Find the gems, dodge the mines. Cash out any time.', cta: 'Play now', art: '/tiles/promo_mines.webp', tint: '#0F6B4A', onClick: needLogin(() => setInstantGame('mines')) },
+      { id: 'pdt', kind: 'card', tag: 'Live game', title: 'Dragon Tiger', text: `One-minute rounds. Pays ${dt?.payout ?? 2}x, and a Tie pays ${dt?.tiePayout ?? 15}x.`, cta: 'Play now', art: '/tiles/promo_dt.webp', tint: '#8A1020', onClick: needLogin(() => setTradingGame('dragontiger')) },
+      { id: 'pref', kind: 'card', tag: 'Promotion', title: 'Refer & Earn', text: 'Invite friends and earn commission on every bet they place, for life.', cta: 'Invite friends', art: '/tiles/promo_coin.webp', tint: '#8A5A06', onClick: needLogin(() => setShowReferralModal(true)) },
+      { id: 'pjet', kind: 'card', tag: 'Crash game', title: '99x Jet', text: 'Cash out before the jet flies away. Up to 2000x.', cta: 'Play now', art: '/tiles/promo_jet.webp', tint: '#0E3F9A', onClick: needLogin(() => setJetOpen(true)) }
     );
-    if (!installApp.installed) {
-      list.push({ id: 'papp', kind: 'card', tag: 'Web app', title: 'Install the 99x app', text: 'Add it to your home screen. No download, and alerts for deposits, withdrawals and results.', cta: 'Install', art: '/icons/icon-512.png', tint: '#0F6B4A', onClick: () => installApp.install() });
+    if (appDl.available && !isIOS()) {
+      list.push({ id: 'papp', kind: 'card', tag: 'Android app', title: 'Get the 99x app', text: 'Faster play, and alerts for deposits, withdrawals and results on your phone.', cta: 'Download', art: '/icons/icon-512.png', tint: '#0F6B4A', onClick: appDl.show });
     }
     return list;
   })();
 
   return (
-    <div className={view === 'webapp' ? 'min-h-screen bg-nv-bg text-white' : 'min-h-screen bg-white text-gray-900 flex justify-center'}>
-      <div className={view === 'webapp' ? 'relative min-h-screen w-full' : 'w-full max-w-xl bg-white min-h-screen flex flex-col relative'}>
+    <div className="min-h-screen bg-nv-bg text-white">
+      <div className="relative min-h-screen w-full">
 
         {/* Full Screen Blocked Overlay */}
         {isWebUserBlocked && (
@@ -1605,151 +1611,16 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* VIEW 1: LANDING PAGE (install the web app or play online)  */}
-        {/* ========================================================= */}
-        {view === 'landing' && (
-          <div className="flex-1 bg-white text-slate-900 pb-12">
-            {/* Top bar */}
-            <div className="flex justify-between items-center px-5 py-3.5 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <div className="flex items-center gap-2.5">
-                <img src="/icons/icon-192.png" alt="" className="w-8 h-8 rounded-lg" />
-                <span className="font-black text-gray-900 text-base tracking-tight">99xmatka</span>
-              </div>
-              <span className="text-[11px] font-bold text-gray-500">Web app</span>
-            </div>
-
-            {/* App Branding & Icon */}
-            <div className="px-5 pt-6 pb-4 flex gap-4 items-start">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 p-0.5 shadow-md shrink-0 flex items-center justify-center border border-amber-300/40">
-                <img src="/app_logo.png" alt="99xmatka" className="w-full h-full object-cover rounded-[14px]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-black text-gray-900 leading-tight">99xmatka SATTA</h1>
-                <p className="text-xs text-[#1C7A52] font-bold mt-0.5">99X Games Ltd.</p>
-                <p className="text-[11px] text-gray-400 font-medium">Install on your phone in 2 taps. No APK, no download.</p>
-              </div>
-            </div>
-
-            {/* What you get */}
-            <div className="grid grid-cols-3 px-5 py-3 border-y border-gray-100 text-center">
-              <div>
-                <div className="flex justify-center"><Smartphone className="w-4 h-4 text-gray-900" /></div>
-                <div className="text-[10px] text-gray-500 font-medium mt-1">Android &amp; iPhone</div>
-              </div>
-              <div className="border-l border-gray-200">
-                <div className="flex justify-center"><Bell className="w-4 h-4 text-gray-900" /></div>
-                <div className="text-[10px] text-gray-500 font-medium mt-1">Phone alerts</div>
-              </div>
-              <div className="border-l border-gray-200">
-                <div className="flex justify-center"><ShieldCheck className="w-4 h-4 text-gray-900" /></div>
-                <div className="text-[10px] text-gray-500 font-medium mt-1">Always the latest version</div>
-              </div>
-            </div>
-
-            {/* 2 Action Buttons (INSTALL APP & PLAY ONLINE) */}
-            <div className="px-5 my-5 space-y-3">
-              {!installApp.installed && (
-                <button
-                  onClick={() => installApp.install()}
-                  className="w-full bg-[#1C7A52] hover:bg-[#155E3F] text-white font-black py-3.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all text-center cursor-pointer"
-                >
-                  <Download className="w-4 h-4 stroke-[3]" /> INSTALL APP
-                </button>
-              )}
-
-              <button 
-                onClick={() => {
-                  if (user) {
-                    setView('webapp');
-                  } else {
-                    setAuthStep('phone');
-                    setMobileNumber('');
-                    setOtpInput('');
-                    setAuthError('');
-                    setView('auth');
-                  }
-                }}
-                className="w-full bg-white hover:bg-gray-50 text-gray-900 font-black py-3.5 rounded-xl border-2 border-[#333333] shadow-sm flex items-center justify-center gap-2 text-sm tracking-wider uppercase transition-all"
-              >
-                <Play className="w-4 h-4 fill-gray-900 text-gray-900" /> {installApp.installed ? 'PLAY NOW' : 'PLAY ONLINE'}
-              </button>
-            </div>
-
-
-
-            {/* About This App Section */}
-            <div className="px-5 mt-8 border-t border-gray-100 pt-6">
-              {/* Main Headline */}
-              <h2 className="text-xl font-black text-gray-900 leading-snug text-center mb-5">
-                भारत का पहला ऐसा खाईवाल मटका ऐप जो देता है <span className="text-[#1C7A52]">8% रेफर कमीशन</span>
-              </h2>
-
-              {/* Rate & Commission Points */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6 space-y-2.5">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">💰</span>
-                  <p className="text-base font-bold text-gray-900">रेट <span className="text-[#1C7A52] text-lg">10 का 900</span></p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">🎯</span>
-                  <p className="text-base font-bold text-gray-900">कमीशन <span className="text-[#1C7A52] text-lg">8 परसेंट</span></p>
-                </div>
-              </div>
-
-              {/* Refer Kya Hota Hai Section */}
-              <h3 className="text-lg font-black text-gray-900 mb-3">रेफर क्या होता है।</h3>
-              <div className="bg-slate-50 border border-gray-200 rounded-xl p-4 mb-5 space-y-4">
-                <div className="flex items-start gap-3">
-                  <span className="bg-[#1C7A52] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    आप अपने दोस्त को ऐप फॉरवर्ड करोगे ओर उसकी आईडी बनवाते वक्त रेफर कोड वाली जगह में अपना रेफर कोड डलवाएंगे तो वो जितने का गेम खेलेगा उसका <strong className="text-[#1C7A52] font-bold">8 परसेंट कमीशन</strong> आपको मिलेगा आपके <strong>वॉलेट</strong> में सीधा जिसे आप <strong>निकाल भी सकते है</strong> ।
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-[#1C7A52] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    आपका आईडी <strong>मोबाइल नंबर</strong> ही आपका <strong>रेफर कोड</strong> होगा ।
-                  </p>
-                </div>
-              </div>
-
-              {/* Web app info */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-2">
-                <div className="flex items-start gap-3">
-                  <Smartphone className="w-6 h-6 shrink-0 mt-0.5 text-gray-900" />
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    <strong className="text-gray-900">Android और iPhone</strong> दोनों पर चलता है। ऊपर <strong className="text-[#1C7A52]">Install App</strong> दबाएं, ऐप आपकी होम स्क्रीन पर आ जाएगा। कोई APK डाउनलोड नहीं करना, और ऐप हमेशा नया रहता है।
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Customer Support Footer Card */}
-            <div className="px-5 mt-8">
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
-                <h4 className="text-sm font-bold text-gray-900">Customer Support:</h4>
-                <div className="text-xs text-gray-700 space-y-1.5">
-                  <p className="flex items-center gap-2">
-                    <span>📞</span> Contact: <a href={`tel:${whatsappCallNumber || whatsappNumber}`} className="text-blue-600 font-bold underline">{whatsappCallNumber || whatsappNumber}</a>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span>💬</span> WhatsApp: <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" className="text-blue-600 font-bold underline">{whatsappNumber}</a>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
         {/* VIEW 2: AUTHENTICATION FLOW (Same as Mobile App!)        */}
         {/* ========================================================= */}
         {view === 'auth' && (
-          <div className="flex-1 bg-[#0A0F0D] p-6 flex flex-col justify-between">
+          <div className="nv-fade fixed inset-0 z-[75] flex items-end justify-center bg-black/75 sm:items-center sm:p-4" onClick={() => setView('webapp')}>
+          <div role="dialog" aria-label={authMode === 'register' ? 'Register' : 'Sign In'} onClick={(e) => e.stopPropagation()}
+            className="relative flex max-h-[94vh] w-full max-w-md flex-col justify-between overflow-y-auto rounded-t-2xl bg-[#0A0F0D] p-6 shadow-2xl ring-1 ring-white/10 sm:rounded-2xl">
             <div>
-              {/* Back to Landing Header */}
-              <button onClick={() => setView('landing')} className="flex items-center gap-2 text-xs font-bold text-[#8FA89B] mb-6">
-                <ArrowLeft className="w-4 h-4" /> Back to Home
+              <button onClick={() => setView('webapp')} aria-label="Close"
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-md text-gray-400 hover:bg-white/10 hover:text-white">
+                <X className="w-5 h-5" />
               </button>
 
               <div className="text-center mb-8">
@@ -1758,6 +1629,8 @@ export default function App() {
                 </div>
                 <h2 className="text-2xl font-black text-[#F0DDB8]">99xmatka</h2>
                 <p className="text-xs text-gray-400 mt-1">आपका भरोसा, हमारी पहचान</p>
+                <p className="mt-4 text-base font-bold text-white">{authMode === 'register' ? 'Create your account' : 'Sign in to play'}</p>
+                <p className="mt-0.5 text-xs text-gray-400">{authMode === 'register' ? 'Verify your mobile number with OTP. It takes a few seconds.' : 'Enter your mobile number. We will send you an OTP.'}</p>
               </div>
 
               {authError && (
@@ -1906,12 +1779,13 @@ export default function App() {
               By continuing you agree to 99xmatka Terms & Conditions
             </div>
           </div>
+          </div>
         )}
 
         {/* ========================================================= */}
         {/* VIEW 3: WEB APP PLAYER PORTAL (100% Mobile App Replica!)   */}
         {/* ========================================================= */}
-        {view === 'webapp' && (
+        {(view === 'webapp' || view === 'auth') && (
           <div className="nv font-nv min-h-screen bg-nv-bg text-white antialiased">
             {/* Casino layout: desktop sidebar, phone menu, top bar, content, footer, phone bottom bar */}
             <SideRail a={shellActions} tab={activeWebTab} section={homeSection} collapsed={navCollapsed} onToggle={toggleNav} />
@@ -1930,8 +1804,8 @@ export default function App() {
                 section={homeSection}
                 onSection={(s) => (s ? openHomeSection(s) : closeHomeSection())}
                 markets={marketViews}
-                onPlayMarket={(name) => { setSelectedGameForBetting(name); setBetMessage(''); }}
-                onOpenMatka99={(key) => openMatka99Betting(key)}
+                onPlayMarket={needLogin((name: string) => { setSelectedGameForBetting(name); setBetMessage(''); })}
+                onOpenMatka99={needLogin((key: string) => openMatka99Betting(key))}
                 onOpenGame={openLobbyGame}
                 onMatka99Chart={() => { setChartMode('matka99'); setActiveWebTab('charts'); }}
                 promos={homePromos}
@@ -3453,9 +3327,9 @@ export default function App() {
         {/* Notifications panel + pop-up for a new message */}
         {showNotificationsModal && (
           <NotificationsPanel list={notes.list} loggedIn={!!user} onClose={() => setShowNotificationsModal(false)}
-            alerts={phoneAlerts} onInstall={() => { setShowNotificationsModal(false); installApp.install(); }} />
+            alerts={phoneAlerts} onInstall={() => { setShowNotificationsModal(false); appDl.show(); }} />
         )}
-        {installApp.sheet && <InstallSheet onClose={installApp.closeSheet} />}
+        {appDl.open && <DownloadAppPopup onClose={appDl.close} />}
         <NotificationToast note={notes.toast} onOpen={() => { notes.closeToast(); openNotifications(); }} onClose={notes.closeToast} />
 
         {/* MODAL: RULES & PAYOUT RATES */}

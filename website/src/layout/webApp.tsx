@@ -1,34 +1,42 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { BellRing, BellOff, Download, Share, SquarePlus, MoreVertical, X, Check, Smartphone } from 'lucide-react';
+import { BellRing, BellOff, Download, Share, SquarePlus, X, Check, Smartphone, Zap, ShieldCheck } from 'lucide-react';
 
-// The web app: the website installed on the phone's home screen (no APK), an offline screen
-// (public/sw.js + public/offline.html) and phone notifications (web push, see backend utils/webPush.js).
+// The 99xmatka app: the Android APK (android-app/, opens this website full screen) is downloaded
+// from the "Download App" popup. Also here: offline screen (public/sw.js + public/offline.html)
+// and phone notifications (web push, see backend utils/webPush.js).
+
+export const APK_URL = '/99xmatka.apk';
 
 // ---------- where we are running ----------
-export const isStandalone = () => {
-  try {
-    return window.matchMedia('(display-mode: standalone)').matches
-      || window.matchMedia('(display-mode: fullscreen)').matches
-      || (navigator as any).standalone === true;
-  } catch { return false; }
-};
 export const isIOS = () => {
   const ua = navigator.userAgent || '';
   return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 };
-const isAndroid = () => /Android/i.test(navigator.userAgent || '');
+export const isAndroid = () => /Android/i.test(navigator.userAgent || '');
+const isPhone = () => isAndroid() || isIOS() || /Mobi/i.test(navigator.userAgent || '');
 
-// Chrome / Edge / Samsung on Android and desktop offer their own "Install" dialog. The browser
-// announces it once, early, so it is caught here before React starts (registerWebApp in main.tsx).
-type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
-let installPrompt: InstallPrompt | null = null;
-const listeners = new Set<() => void>();
-const changed = () => listeners.forEach(f => f());
+/** Opened inside the 99xmatka Android app (or from an iPhone home-screen icon). */
+export const inApp = (() => {
+  let cached: boolean | null = null;
+  return () => {
+    if (cached !== null) return cached;
+    let v = false;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('source') === 'apk') sessionStorage.setItem('99x_in_app', '1');
+      v = sessionStorage.getItem('99x_in_app') === '1'
+        || document.referrer.startsWith('android-app://')
+        || window.matchMedia('(display-mode: standalone)').matches
+        || (navigator as any).standalone === true;
+    } catch { v = false; }
+    cached = v;
+    return v;
+  };
+})();
 
 export function registerWebApp() {
-  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e as InstallPrompt; changed(); });
-  window.addEventListener('appinstalled', () => { installPrompt = null; changed(); });
+  inApp(); // remember "opened from the app" before the address changes
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => { /* the site works without it */ });
@@ -40,38 +48,32 @@ export function registerWebApp() {
   }
 }
 
-/** The "Install app" button: shows the browser's install dialog, or how to do it on this phone. */
-export function useInstallApp() {
-  const [installed, setInstalled] = useState(isStandalone);
-  const [, force] = useState(0);
-  const [sheet, setSheet] = useState(false);
+// ---------- Download App popup ----------
+const POPUP_KEY = '99x_app_popup_at';
+const POPUP_EVERY_MS = 24 * 3600 * 1000; // shown by itself at most once a day
+
+/** The popup: opens from the menu, and by itself once a day for Android phones in the browser. */
+export function useDownloadApp() {
+  const [open, setOpen] = useState(false);
   useEffect(() => {
-    const f = () => { force(x => x + 1); setInstalled(isStandalone()); };
-    listeners.add(f);
-    let mq: MediaQueryList | null = null;
-    try { mq = window.matchMedia('(display-mode: standalone)'); mq.addEventListener('change', f); } catch { /* old browsers */ }
-    return () => { listeners.delete(f); try { mq?.removeEventListener('change', f); } catch { /* ignore */ } };
+    if (inApp() || !isAndroid()) return;
+    let last = 0;
+    try { last = Number(localStorage.getItem(POPUP_KEY)) || 0; } catch { /* ignore */ }
+    if (Date.now() - last < POPUP_EVERY_MS) return;
+    const id = window.setTimeout(() => {
+      setOpen(true);
+      try { localStorage.setItem(POPUP_KEY, String(Date.now())); } catch { /* ignore */ }
+    }, 2500);
+    return () => window.clearTimeout(id);
   }, []);
-  const install = async () => {
-    if (installPrompt) {
-      const p = installPrompt;
-      try {
-        await p.prompt();
-        const choice = await p.userChoice;
-        if (choice.outcome === 'accepted') { installPrompt = null; changed(); }
-        return;
-      } catch { /* fall back to the steps */ }
-    }
-    setSheet(true);
-  };
-  return { installed, install, sheet, closeSheet: () => setSheet(false) };
+  return { open, show: () => setOpen(true), close: () => setOpen(false), available: !inApp() };
 }
 
 function Step({ n, children }: { n: number; children: ReactNode }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nv-gold text-[13px] font-bold text-black">{n}</span>
-      <span className="pt-0.5 text-[13.5px] leading-relaxed text-nv-text">{children}</span>
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-nv-card2 text-[12px] font-bold text-white">{n}</span>
+      <span className="pt-0.5 text-[13px] leading-relaxed text-nv-text">{children}</span>
     </li>
   );
 }
@@ -80,43 +82,76 @@ const Ico = ({ children }: { children: ReactNode }) => (
   <span className="mx-0.5 inline-flex h-6 w-6 translate-y-1.5 items-center justify-center rounded-md bg-nv-card2 text-white">{children}</span>
 );
 
-/** How to install, for phones where the browser has no install dialog (iPhone, Firefox…). */
-export function InstallSheet({ onClose }: { onClose: () => void }) {
+export function DownloadAppPopup({ onClose }: { onClose: () => void }) {
   const ios = isIOS();
-  const android = isAndroid();
+  const [state, setState] = useState<'idle' | 'checking' | 'started' | 'missing'>('idle');
+
+  // Direct download of the APK. Checks first that the file is really there (a missing file would
+  // otherwise download the website page under the name 99xmatka.apk).
+  const download = async () => {
+    setState('checking');
+    try {
+      const r = await fetch(APK_URL, { method: 'HEAD', cache: 'no-store' });
+      const type = r.headers.get('content-type') || '';
+      if (!r.ok || type.includes('text/html')) { setState('missing'); return; }
+    } catch { /* offline check failed: try the download anyway */ }
+    const a = document.createElement('a');
+    a.href = `${APK_URL}?v=${Date.now()}`;
+    a.download = '99xmatka.apk';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 500);
+    setState('started');
+  };
+
   return (
     <div className="nv-fade fixed inset-0 z-[80] flex items-end justify-center bg-black/70 font-nv sm:items-center sm:p-4" onClick={onClose}>
-      <div role="dialog" aria-label="Install the app" className="w-full max-w-md overflow-hidden rounded-t-2xl bg-nv-panel shadow-2xl ring-1 ring-white/5 sm:rounded-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-black/30 px-4 py-3.5">
-          <img src="/icons/icon-192.png" alt="" className="h-10 w-10 rounded-xl" />
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[15px] font-bold text-white">Install 99xmatka</h3>
-            <p className="text-[12px] text-nv-mute">Opens full screen from your home screen. No APK, no download.</p>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="nv-tap flex h-8 w-8 items-center justify-center rounded-md text-nv-mute hover:bg-nv-card2 hover:text-white"><X className="h-5 w-5" /></button>
+      <div role="dialog" aria-label="Download the app" className="relative w-full max-w-md overflow-hidden rounded-t-2xl bg-nv-panel shadow-2xl ring-1 ring-white/5 sm:rounded-2xl" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} aria-label="Close" className="nv-tap absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-md text-nv-mute hover:bg-nv-card2 hover:text-white"><X className="h-5 w-5" /></button>
+        <div className="flex flex-col items-center bg-gradient-to-b from-nv-blue/25 to-transparent px-6 pb-4 pt-7 text-center">
+          <img src="/icons/icon-192.png" alt="" className="h-20 w-20 rounded-2xl shadow-lg ring-1 ring-white/10" />
+          <h3 className="mt-4 text-[19px] font-bold text-white">Get the 99xmatka app</h3>
+          <p className="mt-1 text-[13px] text-nv-text">All games, faster, with alerts for deposits, withdrawals, wins and results.</p>
         </div>
-        <ol className="space-y-4 px-5 py-5">
+        <div className="grid grid-cols-3 gap-2 px-5 pb-4 text-center">
+          {[[Zap, 'Opens instantly'], [BellRing, 'Phone alerts'], [ShieldCheck, 'Same account']].map(([Icon, label]) => {
+            const I = Icon as typeof Zap;
+            return (
+              <div key={label as string} className="rounded-lg bg-nv-input/70 px-2 py-2.5">
+                <I className="mx-auto h-4 w-4 text-nv-gold" />
+                <p className="mt-1 text-[11px] font-semibold text-nv-text">{label as string}</p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="px-5 pb-5">
           {ios ? (
-            <>
-              <Step n={1}>Tap the <Key>Share</Key> button <Ico><Share className="h-3.5 w-3.5" /></Ico> at the bottom (or top) of Safari.</Step>
-              <Step n={2}>Scroll down and tap <Ico><SquarePlus className="h-3.5 w-3.5" /></Ico> <Key>Add to Home Screen</Key>.</Step>
-              <Step n={3}>Tap <Key>Add</Key>. Open 99xmatka from your home screen.</Step>
-            </>
-          ) : android ? (
-            <>
-              <Step n={1}>Tap the browser menu <Ico><MoreVertical className="h-3.5 w-3.5" /></Ico> (top right).</Step>
-              <Step n={2}>Tap <Key>Install app</Key> or <Key>Add to Home screen</Key>.</Step>
-              <Step n={3}>Tap <Key>Install</Key>. Open 99xmatka from your home screen.</Step>
-            </>
+            <div className="rounded-xl bg-nv-input/70 p-4">
+              <p className="text-[13px] font-semibold text-white">On iPhone</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-nv-text">The APK is for Android phones. On iPhone, play right here in Safari, or get an app icon:</p>
+              <ol className="mt-3 space-y-2.5">
+                <Step n={1}>Tap <Ico><Share className="h-3.5 w-3.5" /></Ico> <Key>Share</Key> in Safari.</Step>
+                <Step n={2}>Tap <Ico><SquarePlus className="h-3.5 w-3.5" /></Ico> <Key>Add to Home Screen</Key>, then <Key>Add</Key>.</Step>
+              </ol>
+            </div>
           ) : (
             <>
-              <Step n={1}>Click the install icon <Ico><Download className="h-3.5 w-3.5" /></Ico> at the right end of the address bar, or open the browser menu.</Step>
-              <Step n={2}>Choose <Key>Install 99xmatka</Key>.</Step>
-              <Step n={3}>It opens in its own window and gets an icon like any other app.</Step>
+              <button onClick={download} disabled={state === 'checking'}
+                className="nv-tap flex w-full items-center justify-center gap-2 rounded-lg bg-nv-blue py-3.5 text-[15px] font-bold text-white shadow-lg transition-colors hover:bg-nv-blue2 disabled:opacity-70">
+                <Download className="h-5 w-5" /> {state === 'checking' ? 'Starting…' : 'Download APK'}
+              </button>
+              {state === 'started' && (
+                <p className="mt-3 text-center text-[12.5px] text-nv-green">Downloading… Open 99xmatka.apk from your notifications or Downloads and tap Install.</p>
+              )}
+              {state === 'missing' && (
+                <p className="mt-3 text-center text-[12.5px] text-nv-red">The app file isn't available right now. Please try again later or contact support.</p>
+              )}
+              <p className="mt-3 text-center text-[11.5px] leading-relaxed text-nv-mute">
+                For Android. If your phone asks, allow <span className="text-nv-text">Install unknown apps</span> for your browser.
+              </p>
             </>
           )}
-        </ol>
-        {ios && <p className="px-5 pb-5 text-[12px] leading-relaxed text-nv-mute">Phone notifications on iPhone work only after you install the app this way and open it from the home screen.</p>}
+        </div>
       </div>
     </div>
   );
@@ -160,7 +195,7 @@ export function usePhoneAlerts(loggedIn: boolean) {
   const [error, setError] = useState('');
 
   const check = async () => {
-    if (!pushSupported()) { setState(isIOS() && !isStandalone() ? 'install-first' : 'unsupported'); return; }
+    if (!pushSupported()) { setState(isIOS() && !inApp() ? 'install-first' : 'unsupported'); return; }
     if (Notification.permission === 'denied') { setState('blocked'); return; }
     try {
       const sub = await currentSubscription();
@@ -173,7 +208,7 @@ export function usePhoneAlerts(loggedIn: boolean) {
 
   const turnOn = async () => {
     setError('');
-    if (!pushSupported()) { setState(isIOS() && !isStandalone() ? 'install-first' : 'unsupported'); return; }
+    if (!pushSupported()) { setState(isIOS() && !inApp() ? 'install-first' : 'unsupported'); return; }
     setState('busy');
     try {
       const permission = await Notification.requestPermission();

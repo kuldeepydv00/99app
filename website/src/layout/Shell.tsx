@@ -28,8 +28,12 @@ export type ShellActions = {
   rules: () => void;
   profile: () => void;
   notifications: () => void;
-  install: () => void;
-  installed: boolean;
+  download: () => void;
+  /** opened inside the 99xmatka app: no Download App links */
+  inApp: boolean;
+  loggedIn: boolean;
+  login: () => void;
+  register: () => void;
   logout: () => void;
   supportUrl: string;
 };
@@ -144,7 +148,7 @@ function navGroups(a: ShellActions, tab: WebTab, section: HomeSection): Item[][]
       { key: 'refer', label: 'Refer & Earn', icon: Gift, onClick: a.refer, tone: 'text-nv-gold' },
       { key: 'rules', label: 'Rules & Rates', icon: BookOpen, onClick: a.rules },
       { key: 'support', label: 'Live Support', icon: Headphones, href: a.supportUrl },
-      ...(a.installed ? [] : [{ key: 'install', label: 'Install App', icon: Smartphone, onClick: a.install }])
+      ...(a.inApp ? [] : [{ key: 'download', label: 'Download App', icon: Smartphone, onClick: a.download }])
     ]
   ];
 }
@@ -179,6 +183,12 @@ export function MobileMenu({ a, tab, section, onClose, name, mobile, balance }: 
       <div className="nv-fade absolute inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
       <div className="nv-drawer relative flex h-full w-[300px] max-w-[86vw] flex-col bg-nv-side shadow-2xl">
         <div className="flex items-center gap-3 border-b border-nv-line/60 px-4 py-4">
+          {!a.loggedIn ? (
+            <div className="flex min-w-0 flex-1 gap-2">
+              <button onClick={() => { onClose(); a.login(); }} className="nv-tap h-10 flex-1 rounded-md bg-nv-card2 text-sm font-semibold text-white">Sign In</button>
+              <button onClick={() => { onClose(); a.register(); }} className="nv-tap h-10 flex-1 rounded-md bg-nv-blue text-sm font-semibold text-white">Register</button>
+            </div>
+          ) : (
           <button onClick={() => { a.profile(); onClose(); }} className="nv-tap flex min-w-0 flex-1 items-center gap-3 text-left">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-nv-blue2 to-[#0E3F8F] text-base font-bold text-white">
               {(name || 'P').trim().charAt(0).toUpperCase()}
@@ -189,6 +199,7 @@ export function MobileMenu({ a, tab, section, onClose, name, mobile, balance }: 
               <span className="mt-0.5 block text-[12px] font-semibold tabular-nums text-nv-green">{money(balance)}</span>
             </span>
           </button>
+          )}
           <button onClick={onClose} aria-label="Close menu"
             className="nv-tap flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-nv-card text-nv-text hover:text-white">
             <X className="h-4 w-4" />
@@ -197,7 +208,7 @@ export function MobileMenu({ a, tab, section, onClose, name, mobile, balance }: 
         <nav className="nv-noscroll flex-1 space-y-2.5 overflow-y-auto p-3">
           <FeatureButtons a={a} section={section} tab={tab} after={onClose} />
           {navGroups(a, tab, section).map((g, i) => <Group key={i} items={g} collapsed={false} after={onClose} />)}
-          <Group collapsed={false} after={onClose} items={[{ key: 'logout', label: 'Logout', icon: LogOut, onClick: a.logout, tone: 'text-nv-red' }]} />
+          {a.loggedIn && <Group collapsed={false} after={onClose} items={[{ key: 'logout', label: 'Logout', icon: LogOut, onClick: a.logout, tone: 'text-nv-red' }]} />}
         </nav>
         <p className="border-t border-nv-line/60 px-4 py-3 text-center text-[10.5px] text-nv-dim">99xmatka v2.4 · 18+ · Play responsibly</p>
       </div>
@@ -211,6 +222,18 @@ export function TopBar({ a, balance, unread }: { a: ShellActions; balance: numbe
     <header className="sticky top-0 z-30 border-b border-black/30 bg-nv-side/95 shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-2 px-3 sm:px-6 lg:h-16">
         <Logo onClick={a.home} />
+        {!a.loggedIn ? (
+          <div className="flex flex-1 items-center justify-end gap-2">
+            <button onClick={a.login}
+              className="nv-tap h-9 rounded-md bg-nv-card2 px-3.5 text-[13px] font-semibold text-white transition-colors hover:bg-nv-line sm:h-10 sm:px-5 sm:text-sm">
+              Sign In
+            </button>
+            <button onClick={a.register}
+              className="nv-tap h-9 rounded-md bg-nv-blue px-3.5 text-[13px] font-semibold text-white shadow-md transition-colors hover:bg-nv-blue2 sm:h-10 sm:px-5 sm:text-sm">
+              Register
+            </button>
+          </div>
+        ) : (<>
         <div className="flex min-w-0 flex-1 justify-end sm:justify-center">
           <div className="flex min-w-0 items-stretch overflow-hidden rounded-md bg-nv-bg ring-1 ring-nv-line/70">
             <button onClick={a.wallet} aria-label="Wallet"
@@ -240,6 +263,7 @@ export function TopBar({ a, balance, unread }: { a: ShellActions; balance: numbe
             <UserRound className="h-[19px] w-[19px]" />
           </button>
         </div>
+        </>)}
       </div>
     </header>
   );
@@ -311,7 +335,7 @@ export function SiteFooter({ a }: { a: ShellActions }) {
               <button className={link} onClick={a.rules}>Rules & Rates</button>
               <a className={link} href={a.supportUrl} target="_blank" rel="noreferrer">Live Support</a>
               <button className={link} onClick={a.refer}>Refer & Earn</button>
-              {!a.installed && <button className={link} onClick={a.install}>Install App</button>}
+              {!a.inApp && <button className={link} onClick={a.download}>Download App</button>}
             </div>
           </div>
         </div>
