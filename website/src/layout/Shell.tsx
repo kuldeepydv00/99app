@@ -168,7 +168,7 @@ export function SideRail({ a, tab, section, collapsed, onToggle }: {
       </div>
       <nav className="nv-noscroll flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-4 pt-1">
         {navGroups(a, tab, section).map((g, i) => <Group key={i} items={g} collapsed={collapsed} />)}
-        <Group collapsed={collapsed} items={[{ key: 'logout', label: 'Logout', icon: LogOut, onClick: a.logout, tone: 'text-nv-red' }]} />
+        {a.loggedIn && <Group collapsed={collapsed} items={[{ key: 'logout', label: 'Logout', icon: LogOut, onClick: a.logout, tone: 'text-nv-red' }]} />}
       </nav>
     </aside>
   );

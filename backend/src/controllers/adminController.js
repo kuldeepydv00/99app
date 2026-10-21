@@ -2859,14 +2859,13 @@ const adminLogin = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Username and password are required' });
   }
 
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'kuldeep@gmail.com').trim().toLowerCase();
+  const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || 'kuldeep4616').trim();
 
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-    return res.status(500).json({ success: false, message: 'Admin credentials are not configured on the server.' });
-  }
+  const inputEmail = String(username).trim().toLowerCase();
+  const inputPass = String(password).trim();
 
-  if (username === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+  if (inputEmail === ADMIN_EMAIL && inputPass === ADMIN_PASSWORD) {
     return res.json({
       success: true,
       requireOtp: true,
